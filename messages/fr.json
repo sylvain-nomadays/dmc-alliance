@@ -1,0 +1,308 @@
+{
+  "metadata": {
+    "title": "The DMC Alliance - Experts locaux du voyage B2B",
+    "description": "Collectif d'agences réceptives locales. Sur-mesure, groupes et GIR co-remplissage pour tour-opérateurs et agences de voyage en Europe."
+  },
+  "common": {
+    "learnMore": "En savoir plus",
+    "contactUs": "Nous contacter",
+    "viewAll": "Voir tout",
+    "destinations": "Destinations",
+    "partners": "Partenaires",
+    "services": "Nos offres",
+    "about": "Qui sommes-nous",
+    "magazine": "Magazine",
+    "contact": "Contact",
+    "newsletter": "Newsletter",
+    "proSpace": "Espace Pro",
+    "search": "Rechercher",
+    "from": "À partir de",
+    "perPerson": "par personne",
+    "days": "jours",
+    "nights": "nuits",
+    "available": "disponible",
+    "availablePlural": "disponibles",
+    "soldOut": "Complet",
+    "bookNow": "Réserver",
+    "requestQuote": "Demander un devis",
+    "viewDetails": "Voir les détails",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "close": "Fermer",
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "success": "Succès",
+    "required": "Requis",
+    "optional": "Optionnel"
+  },
+  "nav": {
+    "destinations": "Destinations",
+    "destinationsSubtitle": "Découvrez nos 30+ destinations",
+    "services": "Nos Offres",
+    "tailorMade": "Sur-mesure (FIT)",
+    "tailorMadeDesc": "Circuits personnalisés pour vos clients individuels",
+    "groups": "Voyages Groupes",
+    "groupsDesc": "Solutions clé en main pour groupes constitués",
+    "gir": "GIR Co-remplissage",
+    "girDesc": "Circuits à dates fixes avec places mutualisées",
+    "partners": "Nos Partenaires",
+    "partnersSubtitle": "Annuaire des réceptifs",
+    "magazine": "Magazine",
+    "magazineSubtitle": "Actualités et inspiration",
+    "about": "Qui sommes-nous",
+    "aboutSubtitle": "Notre histoire et nos valeurs",
+    "contact": "Contact"
+  },
+  "home": {
+    "hero": {
+      "title": "L'expertise locale,\nconnectée mondialement",
+      "subtitle": "The DMC Alliance réunit les meilleurs réceptifs indépendants pour vous offrir une expertise terrain inégalée sur 30+ destinations.",
+      "cta": "Découvrir nos destinations",
+      "ctaSecondary": "Nos circuits GIR"
+    },
+    "stats": {
+      "destinations": "Destinations",
+      "partners": "Agences partenaires",
+      "years": "Années d'expérience cumulée",
+      "travelers": "Voyageurs accompagnés/an"
+    },
+    "services": {
+      "title": "Des solutions pour chaque besoin",
+      "subtitle": "Que vous recherchiez du sur-mesure, des voyages groupes ou des GIR à co-remplir, nos experts locaux s'adaptent à vos attentes.",
+      "tailorMade": {
+        "title": "Sur-mesure (FIT)",
+        "description": "Circuits 100% personnalisés créés par nos experts locaux pour vos clients individuels ou petits groupes.",
+        "features": ["Devis sous 48h", "Connaissance terrain", "Flexibilité totale"]
+      },
+      "groups": {
+        "title": "Voyages Groupes",
+        "description": "Solutions clé en main pour vos groupes constitués : associations, CE, incentives, voyages scolaires.",
+        "features": ["Tarifs groupes négociés", "Accompagnement dédié", "Logistique maîtrisée"]
+      },
+      "gir": {
+        "title": "GIR Co-remplissage",
+        "description": "Circuits à dates fixes avec places mutualisées. Intégrez vos clients à nos départs garantis.",
+        "features": ["Départs garantis", "Commission attractive", "Pas de minimum"]
+      }
+    },
+    "destinations": {
+      "title": "30+ destinations d'exception",
+      "subtitle": "De la Mongolie au Costa Rica, nos experts locaux vous ouvrent les portes du monde.",
+      "cta": "Explorer toutes les destinations"
+    },
+    "gir": {
+      "title": "Prochains départs GIR",
+      "subtitle": "Circuits à co-remplir avec dates et tarifs garantis. Inscrivez vos clients dès maintenant.",
+      "cta": "Voir tous les GIR",
+      "requestCommission": "Demander le taux de commission"
+    },
+    "partners": {
+      "title": "Un réseau d'experts terrain",
+      "subtitle": "Chaque agence membre de The DMC Alliance est sélectionnée pour son expertise locale et son engagement qualité.",
+      "cta": "Découvrir nos partenaires"
+    },
+    "testimonials": {
+      "title": "Ils nous font confiance",
+      "subtitle": "Tour-opérateurs et agences de voyage témoignent de leur collaboration avec The DMC Alliance."
+    },
+    "magazine": {
+      "title": "Le Magazine",
+      "subtitle": "Tendances, conseils et inspiration pour vos programmations.",
+      "cta": "Lire le magazine"
+    },
+    "newsletter": {
+      "title": "Restez informés",
+      "subtitle": "Recevez nos actualités, nouveaux GIR et offres exclusives directement dans votre boîte mail.",
+      "placeholder": "Votre email professionnel",
+      "cta": "S'inscrire",
+      "privacy": "Nous respectons votre vie privée. Désinscription possible à tout moment."
+    },
+    "cta": {
+      "title": "Prêts à collaborer ?",
+      "subtitle": "Contactez-nous pour découvrir comment The DMC Alliance peut enrichir votre offre.",
+      "button": "Parlons de votre projet"
+    }
+  },
+  "destinations": {
+    "title": "Nos destinations",
+    "subtitle": "30+ destinations à travers le monde, chacune avec son expert local dédié.",
+    "filterByRegion": "Filtrer par région",
+    "allRegions": "Toutes les régions",
+    "searchPlaceholder": "Rechercher une destination...",
+    "noResults": "Aucune destination trouvée",
+    "discoverPartner": "Découvrir l'agence partenaire",
+    "regions": {
+      "asia": "Asie",
+      "africa": "Afrique",
+      "europe": "Europe",
+      "americas": "Amériques",
+      "middle-east": "Moyen-Orient",
+      "oceania": "Océanie"
+    }
+  },
+  "gir": {
+    "title": "Circuits GIR Co-remplissage",
+    "subtitle": "Intégrez vos clients à nos départs garantis. Dates fixes, tarifs publics, commission sur demande.",
+    "howItWorks": {
+      "title": "Comment ça marche ?",
+      "step1": {
+        "title": "Choisissez un circuit",
+        "description": "Parcourez nos GIR par destination ou date de départ."
+      },
+      "step2": {
+        "title": "Vérifiez les disponibilités",
+        "description": "Consultez les places restantes en temps réel."
+      },
+      "step3": {
+        "title": "Demandez votre commission",
+        "description": "Contactez-nous pour connaître vos conditions."
+      },
+      "step4": {
+        "title": "Inscrivez vos clients",
+        "description": "Confirmez les places et envoyez les dossiers."
+      }
+    },
+    "filters": {
+      "destination": "Destination",
+      "date": "Date de départ",
+      "duration": "Durée",
+      "theme": "Thématique",
+      "level": "Niveau"
+    },
+    "card": {
+      "departure": "Départ le",
+      "duration": "Durée",
+      "level": "Niveau",
+      "places": "places restantes",
+      "publicPrice": "Prix public",
+      "commissionInfo": "Commission sur demande",
+      "viewCircuit": "Voir le circuit",
+      "bookPlaces": "Réserver des places"
+    },
+    "levels": {
+      "easy": "Facile",
+      "moderate": "Modéré",
+      "challenging": "Sportif",
+      "expert": "Expert"
+    },
+    "themes": {
+      "adventure": "Aventure",
+      "culture": "Culture",
+      "nature": "Nature",
+      "wildlife": "Faune sauvage",
+      "trekking": "Trekking",
+      "family": "Famille"
+    }
+  },
+  "partners": {
+    "title": "Annuaire des réceptifs",
+    "subtitle": "Découvrez les agences locales membres de The DMC Alliance.",
+    "searchPlaceholder": "Rechercher par nom ou destination...",
+    "filterBySpecialty": "Filtrer par spécialité",
+    "allSpecialties": "Toutes les spécialités",
+    "premiumPartner": "Partenaire Premium",
+    "viewProfile": "Voir le profil",
+    "contactPartner": "Contacter l'agence",
+    "specialties": "Spécialités",
+    "destinations": "Destinations couvertes",
+    "girAvailable": "Propose des GIR",
+    "website": "Site web"
+  },
+  "about": {
+    "title": "Qui sommes-nous",
+    "subtitle": "The DMC Alliance, c'est l'histoire d'agences locales passionnées qui s'unissent pour mieux vous servir.",
+    "history": {
+      "title": "Notre histoire",
+      "content": "Né de la volonté de partager notre expertise terrain, The DMC Alliance réunit les meilleurs réceptifs indépendants d'Asie, d'Afrique, d'Europe et des Amériques."
+    },
+    "mission": {
+      "title": "Notre mission",
+      "content": "Offrir aux professionnels du voyage un accès privilégié à un réseau d'experts locaux, pour des expériences authentiques et une qualité de service irréprochable."
+    },
+    "values": {
+      "title": "Nos valeurs",
+      "expertise": {
+        "title": "Expertise terrain",
+        "description": "Chaque destination est opérée par des équipes locales qui vivent et respirent leur pays."
+      },
+      "collaboration": {
+        "title": "Collaboration",
+        "description": "Nous partageons nos savoirs et mutualisons nos forces pour mieux vous accompagner."
+      },
+      "quality": {
+        "title": "Qualité",
+        "description": "Sélection rigoureuse des prestataires, contrôle qualité permanent, amélioration continue."
+      },
+      "responsibility": {
+        "title": "Responsabilité",
+        "description": "Tourisme durable, impact positif sur les communautés locales, respect de l'environnement."
+      }
+    },
+    "team": {
+      "title": "L'équipe",
+      "subtitle": "Des femmes et des hommes passionnés aux quatre coins du monde."
+    }
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Une question, un projet, une demande de partenariat ? Notre équipe vous répond sous 24h.",
+    "form": {
+      "company": "Société",
+      "name": "Nom complet",
+      "email": "Email professionnel",
+      "phone": "Téléphone",
+      "subject": "Sujet",
+      "subjects": {
+        "quote": "Demande de devis",
+        "gir": "Information GIR",
+        "partnership": "Devenir partenaire",
+        "other": "Autre"
+      },
+      "message": "Votre message",
+      "submit": "Envoyer",
+      "success": "Message envoyé ! Nous vous répondons sous 24h.",
+      "error": "Erreur lors de l'envoi. Veuillez réessayer."
+    },
+    "info": {
+      "title": "Informations",
+      "email": "Email",
+      "phone": "Téléphone",
+      "address": "Adresse"
+    }
+  },
+  "newsletter": {
+    "title": "Newsletter Pro",
+    "subtitle": "Recevez en avant-première nos nouveaux GIR, actualités destinations et offres exclusives.",
+    "form": {
+      "email": "Email professionnel",
+      "company": "Société",
+      "interests": "Centres d'intérêt",
+      "interestsList": {
+        "gir": "Nouveaux GIR",
+        "destinations": "Actualités destinations",
+        "offers": "Offres spéciales",
+        "magazine": "Articles magazine"
+      },
+      "submit": "S'inscrire",
+      "success": "Inscription confirmée ! Bienvenue dans la communauté DMC Alliance.",
+      "error": "Erreur lors de l'inscription. Veuillez réessayer."
+    },
+    "privacy": "Vos données sont protégées. Désinscription possible à tout moment."
+  },
+  "footer": {
+    "description": "The DMC Alliance réunit les meilleurs réceptifs locaux pour offrir aux professionnels du voyage une expertise terrain inégalée.",
+    "quickLinks": "Liens rapides",
+    "destinations": "Destinations",
+    "services": "Nos offres",
+    "partners": "Partenaires",
+    "magazine": "Magazine",
+    "about": "Qui sommes-nous",
+    "contact": "Contact",
+    "legal": "Mentions légales",
+    "privacy": "Politique de confidentialité",
+    "terms": "CGV",
+    "copyright": "© {year} The DMC Alliance. Tous droits réservés.",
+    "socialTitle": "Suivez-nous"
+  }
+}

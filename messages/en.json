@@ -1,0 +1,308 @@
+{
+  "metadata": {
+    "title": "The DMC Alliance - Local Experts in B2B Travel",
+    "description": "Collective of local receptive agencies. Tailor-made, groups and shared departure tours for tour operators and travel agencies in Europe."
+  },
+  "common": {
+    "learnMore": "Learn more",
+    "contactUs": "Contact us",
+    "viewAll": "View all",
+    "destinations": "Destinations",
+    "partners": "Partners",
+    "services": "Our services",
+    "about": "About us",
+    "magazine": "Magazine",
+    "contact": "Contact",
+    "newsletter": "Newsletter",
+    "proSpace": "Pro Space",
+    "search": "Search",
+    "from": "From",
+    "perPerson": "per person",
+    "days": "days",
+    "nights": "nights",
+    "available": "available",
+    "availablePlural": "available",
+    "soldOut": "Sold out",
+    "bookNow": "Book now",
+    "requestQuote": "Request quote",
+    "viewDetails": "View details",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "nav": {
+    "destinations": "Destinations",
+    "destinationsSubtitle": "Discover our 30+ destinations",
+    "services": "Our Services",
+    "tailorMade": "Tailor-made (FIT)",
+    "tailorMadeDesc": "Custom tours for your individual clients",
+    "groups": "Group Travel",
+    "groupsDesc": "Turnkey solutions for groups",
+    "gir": "Shared Departures",
+    "girDesc": "Fixed-date tours with shared seats",
+    "partners": "Our Partners",
+    "partnersSubtitle": "DMC directory",
+    "magazine": "Magazine",
+    "magazineSubtitle": "News and inspiration",
+    "about": "About us",
+    "aboutSubtitle": "Our story and values",
+    "contact": "Contact"
+  },
+  "home": {
+    "hero": {
+      "title": "Local expertise,\nglobally connected",
+      "subtitle": "The DMC Alliance brings together the best independent receptive agencies to offer you unparalleled field expertise across 30+ destinations.",
+      "cta": "Discover our destinations",
+      "ctaSecondary": "Our shared departure tours"
+    },
+    "stats": {
+      "destinations": "Destinations",
+      "partners": "Partner agencies",
+      "years": "Years of combined experience",
+      "travelers": "Travelers per year"
+    },
+    "services": {
+      "title": "Solutions for every need",
+      "subtitle": "Whether you're looking for tailor-made, group travel or shared departures, our local experts adapt to your needs.",
+      "tailorMade": {
+        "title": "Tailor-made (FIT)",
+        "description": "100% customized tours created by our local experts for your individual clients or small groups.",
+        "features": ["Quote within 48h", "Field knowledge", "Total flexibility"]
+      },
+      "groups": {
+        "title": "Group Travel",
+        "description": "Turnkey solutions for your groups: associations, corporate, incentives, school trips.",
+        "features": ["Negotiated group rates", "Dedicated support", "Mastered logistics"]
+      },
+      "gir": {
+        "title": "Shared Departures",
+        "description": "Fixed-date tours with shared seats. Add your clients to our guaranteed departures.",
+        "features": ["Guaranteed departures", "Attractive commission", "No minimum"]
+      }
+    },
+    "destinations": {
+      "title": "30+ exceptional destinations",
+      "subtitle": "From Mongolia to Costa Rica, our local experts open the world's doors for you.",
+      "cta": "Explore all destinations"
+    },
+    "gir": {
+      "title": "Upcoming shared departures",
+      "subtitle": "Tours with guaranteed dates and prices. Register your clients now.",
+      "cta": "View all tours",
+      "requestCommission": "Request commission rate"
+    },
+    "partners": {
+      "title": "A network of field experts",
+      "subtitle": "Each DMC Alliance member agency is selected for its local expertise and quality commitment.",
+      "cta": "Discover our partners"
+    },
+    "testimonials": {
+      "title": "They trust us",
+      "subtitle": "Tour operators and travel agencies share their experience working with The DMC Alliance."
+    },
+    "magazine": {
+      "title": "The Magazine",
+      "subtitle": "Trends, tips and inspiration for your programming.",
+      "cta": "Read the magazine"
+    },
+    "newsletter": {
+      "title": "Stay informed",
+      "subtitle": "Receive our news, new tours and exclusive offers directly in your inbox.",
+      "placeholder": "Your professional email",
+      "cta": "Subscribe",
+      "privacy": "We respect your privacy. Unsubscribe at any time."
+    },
+    "cta": {
+      "title": "Ready to collaborate?",
+      "subtitle": "Contact us to discover how The DMC Alliance can enrich your offering.",
+      "button": "Let's talk about your project"
+    }
+  },
+  "destinations": {
+    "title": "Our destinations",
+    "subtitle": "30+ destinations worldwide, each with its dedicated local expert.",
+    "filterByRegion": "Filter by region",
+    "allRegions": "All regions",
+    "searchPlaceholder": "Search for a destination...",
+    "noResults": "No destinations found",
+    "discoverPartner": "Discover the partner agency",
+    "regions": {
+      "asia": "Asia",
+      "africa": "Africa",
+      "europe": "Europe",
+      "americas": "Americas",
+      "middle-east": "Middle East",
+      "oceania": "Oceania"
+    }
+  },
+  "gir": {
+    "title": "Shared Departure Tours",
+    "subtitle": "Add your clients to our guaranteed departures. Fixed dates, public rates, commission on request.",
+    "howItWorks": {
+      "title": "How does it work?",
+      "step1": {
+        "title": "Choose a tour",
+        "description": "Browse our tours by destination or departure date."
+      },
+      "step2": {
+        "title": "Check availability",
+        "description": "View remaining seats in real time."
+      },
+      "step3": {
+        "title": "Request your commission",
+        "description": "Contact us to know your conditions."
+      },
+      "step4": {
+        "title": "Register your clients",
+        "description": "Confirm seats and send the files."
+      }
+    },
+    "filters": {
+      "destination": "Destination",
+      "date": "Departure date",
+      "duration": "Duration",
+      "theme": "Theme",
+      "level": "Level"
+    },
+    "card": {
+      "departure": "Departure on",
+      "duration": "Duration",
+      "level": "Level",
+      "places": "seats remaining",
+      "publicPrice": "Public price",
+      "commissionInfo": "Commission on request",
+      "viewCircuit": "View tour",
+      "bookPlaces": "Book seats"
+    },
+    "levels": {
+      "easy": "Easy",
+      "moderate": "Moderate",
+      "challenging": "Challenging",
+      "expert": "Expert"
+    },
+    "themes": {
+      "adventure": "Adventure",
+      "culture": "Culture",
+      "nature": "Nature",
+      "wildlife": "Wildlife",
+      "trekking": "Trekking",
+      "family": "Family"
+    }
+  },
+  "partners": {
+    "title": "DMC Directory",
+    "subtitle": "Discover the local agencies members of The DMC Alliance.",
+    "searchPlaceholder": "Search by name or destination...",
+    "filterBySpecialty": "Filter by specialty",
+    "allSpecialties": "All specialties",
+    "premiumPartner": "Premium Partner",
+    "viewProfile": "View profile",
+    "contactPartner": "Contact agency",
+    "specialties": "Specialties",
+    "destinations": "Destinations covered",
+    "girAvailable": "Offers shared departures",
+    "website": "Website"
+  },
+  "about": {
+    "title": "About us",
+    "subtitle": "The DMC Alliance is the story of passionate local agencies uniting to serve you better.",
+    "history": {
+      "title": "Our story",
+      "content": "Born from the desire to share our field expertise, The DMC Alliance brings together the best independent receptive agencies from Asia, Africa, Europe and the Americas."
+    },
+    "mission": {
+      "title": "Our mission",
+      "content": "To offer travel professionals privileged access to a network of local experts, for authentic experiences and impeccable service quality."
+    },
+    "values": {
+      "title": "Our values",
+      "expertise": {
+        "title": "Field expertise",
+        "description": "Each destination is operated by local teams who live and breathe their country."
+      },
+      "collaboration": {
+        "title": "Collaboration",
+        "description": "We share our knowledge and pool our strengths to better support you."
+      },
+      "quality": {
+        "title": "Quality",
+        "description": "Rigorous supplier selection, permanent quality control, continuous improvement."
+      },
+      "responsibility": {
+        "title": "Responsibility",
+        "description": "Sustainable tourism, positive impact on local communities, environmental respect."
+      }
+    },
+    "team": {
+      "title": "The team",
+      "subtitle": "Passionate men and women around the world."
+    }
+  },
+  "contact": {
+    "title": "Contact us",
+    "subtitle": "A question, a project, a partnership request? Our team responds within 24 hours.",
+    "form": {
+      "company": "Company",
+      "name": "Full name",
+      "email": "Professional email",
+      "phone": "Phone",
+      "subject": "Subject",
+      "subjects": {
+        "quote": "Quote request",
+        "gir": "Shared departure info",
+        "partnership": "Become a partner",
+        "other": "Other"
+      },
+      "message": "Your message",
+      "submit": "Send",
+      "success": "Message sent! We'll respond within 24 hours.",
+      "error": "Error sending. Please try again."
+    },
+    "info": {
+      "title": "Information",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address"
+    }
+  },
+  "newsletter": {
+    "title": "Pro Newsletter",
+    "subtitle": "Receive in preview our new tours, destination news and exclusive offers.",
+    "form": {
+      "email": "Professional email",
+      "company": "Company",
+      "interests": "Interests",
+      "interestsList": {
+        "gir": "New tours",
+        "destinations": "Destination news",
+        "offers": "Special offers",
+        "magazine": "Magazine articles"
+      },
+      "submit": "Subscribe",
+      "success": "Subscription confirmed! Welcome to the DMC Alliance community.",
+      "error": "Subscription error. Please try again."
+    },
+    "privacy": "Your data is protected. Unsubscribe at any time."
+  },
+  "footer": {
+    "description": "The DMC Alliance brings together the best local receptive agencies to offer travel professionals unparalleled field expertise.",
+    "quickLinks": "Quick links",
+    "destinations": "Destinations",
+    "services": "Our services",
+    "partners": "Partners",
+    "magazine": "Magazine",
+    "about": "About us",
+    "contact": "Contact",
+    "legal": "Legal notice",
+    "privacy": "Privacy policy",
+    "terms": "Terms & conditions",
+    "copyright": "© {year} The DMC Alliance. All rights reserved.",
+    "socialTitle": "Follow us"
+  }
+}
