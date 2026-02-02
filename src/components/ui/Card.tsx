@@ -146,7 +146,7 @@ const GirCard = ({
 
   return (
     <Card className="overflow-hidden">
-      <Link href={`/${locale}/services/gir/${slug}`} className="block group">
+      <Link href={`/${locale}/gir/${slug}`} className="block group">
         {/* Image */}
         <div className="relative aspect-[16/9]">
           <Image

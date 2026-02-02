@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import '@/app/globals.css';
 
 export const metadata: Metadata = {
   title: 'The DMC Alliance - Local Experts in B2B Travel',
@@ -11,5 +12,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">{children}</body>
+    </html>
+  );
 }

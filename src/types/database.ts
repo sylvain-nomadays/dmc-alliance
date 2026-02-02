@@ -1,0 +1,606 @@
+// Types générés depuis le schema Supabase
+// Ces types seront mis à jour automatiquement avec la CLI Supabase
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          email: string;
+          full_name: string | null;
+          company_name: string | null;
+          role: 'admin' | 'partner' | 'agency' | 'member';
+          phone: string | null;
+          avatar_url: string | null;
+          locale: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          email: string;
+          full_name?: string | null;
+          company_name?: string | null;
+          role?: 'admin' | 'partner' | 'agency' | 'member';
+          phone?: string | null;
+          avatar_url?: string | null;
+          locale?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          full_name?: string | null;
+          company_name?: string | null;
+          role?: 'admin' | 'partner' | 'agency' | 'member';
+          phone?: string | null;
+          avatar_url?: string | null;
+          locale?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      partners: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          name: string;
+          slug: string;
+          tier: 'premium' | 'classic';
+          logo_url: string | null;
+          website: string | null;
+          email: string | null;
+          phone: string | null;
+          description_fr: string | null;
+          description_en: string | null;
+          specialties: string[];
+          has_gir: boolean;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          name: string;
+          slug: string;
+          tier?: 'premium' | 'classic';
+          logo_url?: string | null;
+          website?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          description_fr?: string | null;
+          description_en?: string | null;
+          specialties?: string[];
+          has_gir?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          name?: string;
+          slug?: string;
+          tier?: 'premium' | 'classic';
+          logo_url?: string | null;
+          website?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          description_fr?: string | null;
+          description_en?: string | null;
+          specialties?: string[];
+          has_gir?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      destinations: {
+        Row: {
+          id: string;
+          partner_id: string;
+          name_fr: string;
+          name_en: string;
+          slug: string;
+          country_code: string;
+          region: 'asia' | 'africa' | 'europe' | 'americas' | 'middle_east' | 'oceania';
+          description_fr: string | null;
+          description_en: string | null;
+          image_url: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          partner_id: string;
+          name_fr: string;
+          name_en: string;
+          slug: string;
+          country_code: string;
+          region: 'asia' | 'africa' | 'europe' | 'americas' | 'middle_east' | 'oceania';
+          description_fr?: string | null;
+          description_en?: string | null;
+          image_url?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          partner_id?: string;
+          name_fr?: string;
+          name_en?: string;
+          slug?: string;
+          country_code?: string;
+          region?: 'asia' | 'africa' | 'europe' | 'americas' | 'middle_east' | 'oceania';
+          description_fr?: string | null;
+          description_en?: string | null;
+          image_url?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      circuits: {
+        Row: {
+          id: string;
+          partner_id: string;
+          destination_id: string;
+          title_fr: string;
+          title_en: string;
+          slug: string;
+          description_fr: string | null;
+          description_en: string | null;
+          itinerary_fr: string | null;
+          itinerary_en: string | null;
+          duration_days: number;
+          difficulty: 'easy' | 'moderate' | 'challenging' | 'expert';
+          departure_date: string;
+          return_date: string;
+          price_from: number;
+          price_single_room: number | null;
+          places_total: number;
+          places_available: number;
+          min_participants: number;
+          max_participants: number;
+          included_fr: string | null;
+          included_en: string | null;
+          excluded_fr: string | null;
+          excluded_en: string | null;
+          image_url: string | null;
+          gallery_urls: string[];
+          status: 'draft' | 'published' | 'full' | 'completed' | 'cancelled';
+          is_featured: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          partner_id: string;
+          destination_id: string;
+          title_fr: string;
+          title_en: string;
+          slug: string;
+          description_fr?: string | null;
+          description_en?: string | null;
+          itinerary_fr?: string | null;
+          itinerary_en?: string | null;
+          duration_days: number;
+          difficulty?: 'easy' | 'moderate' | 'challenging' | 'expert';
+          departure_date: string;
+          return_date: string;
+          price_from: number;
+          price_single_room?: number | null;
+          places_total: number;
+          places_available: number;
+          min_participants?: number;
+          max_participants?: number;
+          included_fr?: string | null;
+          included_en?: string | null;
+          excluded_fr?: string | null;
+          excluded_en?: string | null;
+          image_url?: string | null;
+          gallery_urls?: string[];
+          status?: 'draft' | 'published' | 'full' | 'completed' | 'cancelled';
+          is_featured?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          partner_id?: string;
+          destination_id?: string;
+          title_fr?: string;
+          title_en?: string;
+          slug?: string;
+          description_fr?: string | null;
+          description_en?: string | null;
+          itinerary_fr?: string | null;
+          itinerary_en?: string | null;
+          duration_days?: number;
+          difficulty?: 'easy' | 'moderate' | 'challenging' | 'expert';
+          departure_date?: string;
+          return_date?: string;
+          price_from?: number;
+          price_single_room?: number | null;
+          places_total?: number;
+          places_available?: number;
+          min_participants?: number;
+          max_participants?: number;
+          included_fr?: string | null;
+          included_en?: string | null;
+          excluded_fr?: string | null;
+          excluded_en?: string | null;
+          image_url?: string | null;
+          gallery_urls?: string[];
+          status?: 'draft' | 'published' | 'full' | 'completed' | 'cancelled';
+          is_featured?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      bookings: {
+        Row: {
+          id: string;
+          circuit_id: string;
+          agency_id: string;
+          client_name: string;
+          client_email: string | null;
+          client_phone: string | null;
+          places_booked: number;
+          room_type: string | null;
+          special_requests: string | null;
+          total_price: number | null;
+          commission_rate: number | null;
+          commission_amount: number | null;
+          status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+          confirmed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          circuit_id: string;
+          agency_id: string;
+          client_name: string;
+          client_email?: string | null;
+          client_phone?: string | null;
+          places_booked?: number;
+          room_type?: string | null;
+          special_requests?: string | null;
+          total_price?: number | null;
+          commission_rate?: number | null;
+          commission_amount?: number | null;
+          status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+          confirmed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          circuit_id?: string;
+          agency_id?: string;
+          client_name?: string;
+          client_email?: string | null;
+          client_phone?: string | null;
+          places_booked?: number;
+          room_type?: string | null;
+          special_requests?: string | null;
+          total_price?: number | null;
+          commission_rate?: number | null;
+          commission_amount?: number | null;
+          status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+          confirmed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      agencies: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          name: string;
+          slug: string;
+          license_number: string | null;
+          address: string | null;
+          city: string | null;
+          country: string | null;
+          email: string | null;
+          phone: string | null;
+          website: string | null;
+          commission_rate: number;
+          is_verified: boolean;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          name: string;
+          slug: string;
+          license_number?: string | null;
+          address?: string | null;
+          city?: string | null;
+          country?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          commission_rate?: number;
+          is_verified?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          name?: string;
+          slug?: string;
+          license_number?: string | null;
+          address?: string | null;
+          city?: string | null;
+          country?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          commission_rate?: number;
+          is_verified?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      quote_requests: {
+        Row: {
+          id: string;
+          agency_id: string | null;
+          destination_id: string | null;
+          contact_name: string;
+          contact_email: string;
+          contact_phone: string | null;
+          company_name: string | null;
+          trip_type: string | null;
+          travelers_count: number | null;
+          departure_date: string | null;
+          duration_days: number | null;
+          budget_range: string | null;
+          message: string | null;
+          status: 'new' | 'in_progress' | 'quoted' | 'accepted' | 'declined';
+          assigned_to: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          agency_id?: string | null;
+          destination_id?: string | null;
+          contact_name: string;
+          contact_email: string;
+          contact_phone?: string | null;
+          company_name?: string | null;
+          trip_type?: string | null;
+          travelers_count?: number | null;
+          departure_date?: string | null;
+          duration_days?: number | null;
+          budget_range?: string | null;
+          message?: string | null;
+          status?: 'new' | 'in_progress' | 'quoted' | 'accepted' | 'declined';
+          assigned_to?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          agency_id?: string | null;
+          destination_id?: string | null;
+          contact_name?: string;
+          contact_email?: string;
+          contact_phone?: string | null;
+          company_name?: string | null;
+          trip_type?: string | null;
+          travelers_count?: number | null;
+          departure_date?: string | null;
+          duration_days?: number | null;
+          budget_range?: string | null;
+          message?: string | null;
+          status?: 'new' | 'in_progress' | 'quoted' | 'accepted' | 'declined';
+          assigned_to?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      articles: {
+        Row: {
+          id: string;
+          slug: string;
+          category: string | null;
+          title_fr: string;
+          title_en: string | null;
+          content_fr: string | null;
+          content_en: string | null;
+          excerpt_fr: string | null;
+          excerpt_en: string | null;
+          image_url: string | null;
+          author_id: string | null;
+          destination_id: string | null;
+          tags: string[];
+          is_published: boolean;
+          published_at: string | null;
+          views_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          category?: string | null;
+          title_fr: string;
+          title_en?: string | null;
+          content_fr?: string | null;
+          content_en?: string | null;
+          excerpt_fr?: string | null;
+          excerpt_en?: string | null;
+          image_url?: string | null;
+          author_id?: string | null;
+          destination_id?: string | null;
+          tags?: string[];
+          is_published?: boolean;
+          published_at?: string | null;
+          views_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          category?: string | null;
+          title_fr?: string;
+          title_en?: string | null;
+          content_fr?: string | null;
+          content_en?: string | null;
+          excerpt_fr?: string | null;
+          excerpt_en?: string | null;
+          image_url?: string | null;
+          author_id?: string | null;
+          destination_id?: string | null;
+          tags?: string[];
+          is_published?: boolean;
+          published_at?: string | null;
+          views_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      newsletter_subscribers: {
+        Row: {
+          id: string;
+          email: string;
+          company_name: string | null;
+          locale: string;
+          interests: string[];
+          is_active: boolean;
+          subscribed_at: string;
+          unsubscribed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          company_name?: string | null;
+          locale?: string;
+          interests?: string[];
+          is_active?: boolean;
+          subscribed_at?: string;
+          unsubscribed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          company_name?: string | null;
+          locale?: string;
+          interests?: string[];
+          is_active?: boolean;
+          subscribed_at?: string;
+          unsubscribed_at?: string | null;
+        };
+      };
+      contact_messages: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          phone: string | null;
+          company: string | null;
+          subject: string | null;
+          message: string;
+          is_read: boolean;
+          replied_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          phone?: string | null;
+          company?: string | null;
+          subject?: string | null;
+          message: string;
+          is_read?: boolean;
+          replied_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          phone?: string | null;
+          company?: string | null;
+          subject?: string | null;
+          message?: string;
+          is_read?: boolean;
+          replied_at?: string | null;
+          created_at?: string;
+        };
+      };
+    };
+    Views: {};
+    Functions: {};
+    Enums: {
+      user_role: 'admin' | 'partner' | 'agency' | 'member';
+      circuit_status: 'draft' | 'published' | 'full' | 'completed' | 'cancelled';
+      difficulty_level: 'easy' | 'moderate' | 'challenging' | 'expert';
+      booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+      quote_status: 'new' | 'in_progress' | 'quoted' | 'accepted' | 'declined';
+      partner_tier: 'premium' | 'classic';
+      region: 'asia' | 'africa' | 'europe' | 'americas' | 'middle_east' | 'oceania';
+    };
+  };
+};
+
+// Helper types
+export type Tables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Row'];
+export type InsertTables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Insert'];
+export type UpdateTables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Update'];
+export type Enums<T extends keyof Database['public']['Enums']> =
+  Database['public']['Enums'][T];
+
+// Alias pratiques
+export type Profile = Tables<'profiles'>;
+export type Partner = Tables<'partners'>;
+export type Destination = Tables<'destinations'>;
+export type Circuit = Tables<'circuits'>;
+export type Booking = Tables<'bookings'>;
+export type Agency = Tables<'agencies'>;
+export type QuoteRequest = Tables<'quote_requests'>;
+export type Article = Tables<'articles'>;
+export type NewsletterSubscriber = Tables<'newsletter_subscribers'>;
+export type ContactMessage = Tables<'contact_messages'>;
+
+export type UserRole = Enums<'user_role'>;
+export type CircuitStatus = Enums<'circuit_status'>;
+export type DifficultyLevel = Enums<'difficulty_level'>;
+export type BookingStatus = Enums<'booking_status'>;
+export type QuoteStatus = Enums<'quote_status'>;
+export type PartnerTier = Enums<'partner_tier'>;
+export type Region = Enums<'region'>;

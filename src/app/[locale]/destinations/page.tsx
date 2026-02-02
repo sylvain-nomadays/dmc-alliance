@@ -3,15 +3,14 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
-import { partners, getAllDestinations, getPartnerByDestination, regions, type Region } from '@/data/partners';
+import { getAllDestinations, getPartnerByDestination, regions, type Region } from '@/data/partners';
 
-interface DestinationsPageProps {
-  params: { locale: string };
-}
-
-export default function DestinationsPage({ params: { locale } }: DestinationsPageProps) {
+export default function DestinationsPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'fr';
   const [activeRegion, setActiveRegion] = useState<Region | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 

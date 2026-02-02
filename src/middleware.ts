@@ -1,27 +1,25 @@
-import createMiddleware from 'next-intl/middleware';
-import { locales, defaultLocale } from './i18n';
+import type { NextRequest } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from './navigation';
+import { updateSupabaseSession } from './lib/supabase/session';
 
-export default createMiddleware({
-  // A list of all locales that are supported
-  locales,
+const intlMiddleware = createIntlMiddleware(routing);
 
-  // Used when no locale matches
-  defaultLocale,
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
 
-  // Automatically detect the user's locale
-  localeDetection: true,
+  const isProtected =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/partner') ||
+    pathname.startsWith('/agency');
 
-  // Don't add locale prefix for the default locale
-  localePrefix: 'as-needed',
-});
+  if (isProtected) {
+    return updateSupabaseSession(request);
+  }
+
+  return intlMiddleware(request);
+}
 
 export const config = {
-  // Match only internationalized pathnames
-  matcher: [
-    // Match all pathnames except:
-    // - api routes
-    // - static files
-    // - internal Next.js files
-    '/((?!api|_next|_vercel|.*\\..*).*)',
-  ],
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };

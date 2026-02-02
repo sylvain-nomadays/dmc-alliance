@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "title": "The DMC Alliance - Local Experts in B2B Travel",
-    "description": "Collective of local receptive agencies. Tailor-made, groups and shared departure tours for tour operators and travel agencies in Europe."
+    "title": "The DMC Alliance - Local B2B Travel Experts",
+    "description": "Collective of local DMC agencies. Tailor-made, groups and GIR co-filling for tour operators and travel agencies in Europe."
   },
   "common": {
+    "home": "Home",
     "learnMore": "Learn more",
     "contactUs": "Contact us",
     "viewAll": "View all",
@@ -24,7 +25,7 @@
     "availablePlural": "available",
     "soldOut": "Sold out",
     "bookNow": "Book now",
-    "requestQuote": "Request quote",
+    "requestQuote": "Request a quote",
     "viewDetails": "View details",
     "back": "Back",
     "next": "Next",
@@ -41,10 +42,10 @@
     "destinationsSubtitle": "Discover our 30+ destinations",
     "services": "Our Services",
     "tailorMade": "Tailor-made (FIT)",
-    "tailorMadeDesc": "Custom tours for your individual clients",
+    "tailorMadeDesc": "Customized tours for your individual clients",
     "groups": "Group Travel",
-    "groupsDesc": "Turnkey solutions for groups",
-    "gir": "Shared Departures",
+    "groupsDesc": "Turnkey solutions for organized groups",
+    "gir": "GIR Co-filling",
     "girDesc": "Fixed-date tours with shared seats",
     "partners": "Our Partners",
     "partnersSubtitle": "DMC directory",
@@ -57,54 +58,54 @@
   "home": {
     "hero": {
       "title": "Local expertise,\nglobally connected",
-      "subtitle": "The DMC Alliance brings together the best independent receptive agencies to offer you unparalleled field expertise across 30+ destinations.",
+      "subtitle": "The DMC Alliance brings together the best independent DMCs to offer you unparalleled local expertise across 30+ destinations.",
       "cta": "Discover our destinations",
-      "ctaSecondary": "Our shared departure tours"
+      "ctaSecondary": "Our GIR tours"
     },
     "stats": {
       "destinations": "Destinations",
       "partners": "Partner agencies",
       "years": "Years of combined experience",
-      "travelers": "Travelers per year"
+      "travelers": "Travelers assisted/year"
     },
     "services": {
       "title": "Solutions for every need",
-      "subtitle": "Whether you're looking for tailor-made, group travel or shared departures, our local experts adapt to your needs.",
+      "subtitle": "Whether you're looking for tailor-made tours, group travel or GIR co-filling, our local experts adapt to your expectations.",
       "tailorMade": {
         "title": "Tailor-made (FIT)",
         "description": "100% customized tours created by our local experts for your individual clients or small groups.",
-        "features": ["Quote within 48h", "Field knowledge", "Total flexibility"]
+        "features": ["Quote within 48h", "Local knowledge", "Total flexibility"]
       },
       "groups": {
         "title": "Group Travel",
-        "description": "Turnkey solutions for your groups: associations, corporate, incentives, school trips.",
-        "features": ["Negotiated group rates", "Dedicated support", "Mastered logistics"]
+        "description": "Turnkey solutions for your organized groups: associations, works councils, incentives, school trips.",
+        "features": ["Negotiated group rates", "Dedicated support", "Managed logistics"]
       },
       "gir": {
-        "title": "Shared Departures",
+        "title": "GIR Co-filling",
         "description": "Fixed-date tours with shared seats. Add your clients to our guaranteed departures.",
         "features": ["Guaranteed departures", "Attractive commission", "No minimum"]
       }
     },
     "destinations": {
       "title": "30+ exceptional destinations",
-      "subtitle": "From Mongolia to Costa Rica, our local experts open the world's doors for you.",
+      "subtitle": "From Mongolia to Costa Rica, our local experts open the doors to the world for you.",
       "cta": "Explore all destinations"
     },
     "gir": {
-      "title": "Upcoming shared departures",
-      "subtitle": "Tours with guaranteed dates and prices. Register your clients now.",
-      "cta": "View all tours",
+      "title": "Upcoming GIR departures",
+      "subtitle": "Co-filling tours with guaranteed dates and rates. Register your clients now.",
+      "cta": "View all GIRs",
       "requestCommission": "Request commission rate"
     },
     "partners": {
-      "title": "A network of field experts",
-      "subtitle": "Each DMC Alliance member agency is selected for its local expertise and quality commitment.",
+      "title": "A network of local experts",
+      "subtitle": "Each member agency of The DMC Alliance is selected for its local expertise and quality commitment.",
       "cta": "Discover our partners"
     },
     "testimonials": {
       "title": "They trust us",
-      "subtitle": "Tour operators and travel agencies share their experience working with The DMC Alliance."
+      "subtitle": "Tour operators and travel agencies share their experience collaborating with The DMC Alliance."
     },
     "magazine": {
       "title": "The Magazine",
@@ -113,24 +114,24 @@
     },
     "newsletter": {
       "title": "Stay informed",
-      "subtitle": "Receive our news, new tours and exclusive offers directly in your inbox.",
+      "subtitle": "Receive our news, new GIRs and exclusive offers directly in your inbox.",
       "placeholder": "Your professional email",
       "cta": "Subscribe",
       "privacy": "We respect your privacy. Unsubscribe at any time."
     },
     "cta": {
       "title": "Ready to collaborate?",
-      "subtitle": "Contact us to discover how The DMC Alliance can enrich your offering.",
+      "subtitle": "Contact us to discover how The DMC Alliance can enrich your offer.",
       "button": "Let's talk about your project"
     }
   },
   "destinations": {
     "title": "Our destinations",
-    "subtitle": "30+ destinations worldwide, each with its dedicated local expert.",
+    "subtitle": "30+ destinations around the world, each with a dedicated local expert.",
     "filterByRegion": "Filter by region",
     "allRegions": "All regions",
-    "searchPlaceholder": "Search for a destination...",
-    "noResults": "No destinations found",
+    "searchPlaceholder": "Search a destination...",
+    "noResults": "No destination found",
     "discoverPartner": "Discover the partner agency",
     "regions": {
       "asia": "Asia",
@@ -142,13 +143,13 @@
     }
   },
   "gir": {
-    "title": "Shared Departure Tours",
+    "title": "GIR Co-filling Tours",
     "subtitle": "Add your clients to our guaranteed departures. Fixed dates, public rates, commission on request.",
     "howItWorks": {
       "title": "How does it work?",
       "step1": {
         "title": "Choose a tour",
-        "description": "Browse our tours by destination or departure date."
+        "description": "Browse our GIRs by destination or departure date."
       },
       "step2": {
         "title": "Check availability",
@@ -156,7 +157,7 @@
       },
       "step3": {
         "title": "Request your commission",
-        "description": "Contact us to know your conditions."
+        "description": "Contact us to know your terms."
       },
       "step4": {
         "title": "Register your clients",
@@ -197,7 +198,7 @@
   },
   "partners": {
     "title": "DMC Directory",
-    "subtitle": "Discover the local agencies members of The DMC Alliance.",
+    "subtitle": "Discover the local agencies that are members of The DMC Alliance.",
     "searchPlaceholder": "Search by name or destination...",
     "filterBySpecialty": "Filter by specialty",
     "allSpecialties": "All specialties",
@@ -205,16 +206,44 @@
     "viewProfile": "View profile",
     "contactPartner": "Contact agency",
     "specialties": "Specialties",
-    "destinations": "Destinations covered",
-    "girAvailable": "Offers shared departures",
-    "website": "Website"
+    "destinations": "Covered destinations",
+    "girAvailable": "Offers GIRs",
+    "website": "Website",
+    "exploreNetwork": "Explore our network",
+    "map": "Map",
+    "list": "List",
+    "allRegions": "All regions",
+    "allTiers": "All tiers",
+    "withGir": "With GIR",
+    "clear": "Clear",
+    "partnerFound": "partner found",
+    "partnersFound": "partners found",
+    "noPartnerFound": "No partner found",
+    "tryChangingFilters": "Try changing your filters",
+    "resetFilters": "Reset filters",
+    "areYouLocalDmc": "Are you a local DMC?",
+    "joinAlliance": "Join The DMC Alliance and develop your network of European partners.",
+    "becomePartner": "Become a partner",
+    "years": "years",
+    "yrs": "yrs",
+    "team": "team",
+    "pers": "pers.",
+    "specialtiesCount": "specialties",
+    "offerGir": "offer GIR",
+    "partnerAgencies": "partner agencies",
+    "globalNetwork": "Our Global Network",
+    "clickPointToSeePartner": "Click a point to see the partner",
+    "yearsExp": "Years exp.",
+    "teamMembers": "Team members",
+    "satisfactionRate": "Satisfaction rate",
+    "viewFullProfile": "View full profile"
   },
   "about": {
     "title": "About us",
     "subtitle": "The DMC Alliance is the story of passionate local agencies uniting to serve you better.",
     "history": {
       "title": "Our story",
-      "content": "Born from the desire to share our field expertise, The DMC Alliance brings together the best independent receptive agencies from Asia, Africa, Europe and the Americas."
+      "content": "Born from the desire to share our local expertise, The DMC Alliance brings together the best independent DMCs from Asia, Africa, Europe and the Americas."
     },
     "mission": {
       "title": "Our mission",
@@ -223,7 +252,7 @@
     "values": {
       "title": "Our values",
       "expertise": {
-        "title": "Field expertise",
+        "title": "Local expertise",
         "description": "Each destination is operated by local teams who live and breathe their country."
       },
       "collaboration": {
@@ -232,7 +261,7 @@
       },
       "quality": {
         "title": "Quality",
-        "description": "Rigorous supplier selection, permanent quality control, continuous improvement."
+        "description": "Rigorous provider selection, permanent quality control, continuous improvement."
       },
       "responsibility": {
         "title": "Responsibility",
@@ -241,12 +270,12 @@
     },
     "team": {
       "title": "The team",
-      "subtitle": "Passionate men and women around the world."
+      "subtitle": "Passionate women and men from around the world."
     }
   },
   "contact": {
     "title": "Contact us",
-    "subtitle": "A question, a project, a partnership request? Our team responds within 24 hours.",
+    "subtitle": "A question, a project, a partnership request? Our team responds within 24h.",
     "form": {
       "company": "Company",
       "name": "Full name",
@@ -255,13 +284,13 @@
       "subject": "Subject",
       "subjects": {
         "quote": "Quote request",
-        "gir": "Shared departure info",
+        "gir": "GIR information",
         "partnership": "Become a partner",
         "other": "Other"
       },
       "message": "Your message",
       "submit": "Send",
-      "success": "Message sent! We'll respond within 24 hours.",
+      "success": "Message sent! We'll respond within 24h.",
       "error": "Error sending. Please try again."
     },
     "info": {
@@ -273,13 +302,13 @@
   },
   "newsletter": {
     "title": "Pro Newsletter",
-    "subtitle": "Receive in preview our new tours, destination news and exclusive offers.",
+    "subtitle": "Be the first to receive our new GIRs, destination news and exclusive offers.",
     "form": {
       "email": "Professional email",
       "company": "Company",
       "interests": "Interests",
       "interestsList": {
-        "gir": "New tours",
+        "gir": "New GIRs",
         "destinations": "Destination news",
         "offers": "Special offers",
         "magazine": "Magazine articles"
@@ -290,8 +319,65 @@
     },
     "privacy": "Your data is protected. Unsubscribe at any time."
   },
+  "destination": {
+    "overview": "Destination overview",
+    "sellingPoints": "Highlights for your clients",
+    "idealClientele": "Ideal clientele",
+    "webinar": "Presentation webinar",
+    "localExpert": "Your local expert",
+    "premiumPartner": "Premium Partner",
+    "specialties": "Specialties",
+    "experience": "Years of experience",
+    "contactAgency": "Contact agency",
+    "viewProfile": "View full profile",
+    "visitWebsite": "Visit website",
+    "needQuote": "Need a quick quote?",
+    "quoteInfo": "Our team responds within 48h with a personalized proposal.",
+    "requestQuote": "Request a quote",
+    "girAvailable": "GIR tours available",
+    "girInfo": "Add your clients to our guaranteed departures. Fixed dates, commission on request.",
+    "viewGir": "View GIRs",
+    "otherDestinations": "Other destinations in the region",
+    "readyToProgram": "Ready to program this destination?",
+    "contactForRates": "Contact us to receive our professional rates and discuss your projects.",
+    "viewAllDestinations": "View all destinations"
+  },
+  "circuit": {
+    "overview": "Tour overview",
+    "highlights": "Tour highlights",
+    "itinerary": "Day by day program",
+    "included": "Price includes",
+    "notIncluded": "Price does not include",
+    "practicalInfo": "Practical information",
+    "physicalCondition": "Physical condition",
+    "bestSeason": "Best season",
+    "maxAltitude": "Maximum altitude",
+    "groupSize": "Group size",
+    "datesAndPrices": "Dates and prices",
+    "departuresAvailable": "departures available",
+    "guaranteedDeparture": "Guaranteed departure",
+    "spotsLeft": "Only {count} seats left",
+    "full": "Full",
+    "spots": "seats",
+    "publicPrice": "public price",
+    "book": "Book",
+    "requestCommission": "Request commission rate",
+    "needHelp": "Need help?",
+    "helpInfo": "Our team is available to answer your questions.",
+    "callUs": "Call us",
+    "otherGir": "Other GIR tours",
+    "viewAllGir": "View all GIRs",
+    "day": "Day",
+    "meals": "Meals",
+    "breakfast": "B",
+    "lunch": "L",
+    "dinner": "D",
+    "freeMeals": "Free meals",
+    "accommodation": "Accommodation",
+    "transfer": "Transfer"
+  },
   "footer": {
-    "description": "The DMC Alliance brings together the best local receptive agencies to offer travel professionals unparalleled field expertise.",
+    "description": "The DMC Alliance brings together the best local DMCs to offer travel professionals unparalleled local expertise.",
     "quickLinks": "Quick links",
     "destinations": "Destinations",
     "services": "Our services",

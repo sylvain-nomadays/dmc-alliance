@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/navigation';
+import NextLink from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 
@@ -31,14 +32,14 @@ export function Footer({ locale, translations }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   const quickLinks = [
-    { label: translations.destinations, href: `/${locale}/destinations` },
-    { label: translations.services, href: `/${locale}/services` },
-    { label: translations.partners, href: `/${locale}/partners` },
-    { label: translations.magazine, href: `/${locale}/magazine` },
-    { label: translations.about, href: `/${locale}/about` },
-    { label: translations.contact, href: `/${locale}/contact` },
+    { label: translations.destinations, href: '/destinations' as const },
+    { label: translations.partners, href: '/partners' as const },
+    { label: translations.magazine, href: '/magazine' as const },
+    { label: translations.about, href: '/about' as const },
+    { label: translations.contact, href: '/contact' as const },
   ];
 
+  // Legal links use standard Next.js Link since they're not localized in pathnames
   const legalLinks = [
     { label: translations.legal, href: `/${locale}/legal` },
     { label: translations.privacy, href: `/${locale}/privacy` },
@@ -106,7 +107,7 @@ export function Footer({ locale, translations }: FooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand Column */}
           <div className="lg:col-span-1">
-            <Link href={`/${locale}`} className="inline-block mb-4">
+            <Link href="/" className="inline-block mb-4">
               <Image
                 src="/images/logo-dmc-alliance-white.svg"
                 alt="The DMC Alliance"
@@ -159,13 +160,20 @@ export function Footer({ locale, translations }: FooterProps) {
           <div>
             <h4 className="font-heading text-lg mb-4">{translations.destinations}</h4>
             <ul className="space-y-3">
-              {['Mongolie', 'Kirghizistan', 'Thaïlande', 'Tanzanie', 'Kenya', 'Madagascar'].map((dest) => (
-                <li key={dest}>
+              {[
+                { name: 'Mongolie', slug: 'mongolie' },
+                { name: 'Kirghizistan', slug: 'kirghizistan' },
+                { name: 'Thaïlande', slug: 'thailande' },
+                { name: 'Tanzanie', slug: 'tanzanie' },
+                { name: 'Kenya', slug: 'kenya' },
+                { name: 'Madagascar', slug: 'madagascar' },
+              ].map((dest) => (
+                <li key={dest.slug}>
                   <Link
-                    href={`/${locale}/destinations/${dest.toLowerCase()}`}
+                    href={{ pathname: '/destinations/[slug]', params: { slug: dest.slug } }}
                     className="text-gray-400 hover:text-terracotta-400 transition-colors text-sm"
                   >
-                    {dest}
+                    {dest.name}
                   </Link>
                 </li>
               ))}
@@ -215,13 +223,13 @@ export function Footer({ locale, translations }: FooterProps) {
             </p>
             <div className="flex items-center gap-6">
               {legalLinks.map((link) => (
-                <Link
+                <NextLink
                   key={link.href}
                   href={link.href}
                   className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
                 >
                   {link.label}
-                </Link>
+                </NextLink>
               ))}
             </div>
           </div>

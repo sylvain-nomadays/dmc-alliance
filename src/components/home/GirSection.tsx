@@ -33,7 +33,7 @@ const upcomingGirs = [
   {
     id: '2',
     title: 'Merveilles de Kirghizie',
-    slug: 'merveilles-kirghizie',
+    slug: 'merveilles-de-kirghizie',
     destination: 'Kirghizistan',
     image: '/images/gir/kyrgyzstan-mountains.jpg',
     departureDate: '2024-07-08',
@@ -45,16 +45,16 @@ const upcomingGirs = [
   },
   {
     id: '3',
-    title: 'Grande Découverte de la Thaïlande',
-    slug: 'grande-decouverte-thailande',
-    destination: 'Thaïlande',
-    image: '/images/gir/thailand-temple.jpg',
-    departureDate: '2024-05-20',
-    duration: 14,
-    price: 2890,
+    title: 'Grande Migration Masai Mara',
+    slug: 'grande-migration-masai-mara',
+    destination: 'Kenya',
+    image: '/images/gir/kenya-migration.jpg',
+    departureDate: '2024-07-15',
+    duration: 10,
+    price: 4890,
     level: 'easy' as const,
-    placesRemaining: 8,
-    partner: 'Sawa Discovery',
+    placesRemaining: 6,
+    partner: 'Galago Expeditions',
   },
 ];
 
@@ -97,7 +97,7 @@ export function GirSection({ locale, translations }: GirSectionProps) {
               {translations.subtitle}
             </p>
           </div>
-          <Link href={`/${locale}/services/gir`}>
+          <Link href={`/${locale}/gir`}>
             <Button variant="outline" size="md">
               {translations.cta}
             </Button>
@@ -182,7 +182,7 @@ export function GirSection({ locale, translations }: GirSectionProps) {
                   </div>
 
                   <Link
-                    href={`/${locale}/services/gir/${gir.slug}`}
+                    href={`/${locale}/gir/${gir.slug}`}
                     className="text-deep-blue-600 font-medium text-sm hover:text-terracotta-500 transition-colors flex items-center gap-1"
                   >
                     {locale === 'fr' ? 'Voir le circuit' : 'View tour'}

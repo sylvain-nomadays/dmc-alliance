@@ -1,308 +1,394 @@
 {
   "metadata": {
-    "title": "The DMC Alliance - Experts locaux du voyage B2B",
-    "description": "Collectif d'agences réceptives locales. Sur-mesure, groupes et GIR co-remplissage pour tour-opérateurs et agences de voyage en Europe."
+    "title": "The DMC Alliance - Esperti locali di viaggi B2B",
+    "description": "Collettivo di agenzie DMC locali. Su misura, gruppi e GIR co-riempimento per tour operator e agenzie di viaggio in Europa."
   },
   "common": {
-    "learnMore": "En savoir plus",
-    "contactUs": "Nous contacter",
-    "viewAll": "Voir tout",
-    "destinations": "Destinations",
-    "partners": "Partenaires",
-    "services": "Nos offres",
-    "about": "Qui sommes-nous",
+    "home": "Home",
+    "learnMore": "Scopri di più",
+    "contactUs": "Contattaci",
+    "viewAll": "Vedi tutto",
+    "destinations": "Destinazioni",
+    "partners": "Partner",
+    "services": "Le nostre offerte",
+    "about": "Chi siamo",
     "magazine": "Magazine",
-    "contact": "Contact",
+    "contact": "Contatto",
     "newsletter": "Newsletter",
-    "proSpace": "Espace Pro",
-    "search": "Rechercher",
-    "from": "À partir de",
-    "perPerson": "par personne",
-    "days": "jours",
-    "nights": "nuits",
-    "available": "disponible",
-    "availablePlural": "disponibles",
-    "soldOut": "Complet",
-    "bookNow": "Réserver",
-    "requestQuote": "Demander un devis",
-    "viewDetails": "Voir les détails",
-    "back": "Retour",
-    "next": "Suivant",
-    "previous": "Précédent",
-    "close": "Fermer",
-    "loading": "Chargement...",
-    "error": "Une erreur est survenue",
-    "success": "Succès",
-    "required": "Requis",
-    "optional": "Optionnel"
+    "proSpace": "Spazio Pro",
+    "search": "Cerca",
+    "from": "Da",
+    "perPerson": "a persona",
+    "days": "giorni",
+    "nights": "notti",
+    "available": "disponibile",
+    "availablePlural": "disponibili",
+    "soldOut": "Esaurito",
+    "bookNow": "Prenota ora",
+    "requestQuote": "Richiedi preventivo",
+    "viewDetails": "Vedi dettagli",
+    "back": "Indietro",
+    "next": "Avanti",
+    "previous": "Precedente",
+    "close": "Chiudi",
+    "loading": "Caricamento...",
+    "error": "Si è verificato un errore",
+    "success": "Successo",
+    "required": "Richiesto",
+    "optional": "Facoltativo"
   },
   "nav": {
-    "destinations": "Destinations",
-    "destinationsSubtitle": "Découvrez nos 30+ destinations",
-    "services": "Nos Offres",
-    "tailorMade": "Sur-mesure (FIT)",
-    "tailorMadeDesc": "Circuits personnalisés pour vos clients individuels",
-    "groups": "Voyages Groupes",
-    "groupsDesc": "Solutions clé en main pour groupes constitués",
-    "gir": "GIR Co-remplissage",
-    "girDesc": "Circuits à dates fixes avec places mutualisées",
-    "partners": "Nos Partenaires",
-    "partnersSubtitle": "Annuaire des réceptifs",
+    "destinations": "Destinazioni",
+    "destinationsSubtitle": "Scopri le nostre 30+ destinazioni",
+    "services": "Le Nostre Offerte",
+    "tailorMade": "Su misura (FIT)",
+    "tailorMadeDesc": "Circuiti personalizzati per i tuoi clienti individuali",
+    "groups": "Viaggi di Gruppo",
+    "groupsDesc": "Soluzioni chiavi in mano per gruppi organizzati",
+    "gir": "GIR Co-riempimento",
+    "girDesc": "Circuiti a date fisse con posti condivisi",
+    "partners": "I Nostri Partner",
+    "partnersSubtitle": "Directory DMC",
     "magazine": "Magazine",
-    "magazineSubtitle": "Actualités et inspiration",
-    "about": "Qui sommes-nous",
-    "aboutSubtitle": "Notre histoire et nos valeurs",
-    "contact": "Contact"
+    "magazineSubtitle": "Notizie e ispirazione",
+    "about": "Chi siamo",
+    "aboutSubtitle": "La nostra storia e i nostri valori",
+    "contact": "Contatto"
   },
   "home": {
     "hero": {
-      "title": "L'expertise locale,\nconnectée mondialement",
-      "subtitle": "The DMC Alliance réunit les meilleurs réceptifs indépendants pour vous offrir une expertise terrain inégalée sur 30+ destinations.",
-      "cta": "Découvrir nos destinations",
-      "ctaSecondary": "Nos circuits GIR"
+      "title": "Competenza locale,\nconnessa globalmente",
+      "subtitle": "The DMC Alliance riunisce i migliori DMC indipendenti per offrirti una competenza locale senza pari in oltre 30 destinazioni.",
+      "cta": "Scopri le nostre destinazioni",
+      "ctaSecondary": "I nostri circuiti GIR"
     },
     "stats": {
-      "destinations": "Destinations",
-      "partners": "Agences partenaires",
-      "years": "Années d'expérience cumulée",
-      "travelers": "Voyageurs accompagnés/an"
+      "destinations": "Destinazioni",
+      "partners": "Agenzie partner",
+      "years": "Anni di esperienza combinata",
+      "travelers": "Viaggiatori assistiti/anno"
     },
     "services": {
-      "title": "Des solutions pour chaque besoin",
-      "subtitle": "Que vous recherchiez du sur-mesure, des voyages groupes ou des GIR à co-remplir, nos experts locaux s'adaptent à vos attentes.",
+      "title": "Soluzioni per ogni esigenza",
+      "subtitle": "Che tu stia cercando viaggi su misura, di gruppo o GIR da co-riempire, i nostri esperti locali si adattano alle tue aspettative.",
       "tailorMade": {
-        "title": "Sur-mesure (FIT)",
-        "description": "Circuits 100% personnalisés créés par nos experts locaux pour vos clients individuels ou petits groupes.",
-        "features": ["Devis sous 48h", "Connaissance terrain", "Flexibilité totale"]
+        "title": "Su misura (FIT)",
+        "description": "Circuiti 100% personalizzati creati dai nostri esperti locali per i tuoi clienti individuali o piccoli gruppi.",
+        "features": ["Preventivo in 48h", "Conoscenza locale", "Totale flessibilità"]
       },
       "groups": {
-        "title": "Voyages Groupes",
-        "description": "Solutions clé en main pour vos groupes constitués : associations, CE, incentives, voyages scolaires.",
-        "features": ["Tarifs groupes négociés", "Accompagnement dédié", "Logistique maîtrisée"]
+        "title": "Viaggi di Gruppo",
+        "description": "Soluzioni chiavi in mano per i tuoi gruppi organizzati: associazioni, comitati aziendali, incentive, viaggi scolastici.",
+        "features": ["Tariffe gruppo negoziate", "Supporto dedicato", "Logistica gestita"]
       },
       "gir": {
-        "title": "GIR Co-remplissage",
-        "description": "Circuits à dates fixes avec places mutualisées. Intégrez vos clients à nos départs garantis.",
-        "features": ["Départs garantis", "Commission attractive", "Pas de minimum"]
+        "title": "GIR Co-riempimento",
+        "description": "Circuiti a date fisse con posti condivisi. Aggiungi i tuoi clienti alle nostre partenze garantite.",
+        "features": ["Partenze garantite", "Commissione attraente", "Nessun minimo"]
       }
     },
     "destinations": {
-      "title": "30+ destinations d'exception",
-      "subtitle": "De la Mongolie au Costa Rica, nos experts locaux vous ouvrent les portes du monde.",
-      "cta": "Explorer toutes les destinations"
+      "title": "30+ destinazioni eccezionali",
+      "subtitle": "Dalla Mongolia al Costa Rica, i nostri esperti locali ti aprono le porte del mondo.",
+      "cta": "Esplora tutte le destinazioni"
     },
     "gir": {
-      "title": "Prochains départs GIR",
-      "subtitle": "Circuits à co-remplir avec dates et tarifs garantis. Inscrivez vos clients dès maintenant.",
-      "cta": "Voir tous les GIR",
-      "requestCommission": "Demander le taux de commission"
+      "title": "Prossime partenze GIR",
+      "subtitle": "Circuiti di co-riempimento con date e tariffe garantite. Registra ora i tuoi clienti.",
+      "cta": "Vedi tutti i GIR",
+      "requestCommission": "Richiedi tasso commissione"
     },
     "partners": {
-      "title": "Un réseau d'experts terrain",
-      "subtitle": "Chaque agence membre de The DMC Alliance est sélectionnée pour son expertise locale et son engagement qualité.",
-      "cta": "Découvrir nos partenaires"
+      "title": "Una rete di esperti locali",
+      "subtitle": "Ogni agenzia membro di The DMC Alliance è selezionata per la sua competenza locale e il suo impegno per la qualità.",
+      "cta": "Scopri i nostri partner"
     },
     "testimonials": {
-      "title": "Ils nous font confiance",
-      "subtitle": "Tour-opérateurs et agences de voyage témoignent de leur collaboration avec The DMC Alliance."
+      "title": "Si fidano di noi",
+      "subtitle": "Tour operator e agenzie di viaggio condividono la loro esperienza di collaborazione con The DMC Alliance."
     },
     "magazine": {
-      "title": "Le Magazine",
-      "subtitle": "Tendances, conseils et inspiration pour vos programmations.",
-      "cta": "Lire le magazine"
+      "title": "Il Magazine",
+      "subtitle": "Tendenze, consigli e ispirazione per la tua programmazione.",
+      "cta": "Leggi il magazine"
     },
     "newsletter": {
-      "title": "Restez informés",
-      "subtitle": "Recevez nos actualités, nouveaux GIR et offres exclusives directement dans votre boîte mail.",
-      "placeholder": "Votre email professionnel",
-      "cta": "S'inscrire",
-      "privacy": "Nous respectons votre vie privée. Désinscription possible à tout moment."
+      "title": "Rimani informato",
+      "subtitle": "Ricevi le nostre notizie, nuovi GIR e offerte esclusive direttamente nella tua casella di posta.",
+      "placeholder": "La tua email professionale",
+      "cta": "Iscriviti",
+      "privacy": "Rispettiamo la tua privacy. Cancellati in qualsiasi momento."
     },
     "cta": {
-      "title": "Prêts à collaborer ?",
-      "subtitle": "Contactez-nous pour découvrir comment The DMC Alliance peut enrichir votre offre.",
-      "button": "Parlons de votre projet"
+      "title": "Pronto a collaborare?",
+      "subtitle": "Contattaci per scoprire come The DMC Alliance può arricchire la tua offerta.",
+      "button": "Parliamo del tuo progetto"
     }
   },
   "destinations": {
-    "title": "Nos destinations",
-    "subtitle": "30+ destinations à travers le monde, chacune avec son expert local dédié.",
-    "filterByRegion": "Filtrer par région",
-    "allRegions": "Toutes les régions",
-    "searchPlaceholder": "Rechercher une destination...",
-    "noResults": "Aucune destination trouvée",
-    "discoverPartner": "Découvrir l'agence partenaire",
+    "title": "Le nostre destinazioni",
+    "subtitle": "30+ destinazioni in tutto il mondo, ognuna con un esperto locale dedicato.",
+    "filterByRegion": "Filtra per regione",
+    "allRegions": "Tutte le regioni",
+    "searchPlaceholder": "Cerca una destinazione...",
+    "noResults": "Nessuna destinazione trovata",
+    "discoverPartner": "Scopri l'agenzia partner",
     "regions": {
-      "asia": "Asie",
-      "africa": "Afrique",
-      "europe": "Europe",
-      "americas": "Amériques",
-      "middle-east": "Moyen-Orient",
-      "oceania": "Océanie"
+      "asia": "Asia",
+      "africa": "Africa",
+      "europe": "Europa",
+      "americas": "Americhe",
+      "middle-east": "Medio Oriente",
+      "oceania": "Oceania"
     }
   },
   "gir": {
-    "title": "Circuits GIR Co-remplissage",
-    "subtitle": "Intégrez vos clients à nos départs garantis. Dates fixes, tarifs publics, commission sur demande.",
+    "title": "Circuiti GIR Co-riempimento",
+    "subtitle": "Aggiungi i tuoi clienti alle nostre partenze garantite. Date fisse, prezzi pubblici, commissione su richiesta.",
     "howItWorks": {
-      "title": "Comment ça marche ?",
+      "title": "Come funziona?",
       "step1": {
-        "title": "Choisissez un circuit",
-        "description": "Parcourez nos GIR par destination ou date de départ."
+        "title": "Scegli un circuito",
+        "description": "Sfoglia i nostri GIR per destinazione o data di partenza."
       },
       "step2": {
-        "title": "Vérifiez les disponibilités",
-        "description": "Consultez les places restantes en temps réel."
+        "title": "Verifica la disponibilità",
+        "description": "Visualizza i posti rimanenti in tempo reale."
       },
       "step3": {
-        "title": "Demandez votre commission",
-        "description": "Contactez-nous pour connaître vos conditions."
+        "title": "Richiedi la tua commissione",
+        "description": "Contattaci per conoscere le tue condizioni."
       },
       "step4": {
-        "title": "Inscrivez vos clients",
-        "description": "Confirmez les places et envoyez les dossiers."
+        "title": "Registra i tuoi clienti",
+        "description": "Conferma i posti e invia i dossier."
       }
     },
     "filters": {
-      "destination": "Destination",
-      "date": "Date de départ",
-      "duration": "Durée",
-      "theme": "Thématique",
-      "level": "Niveau"
+      "destination": "Destinazione",
+      "date": "Data di partenza",
+      "duration": "Durata",
+      "theme": "Tema",
+      "level": "Livello"
     },
     "card": {
-      "departure": "Départ le",
-      "duration": "Durée",
-      "level": "Niveau",
-      "places": "places restantes",
-      "publicPrice": "Prix public",
-      "commissionInfo": "Commission sur demande",
-      "viewCircuit": "Voir le circuit",
-      "bookPlaces": "Réserver des places"
+      "departure": "Partenza il",
+      "duration": "Durata",
+      "level": "Livello",
+      "places": "posti rimanenti",
+      "publicPrice": "Prezzo pubblico",
+      "commissionInfo": "Commissione su richiesta",
+      "viewCircuit": "Vedi circuito",
+      "bookPlaces": "Prenota posti"
     },
     "levels": {
       "easy": "Facile",
-      "moderate": "Modéré",
-      "challenging": "Sportif",
-      "expert": "Expert"
+      "moderate": "Moderato",
+      "challenging": "Impegnativo",
+      "expert": "Esperto"
     },
     "themes": {
-      "adventure": "Aventure",
-      "culture": "Culture",
-      "nature": "Nature",
-      "wildlife": "Faune sauvage",
+      "adventure": "Avventura",
+      "culture": "Cultura",
+      "nature": "Natura",
+      "wildlife": "Fauna selvatica",
       "trekking": "Trekking",
-      "family": "Famille"
+      "family": "Famiglia"
     }
   },
   "partners": {
-    "title": "Annuaire des réceptifs",
-    "subtitle": "Découvrez les agences locales membres de The DMC Alliance.",
-    "searchPlaceholder": "Rechercher par nom ou destination...",
-    "filterBySpecialty": "Filtrer par spécialité",
-    "allSpecialties": "Toutes les spécialités",
-    "premiumPartner": "Partenaire Premium",
-    "viewProfile": "Voir le profil",
-    "contactPartner": "Contacter l'agence",
-    "specialties": "Spécialités",
-    "destinations": "Destinations couvertes",
-    "girAvailable": "Propose des GIR",
-    "website": "Site web"
+    "title": "Directory DMC",
+    "subtitle": "Scopri le agenzie locali membri di The DMC Alliance.",
+    "searchPlaceholder": "Cerca per nome o destinazione...",
+    "filterBySpecialty": "Filtra per specialità",
+    "allSpecialties": "Tutte le specialità",
+    "premiumPartner": "Partner Premium",
+    "viewProfile": "Vedi profilo",
+    "contactPartner": "Contatta agenzia",
+    "specialties": "Specialità",
+    "destinations": "Destinazioni coperte",
+    "girAvailable": "Offre GIR",
+    "website": "Sito web",
+    "exploreNetwork": "Esplora la nostra rete",
+    "map": "Mappa",
+    "list": "Lista",
+    "allRegions": "Tutte le regioni",
+    "allTiers": "Tutti i livelli",
+    "withGir": "Con GIR",
+    "clear": "Cancella",
+    "partnerFound": "partner trovato",
+    "partnersFound": "partner trovati",
+    "noPartnerFound": "Nessun partner trovato",
+    "tryChangingFilters": "Prova a modificare i tuoi filtri",
+    "resetFilters": "Reimposta filtri",
+    "areYouLocalDmc": "Sei un DMC locale?",
+    "joinAlliance": "Unisciti a The DMC Alliance e sviluppa la tua rete di partner europei.",
+    "becomePartner": "Diventa partner",
+    "years": "anni",
+    "yrs": "anni",
+    "team": "team",
+    "pers": "pers.",
+    "specialtiesCount": "specialità",
+    "offerGir": "offrono GIR",
+    "partnerAgencies": "agenzie partner",
+    "globalNetwork": "La nostra rete globale",
+    "clickPointToSeePartner": "Clicca su un punto per vedere il partner",
+    "yearsExp": "Anni esp.",
+    "teamMembers": "Membri del team",
+    "satisfactionRate": "Tasso di soddisfazione",
+    "viewFullProfile": "Vedi profilo completo"
   },
   "about": {
-    "title": "Qui sommes-nous",
-    "subtitle": "The DMC Alliance, c'est l'histoire d'agences locales passionnées qui s'unissent pour mieux vous servir.",
+    "title": "Chi siamo",
+    "subtitle": "The DMC Alliance è la storia di agenzie locali appassionate che si uniscono per servirti meglio.",
     "history": {
-      "title": "Notre histoire",
-      "content": "Né de la volonté de partager notre expertise terrain, The DMC Alliance réunit les meilleurs réceptifs indépendants d'Asie, d'Afrique, d'Europe et des Amériques."
+      "title": "La nostra storia",
+      "content": "Nato dal desiderio di condividere la nostra competenza locale, The DMC Alliance riunisce i migliori DMC indipendenti di Asia, Africa, Europa e Americhe."
     },
     "mission": {
-      "title": "Notre mission",
-      "content": "Offrir aux professionnels du voyage un accès privilégié à un réseau d'experts locaux, pour des expériences authentiques et une qualité de service irréprochable."
+      "title": "La nostra missione",
+      "content": "Offrire ai professionisti del viaggio un accesso privilegiato a una rete di esperti locali, per esperienze autentiche e una qualità del servizio impeccabile."
     },
     "values": {
-      "title": "Nos valeurs",
+      "title": "I nostri valori",
       "expertise": {
-        "title": "Expertise terrain",
-        "description": "Chaque destination est opérée par des équipes locales qui vivent et respirent leur pays."
+        "title": "Competenza locale",
+        "description": "Ogni destinazione è gestita da team locali che vivono e respirano il loro paese."
       },
       "collaboration": {
-        "title": "Collaboration",
-        "description": "Nous partageons nos savoirs et mutualisons nos forces pour mieux vous accompagner."
+        "title": "Collaborazione",
+        "description": "Condividiamo le nostre conoscenze e uniamo le nostre forze per supportarti meglio."
       },
       "quality": {
-        "title": "Qualité",
-        "description": "Sélection rigoureuse des prestataires, contrôle qualité permanent, amélioration continue."
+        "title": "Qualità",
+        "description": "Selezione rigorosa dei fornitori, controllo qualità permanente, miglioramento continuo."
       },
       "responsibility": {
-        "title": "Responsabilité",
-        "description": "Tourisme durable, impact positif sur les communautés locales, respect de l'environnement."
+        "title": "Responsabilità",
+        "description": "Turismo sostenibile, impatto positivo sulle comunità locali, rispetto dell'ambiente."
       }
     },
     "team": {
-      "title": "L'équipe",
-      "subtitle": "Des femmes et des hommes passionnés aux quatre coins du monde."
+      "title": "Il team",
+      "subtitle": "Donne e uomini appassionati da tutto il mondo."
     }
   },
   "contact": {
-    "title": "Contactez-nous",
-    "subtitle": "Une question, un projet, une demande de partenariat ? Notre équipe vous répond sous 24h.",
+    "title": "Contattaci",
+    "subtitle": "Una domanda, un progetto, una richiesta di partnership? Il nostro team risponde entro 24h.",
     "form": {
-      "company": "Société",
-      "name": "Nom complet",
-      "email": "Email professionnel",
-      "phone": "Téléphone",
-      "subject": "Sujet",
+      "company": "Azienda",
+      "name": "Nome completo",
+      "email": "Email professionale",
+      "phone": "Telefono",
+      "subject": "Oggetto",
       "subjects": {
-        "quote": "Demande de devis",
-        "gir": "Information GIR",
-        "partnership": "Devenir partenaire",
-        "other": "Autre"
+        "quote": "Richiesta preventivo",
+        "gir": "Informazioni GIR",
+        "partnership": "Diventa partner",
+        "other": "Altro"
       },
-      "message": "Votre message",
-      "submit": "Envoyer",
-      "success": "Message envoyé ! Nous vous répondons sous 24h.",
-      "error": "Erreur lors de l'envoi. Veuillez réessayer."
+      "message": "Il tuo messaggio",
+      "submit": "Invia",
+      "success": "Messaggio inviato! Risponderemo entro 24h.",
+      "error": "Errore di invio. Riprova."
     },
     "info": {
-      "title": "Informations",
+      "title": "Informazioni",
       "email": "Email",
-      "phone": "Téléphone",
-      "address": "Adresse"
+      "phone": "Telefono",
+      "address": "Indirizzo"
     }
   },
   "newsletter": {
     "title": "Newsletter Pro",
-    "subtitle": "Recevez en avant-première nos nouveaux GIR, actualités destinations et offres exclusives.",
+    "subtitle": "Ricevi per primo i nostri nuovi GIR, notizie sulle destinazioni e offerte esclusive.",
     "form": {
-      "email": "Email professionnel",
-      "company": "Société",
-      "interests": "Centres d'intérêt",
+      "email": "Email professionale",
+      "company": "Azienda",
+      "interests": "Interessi",
       "interestsList": {
-        "gir": "Nouveaux GIR",
-        "destinations": "Actualités destinations",
-        "offers": "Offres spéciales",
-        "magazine": "Articles magazine"
+        "gir": "Nuovi GIR",
+        "destinations": "Notizie destinazioni",
+        "offers": "Offerte speciali",
+        "magazine": "Articoli magazine"
       },
-      "submit": "S'inscrire",
-      "success": "Inscription confirmée ! Bienvenue dans la communauté DMC Alliance.",
-      "error": "Erreur lors de l'inscription. Veuillez réessayer."
+      "submit": "Iscriviti",
+      "success": "Iscrizione confermata! Benvenuto nella community DMC Alliance.",
+      "error": "Errore di iscrizione. Riprova."
     },
-    "privacy": "Vos données sont protégées. Désinscription possible à tout moment."
+    "privacy": "I tuoi dati sono protetti. Cancellati in qualsiasi momento."
+  },
+  "destination": {
+    "overview": "Panoramica destinazione",
+    "sellingPoints": "Punti di forza per i tuoi clienti",
+    "idealClientele": "Clientela ideale",
+    "webinar": "Webinar di presentazione",
+    "localExpert": "Il tuo esperto locale",
+    "premiumPartner": "Partner Premium",
+    "specialties": "Specialità",
+    "experience": "Anni di esperienza",
+    "contactAgency": "Contatta agenzia",
+    "viewProfile": "Vedi profilo completo",
+    "visitWebsite": "Visita sito web",
+    "needQuote": "Hai bisogno di un preventivo rapido?",
+    "quoteInfo": "Il nostro team risponde entro 48h con una proposta personalizzata.",
+    "requestQuote": "Richiedi preventivo",
+    "girAvailable": "Circuiti GIR disponibili",
+    "girInfo": "Aggiungi i tuoi clienti alle nostre partenze garantite. Date fisse, commissione su richiesta.",
+    "viewGir": "Vedi GIR",
+    "otherDestinations": "Altre destinazioni nella regione",
+    "readyToProgram": "Pronto a programmare questa destinazione?",
+    "contactForRates": "Contattaci per ricevere le nostre tariffe professionali e discutere i tuoi progetti.",
+    "viewAllDestinations": "Vedi tutte le destinazioni"
+  },
+  "circuit": {
+    "overview": "Panoramica circuito",
+    "highlights": "Punti salienti del circuito",
+    "itinerary": "Programma giorno per giorno",
+    "included": "Il prezzo include",
+    "notIncluded": "Il prezzo non include",
+    "practicalInfo": "Informazioni pratiche",
+    "physicalCondition": "Condizione fisica",
+    "bestSeason": "Stagione migliore",
+    "maxAltitude": "Altitudine massima",
+    "groupSize": "Dimensione gruppo",
+    "datesAndPrices": "Date e prezzi",
+    "departuresAvailable": "partenze disponibili",
+    "guaranteedDeparture": "Partenza garantita",
+    "spotsLeft": "Solo {count} posti rimasti",
+    "full": "Completo",
+    "spots": "posti",
+    "publicPrice": "prezzo pubblico",
+    "book": "Prenota",
+    "requestCommission": "Richiedi tasso commissione",
+    "needHelp": "Hai bisogno di aiuto?",
+    "helpInfo": "Il nostro team è disponibile per rispondere alle tue domande.",
+    "callUs": "Chiamaci",
+    "otherGir": "Altri circuiti GIR",
+    "viewAllGir": "Vedi tutti i GIR",
+    "day": "Giorno",
+    "meals": "Pasti",
+    "breakfast": "C",
+    "lunch": "P",
+    "dinner": "C",
+    "freeMeals": "Pasti liberi",
+    "accommodation": "Alloggio",
+    "transfer": "Trasferimento"
   },
   "footer": {
-    "description": "The DMC Alliance réunit les meilleurs réceptifs locaux pour offrir aux professionnels du voyage une expertise terrain inégalée.",
-    "quickLinks": "Liens rapides",
-    "destinations": "Destinations",
-    "services": "Nos offres",
-    "partners": "Partenaires",
+    "description": "The DMC Alliance riunisce i migliori DMC locali per offrire ai professionisti del viaggio una competenza locale senza pari.",
+    "quickLinks": "Link rapidi",
+    "destinations": "Destinazioni",
+    "services": "Le nostre offerte",
+    "partners": "Partner",
     "magazine": "Magazine",
-    "about": "Qui sommes-nous",
-    "contact": "Contact",
-    "legal": "Mentions légales",
-    "privacy": "Politique de confidentialité",
-    "terms": "CGV",
-    "copyright": "© {year} The DMC Alliance. Tous droits réservés.",
-    "socialTitle": "Suivez-nous"
+    "about": "Chi siamo",
+    "contact": "Contatto",
+    "legal": "Note legali",
+    "privacy": "Privacy policy",
+    "terms": "Termini e condizioni",
+    "copyright": "© {year} The DMC Alliance. Tutti i diritti riservati.",
+    "socialTitle": "Seguici"
   }
 }

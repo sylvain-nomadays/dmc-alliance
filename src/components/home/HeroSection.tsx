@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { getStorageUrl } from '@/lib/supabase/storage';
 
 interface HeroSectionProps {
   locale: string;
@@ -14,10 +15,12 @@ interface HeroSectionProps {
     cta: string;
     ctaSecondary: string;
   };
+  /** Custom hero images from Supabase Storage (paths like 'homepage/hero-1.jpg') */
+  images?: string[];
 }
 
-// Images de fond qui défilent
-const heroImages = [
+// Default local images - used as fallback
+const defaultLocalImages = [
   '/images/hero/mongolia-horses.jpg',
   '/images/hero/tanzania-safari.jpg',
   '/images/hero/thailand-temple.jpg',
@@ -25,9 +28,17 @@ const heroImages = [
   '/images/hero/madagascar-lemur.jpg',
 ];
 
-export function HeroSection({ locale, translations }: HeroSectionProps) {
+export function HeroSection({ locale, translations, images }: HeroSectionProps) {
   const [currentImage, setCurrentImage] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Use provided images (converting to full URLs if needed) or fall back to defaults
+  const heroImages = useMemo(() => {
+    if (images && images.length > 0) {
+      return images.map(img => getStorageUrl(img));
+    }
+    return defaultLocalImages;
+  }, [images]);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -35,7 +46,7 @@ export function HeroSection({ locale, translations }: HeroSectionProps) {
       setCurrentImage((prev) => (prev + 1) % heroImages.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, []);
+  }, [heroImages.length]);
 
   return (
     <section className="relative h-screen min-h-[600px] max-h-[900px] flex items-center">
@@ -104,7 +115,7 @@ export function HeroSection({ locale, translations }: HeroSectionProps) {
                 {translations.cta}
               </Button>
             </Link>
-            <Link href={`/${locale}/services/gir`}>
+            <Link href={`/${locale}/gir`}>
               <Button variant="outline-white" size="lg">
                 {translations.ctaSecondary}
               </Button>

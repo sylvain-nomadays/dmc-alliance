@@ -1,20 +1,8 @@
-import { notFound } from 'next/navigation';
 import { getRequestConfig } from 'next-intl/server';
+import { routing, locales, defaultLocale, type Locale } from './navigation';
 
-// Supported locales
-export const locales = ['fr', 'en', 'de', 'nl', 'es', 'it'] as const;
-export type Locale = (typeof locales)[number];
-
-export const defaultLocale: Locale = 'fr';
-
-export const localeNames: Record<Locale, string> = {
-  fr: 'Français',
-  en: 'English',
-  de: 'Deutsch',
-  nl: 'Nederlands',
-  es: 'Español',
-  it: 'Italiano',
-};
+// Re-export for backward compatibility
+export { locales, defaultLocale, localeNames, type Locale } from './navigation';
 
 export default getRequestConfig(async ({ requestLocale }) => {
   // Get the locale from the request

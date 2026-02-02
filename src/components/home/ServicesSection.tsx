@@ -31,7 +31,7 @@ interface ServicesSectionProps {
 const services = [
   {
     key: 'tailorMade',
-    href: '/services/tailor-made',
+    href: '/contact?service=tailor-made',
     image: '/images/services/tailor-made.jpg',
     icon: (
       <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +42,7 @@ const services = [
   },
   {
     key: 'groups',
-    href: '/services/groups',
+    href: '/contact?service=groups',
     image: '/images/services/groups.jpg',
     icon: (
       <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,7 +53,7 @@ const services = [
   },
   {
     key: 'gir',
-    href: '/services/gir',
+    href: '/gir',
     image: '/images/services/gir.jpg',
     icon: (
       <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">

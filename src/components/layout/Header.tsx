@@ -1,20 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { Link, usePathname, useRouter, type Locale } from '@/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+
+// Type for navigation links (without dynamic segments)
+type NavHref = '/' | '/partners' | '/destinations' | '/magazine' | '/about' | '/contact' | '/gir';
 
 // Types for navigation
 interface NavItem {
   label: string;
-  href?: string;
+  href?: NavHref;
   children?: {
     label: string;
     description?: string;
-    href: string;
+    href: NavHref;
     icon?: React.ReactNode;
   }[];
 }
@@ -38,6 +42,100 @@ interface HeaderProps {
   };
 }
 
+interface LanguageSwitcherProps {
+  locale: string;
+  languages: { code: string; label: string }[];
+  isScrolled: boolean;
+  isHomepage: boolean;
+}
+
+/**
+ * Language Switcher component that handles locale switching properly
+ * for both static and dynamic routes with localized pathnames
+ */
+function LanguageSwitcher({ locale, languages, isScrolled, isHomepage }: LanguageSwitcherProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams();
+
+  const handleLocaleChange = (newLocale: string) => {
+    // router.replace handles dynamic params automatically
+    router.replace(
+      // @ts-expect-error - pathname from usePathname is the internal route pattern
+      { pathname, params },
+      { locale: newLocale as Locale }
+    );
+  };
+
+  return (
+    <div className="relative group">
+      <button
+        className={cn(
+          'flex items-center gap-1 text-sm font-medium',
+          isScrolled || !isHomepage ? 'text-gray-600' : 'text-white/80'
+        )}
+      >
+        {languages.find((l) => l.code === locale)?.label}
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div className="absolute top-full right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+        <div className="bg-white rounded-lg shadow-lg py-1 min-w-[60px]">
+          {languages.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => handleLocaleChange(lang.code)}
+              className={cn(
+                'block w-full text-left px-4 py-2 text-sm hover:bg-sand-50 transition-colors',
+                lang.code === locale ? 'text-terracotta-500 font-medium' : 'text-gray-700'
+              )}
+            >
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Mobile Language Switcher component
+ */
+function MobileLanguageSwitcher({ locale, languages }: { locale: string; languages: { code: string; label: string }[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams();
+
+  const handleLocaleChange = (newLocale: string) => {
+    router.replace(
+      // @ts-expect-error - pathname from usePathname is the internal route pattern
+      { pathname, params },
+      { locale: newLocale as Locale }
+    );
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-gray-100 mt-2">
+      {languages.map((lang) => (
+        <button
+          key={lang.code}
+          onClick={() => handleLocaleChange(lang.code)}
+          className={cn(
+            'px-3 py-1 rounded-full text-sm',
+            lang.code === locale
+              ? 'bg-terracotta-500 text-white'
+              : 'bg-gray-100 text-gray-700'
+          )}
+        >
+          {lang.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Header({ locale, translations }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -45,7 +143,7 @@ export function Header({ locale, translations }: HeaderProps) {
   const pathname = usePathname();
 
   // Check if we're on the homepage (with hero) for transparent header
-  const isHomepage = pathname === `/${locale}` || pathname === '/';
+  const isHomepage = pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,10 +159,11 @@ export function Header({ locale, translations }: HeaderProps) {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
+  // Navigation items using localized pathnames
   const navigation: NavItem[] = [
     {
       label: translations.destinations,
-      href: `/${locale}/destinations`,
+      href: '/destinations',
     },
     {
       label: translations.services,
@@ -72,7 +171,7 @@ export function Header({ locale, translations }: HeaderProps) {
         {
           label: translations.tailorMade,
           description: translations.tailorMadeDesc,
-          href: `/${locale}/services/tailor-made`,
+          href: '/contact',
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -82,7 +181,7 @@ export function Header({ locale, translations }: HeaderProps) {
         {
           label: translations.groups,
           description: translations.groupsDesc,
-          href: `/${locale}/services/groups`,
+          href: '/contact',
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -92,7 +191,7 @@ export function Header({ locale, translations }: HeaderProps) {
         {
           label: translations.gir,
           description: translations.girDesc,
-          href: `/${locale}/services/gir`,
+          href: '/gir',
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -103,15 +202,15 @@ export function Header({ locale, translations }: HeaderProps) {
     },
     {
       label: translations.partners,
-      href: `/${locale}/partners`,
+      href: '/partners',
     },
     {
       label: translations.magazine,
-      href: `/${locale}/magazine`,
+      href: '/magazine',
     },
     {
       label: translations.about,
-      href: `/${locale}/about`,
+      href: '/about',
     },
   ];
 
@@ -148,7 +247,7 @@ export function Header({ locale, translations }: HeaderProps) {
       <div className="container mx-auto px-4">
         <nav className="flex items-center justify-between">
           {/* Logo */}
-          <Link href={`/${locale}`} className="flex-shrink-0">
+          <Link href="/" className="flex-shrink-0">
             <Image
               src="/images/logo-dmc-alliance.svg"
               alt="The DMC Alliance"
@@ -223,38 +322,15 @@ export function Header({ locale, translations }: HeaderProps) {
           {/* Right Side: Language + CTA */}
           <div className="hidden lg:flex items-center gap-4">
             {/* Language Switcher */}
-            <div className="relative group">
-              <button
-                className={cn(
-                  'flex items-center gap-1 text-sm font-medium',
-                  isScrolled || !isHomepage ? 'text-gray-600' : 'text-white/80'
-                )}
-              >
-                {languages.find((l) => l.code === locale)?.label}
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <div className="absolute top-full right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                <div className="bg-white rounded-lg shadow-lg py-1 min-w-[60px]">
-                  {languages.map((lang) => (
-                    <Link
-                      key={lang.code}
-                      href={pathname.replace(`/${locale}`, `/${lang.code}`)}
-                      className={cn(
-                        'block px-4 py-2 text-sm hover:bg-sand-50 transition-colors',
-                        lang.code === locale ? 'text-terracotta-500 font-medium' : 'text-gray-700'
-                      )}
-                    >
-                      {lang.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <LanguageSwitcher
+              locale={locale}
+              languages={languages}
+              isScrolled={isScrolled}
+              isHomepage={isHomepage}
+            />
 
             {/* Contact CTA */}
-            <Link href={`/${locale}/contact`}>
+            <Link href="/contact">
               <Button
                 variant={isScrolled || !isHomepage ? 'primary' : 'outline-white'}
                 size="sm"
@@ -336,26 +412,11 @@ export function Header({ locale, translations }: HeaderProps) {
               ))}
 
               {/* Mobile Language Switcher */}
-              <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-gray-100 mt-2">
-                {languages.map((lang) => (
-                  <Link
-                    key={lang.code}
-                    href={pathname.replace(`/${locale}`, `/${lang.code}`)}
-                    className={cn(
-                      'px-3 py-1 rounded-full text-sm',
-                      lang.code === locale
-                        ? 'bg-terracotta-500 text-white'
-                        : 'bg-gray-100 text-gray-700'
-                    )}
-                  >
-                    {lang.label}
-                  </Link>
-                ))}
-              </div>
+              <MobileLanguageSwitcher locale={locale} languages={languages} />
 
               {/* Mobile CTA */}
               <div className="px-4 pt-2">
-                <Link href={`/${locale}/contact`}>
+                <Link href="/contact">
                   <Button variant="primary" fullWidth>
                     {translations.contact}
                   </Button>
