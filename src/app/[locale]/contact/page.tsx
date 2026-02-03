@@ -382,6 +382,39 @@ export default function ContactPage() {
 
             {/* Sidebar */}
             <div className="space-y-8">
+              {/* Agency CTA Card - Moved to top */}
+              <div className="bg-gradient-to-br from-terracotta-500 to-terracotta-600 rounded-2xl p-8 text-white">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-heading">
+                    {isFr ? 'Vous êtes une agence ?' : 'Are you a travel agency?'}
+                  </h2>
+                </div>
+                <p className="text-white/90 text-sm mb-6">
+                  {isFr
+                    ? 'Créez votre espace gratuit pour accéder aux circuits GIR en temps réel, suivre les disponibilités et bénéficier de commissions exclusives.'
+                    : 'Create your free account to access GIR tours in real-time, track availability, and benefit from exclusive commissions.'}
+                </p>
+                <div className="space-y-3">
+                  <Link
+                    href={`/${locale}/auth/register`}
+                    className="block w-full text-center bg-white text-terracotta-600 font-medium py-3 px-4 rounded-lg hover:bg-terracotta-50 transition-colors"
+                  >
+                    {isFr ? 'Créer mon espace gratuit' : 'Create my free account'}
+                  </Link>
+                  <Link
+                    href={`/${locale}/auth/login`}
+                    className="block w-full text-center text-white/90 text-sm hover:text-white transition-colors"
+                  >
+                    {isFr ? 'Déjà inscrit ? Se connecter' : 'Already registered? Log in'}
+                  </Link>
+                </div>
+              </div>
+
               {/* Contact Info */}
               <div className="bg-sand-50 rounded-2xl p-8">
                 <h2 className="text-xl font-heading text-gray-900 mb-6">
@@ -468,6 +501,7 @@ export default function ContactPage() {
                   ))}
                 </div>
               </div>
+
             </div>
           </div>
         </div>

@@ -5,6 +5,15 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
+interface Partner {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string;
+  destinations: string[];
+  isPremium: boolean;
+}
+
 interface PartnersSectionProps {
   locale: string;
   translations: {
@@ -12,55 +21,24 @@ interface PartnersSectionProps {
     subtitle: string;
     cta: string;
   };
+  /** Partners data from Supabase */
+  partners?: Partner[];
 }
 
-// Featured partners for homepage
-const featuredPartners = [
-  {
-    id: 'horseback-adventure',
-    name: 'Horseback Adventure',
-    logo: '/images/partners/horseback-adventure.png',
-    destinations: ['Mongolie'],
-    isPremium: true,
-  },
-  {
-    id: 'kyrgyzwhat',
-    name: "Kyrgyz'What ?",
-    logo: '/images/partners/kyrgyzwhat.png',
-    destinations: ['Kirghizistan'],
-    isPremium: true,
-  },
-  {
-    id: 'sawa-discovery',
-    name: 'Sawa Discovery',
-    logo: '/images/partners/sawa-discovery.png',
-    destinations: ['Thaïlande'],
-    isPremium: true,
-  },
-  {
-    id: 'galago-expeditions',
-    name: 'Galago Expeditions',
-    logo: '/images/partners/galago.png',
-    destinations: ['Kenya', 'Tanzanie', 'Ouganda'],
-    isPremium: true,
-  },
-  {
-    id: 'detours-operator',
-    name: 'Détours Opérator',
-    logo: '/images/partners/detours.png',
-    destinations: ['Madagascar', 'Mauritanie', 'Algérie'],
-    isPremium: true,
-  },
-  {
-    id: 'azimuth',
-    name: 'Azimuth Adventure Travel',
-    logo: '/images/partners/azimuth.png',
-    destinations: ['Indonésie'],
-    isPremium: true,
-  },
+// Default fallback partners
+const defaultPartners: Partner[] = [
+  { id: 'horseback-adventure', name: 'Horseback Adventure', slug: 'horseback-adventure', logo: '/images/partners/horseback-adventure.png', destinations: ['Mongolie'], isPremium: true },
+  { id: 'kyrgyzwhat', name: "Kyrgyz'What ?", slug: 'kyrgyzwhat', logo: '/images/partners/kyrgyzwhat.png', destinations: ['Kirghizistan'], isPremium: true },
+  { id: 'sawa-discovery', name: 'Sawa Discovery', slug: 'sawa-discovery', logo: '/images/partners/sawa-discovery.png', destinations: ['Thaïlande'], isPremium: true },
+  { id: 'galago-expeditions', name: 'Galago Expeditions', slug: 'galago-expeditions', logo: '/images/partners/galago.png', destinations: ['Kenya', 'Tanzanie', 'Ouganda'], isPremium: true },
+  { id: 'detours-operator', name: 'Détours Opérator', slug: 'detours-operator', logo: '/images/partners/detours.png', destinations: ['Madagascar', 'Mauritanie', 'Algérie'], isPremium: true },
+  { id: 'azimuth', name: 'Azimuth Adventure Travel', slug: 'azimuth', logo: '/images/partners/azimuth.png', destinations: ['Indonésie'], isPremium: true },
 ];
 
-export function PartnersSection({ locale, translations }: PartnersSectionProps) {
+export function PartnersSection({ locale, translations, partners }: PartnersSectionProps) {
+  // Use provided partners or fallback to defaults
+  const featuredPartners = partners && partners.length > 0 ? partners : defaultPartners;
+
   return (
     <section className="py-20 md:py-28 bg-gray-900 text-white overflow-hidden">
       <div className="container mx-auto px-4">
@@ -88,7 +66,7 @@ export function PartnersSection({ locale, translations }: PartnersSectionProps) 
             {featuredPartners.map((partner, index) => (
               <Link
                 key={partner.id}
-                href={`/${locale}/partners/${partner.id}`}
+                href={`/${locale}/partners/${partner.slug}`}
                 className={cn(
                   'group relative bg-gray-800/50 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all duration-300 hover:bg-gray-800 hover:scale-105 animate-fade-in-up',
                 )}

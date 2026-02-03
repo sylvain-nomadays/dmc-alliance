@@ -5,6 +5,11 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import { CommissionTiersEditor } from '@/components/admin/CommissionTiersEditor';
+import { ExternalSourceEditor } from '@/components/admin/ExternalSourceEditor';
+import { CircuitImporter } from '@/components/admin/CircuitImporter';
+import TranslationPushButton from '@/components/admin/TranslationPushButton';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 
 interface ItineraryDay {
   day: number;
@@ -32,6 +37,8 @@ interface CircuitForm {
   price_from: number;
   price_single_supplement: number | null;
   commission_rate: number;
+  base_commission_rate: number;
+  use_tiered_commission: boolean;
   duration_days: number;
   group_size_min: number;
   group_size_max: number;
@@ -46,6 +53,7 @@ interface CircuitForm {
   partner_id: string;
   status: string;
   is_featured: boolean;
+  is_gir: boolean;
 }
 
 interface Destination {
@@ -71,6 +79,8 @@ const defaultForm: CircuitForm = {
   price_from: 0,
   price_single_supplement: null,
   commission_rate: 10,
+  base_commission_rate: 10,
+  use_tiered_commission: false,
   duration_days: 7,
   group_size_min: 2,
   group_size_max: 16,
@@ -85,6 +95,7 @@ const defaultForm: CircuitForm = {
   partner_id: '',
   status: 'draft',
   is_featured: false,
+  is_gir: false,
 };
 
 const statusOptions = [
@@ -111,7 +122,7 @@ export default function CircuitEditPage() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'content' | 'itinerary' | 'pricing' | 'inclusions'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'content' | 'itinerary' | 'pricing' | 'inclusions' | 'commission' | 'import'>('general');
 
   // Inputs for list fields
   const [newHighlightFr, setNewHighlightFr] = useState('');
@@ -161,17 +172,30 @@ export default function CircuitEditPage() {
         console.error('Error fetching circuit:', error);
         router.push('/admin/circuits');
       } else if (data) {
+        // Normaliser l'itinéraire pour s'assurer que chaque jour a la structure complète
+        const normalizedItinerary = (data.itinerary || []).map((day: Partial<ItineraryDay>, index: number) => ({
+          day: day.day || index + 1,
+          title_fr: day.title_fr || '',
+          title_en: day.title_en || '',
+          description_fr: day.description_fr || '',
+          description_en: day.description_en || '',
+          meals: day.meals || { breakfast: false, lunch: false, dinner: false },
+          accommodation: day.accommodation || '',
+        }));
+
         setForm({
           ...defaultForm,
           ...data,
           highlights_fr: data.highlights_fr || [],
           highlights_en: data.highlights_en || [],
-          itinerary: data.itinerary || [],
+          itinerary: normalizedItinerary,
           included_fr: data.included_fr || [],
           included_en: data.included_en || [],
           not_included_fr: data.not_included_fr || [],
           not_included_en: data.not_included_en || [],
           gallery_urls: data.gallery_urls || [],
+          base_commission_rate: data.base_commission_rate || 10,
+          use_tiered_commission: data.use_tiered_commission || false,
         });
       }
     }
@@ -335,6 +359,8 @@ export default function CircuitEditPage() {
               { id: 'itinerary', label: 'Itinéraire' },
               { id: 'pricing', label: 'Tarifs' },
               { id: 'inclusions', label: 'Inclus/Non inclus' },
+              { id: 'commission', label: 'Commission & Sync' },
+              { id: 'import', label: 'Import URL' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -523,18 +549,32 @@ export default function CircuitEditPage() {
                 />
               </div>
 
-              {/* Featured */}
-              <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-                <input
-                  type="checkbox"
-                  id="is_featured"
-                  checked={form.is_featured}
-                  onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
-                  className="w-4 h-4 text-terracotta-500 border-gray-300 rounded focus:ring-terracotta-500"
-                />
-                <label htmlFor="is_featured" className="text-sm text-gray-700 cursor-pointer">
-                  Mettre en avant sur la page d&apos;accueil
-                </label>
+              {/* Featured & GIR */}
+              <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_featured"
+                    checked={form.is_featured}
+                    onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
+                    className="w-4 h-4 text-terracotta-500 border-gray-300 rounded focus:ring-terracotta-500"
+                  />
+                  <label htmlFor="is_featured" className="text-sm text-gray-700 cursor-pointer">
+                    Mettre en avant sur la page d&apos;accueil
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_gir"
+                    checked={form.is_gir}
+                    onChange={(e) => setForm({ ...form, is_gir: e.target.checked })}
+                    className="w-4 h-4 text-terracotta-500 border-gray-300 rounded focus:ring-terracotta-500"
+                  />
+                  <label htmlFor="is_gir" className="text-sm text-gray-700 cursor-pointer">
+                    <span className="font-medium text-terracotta-600">GIR</span> - Circuit à itinéraire réservé (co-remplissage)
+                  </label>
+                </div>
               </div>
             </div>
           )}
@@ -542,36 +582,26 @@ export default function CircuitEditPage() {
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div className="space-y-6">
-              {/* Description FR */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (FR)
-                </label>
-                <textarea
-                  value={form.description_fr}
-                  onChange={(e) => setForm({ ...form, description_fr: e.target.value })}
-                  rows={5}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Rédigez en français uniquement.</strong> Les traductions vers les autres langues seront générées automatiquement via le bouton &quot;Push Traductions&quot;.
+                </p>
               </div>
 
-              {/* Description EN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (EN)
-                </label>
-                <textarea
-                  value={form.description_en}
-                  onChange={(e) => setForm({ ...form, description_en: e.target.value })}
-                  rows={5}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
-              </div>
+              {/* Description FR */}
+              <RichTextEditor
+                value={form.description_fr}
+                onChange={(content) => setForm({ ...form, description_fr: content })}
+                label="Description"
+                placeholder="Description du circuit..."
+                minHeight="200px"
+              />
 
               {/* Highlights FR */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Points forts (FR)
+                  Points forts
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
@@ -597,46 +627,6 @@ export default function CircuitEditPage() {
                       <button
                         type="button"
                         onClick={() => removeFromList('highlights_fr', i)}
-                        className="text-gray-400 hover:text-red-500"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Highlights EN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Highlights (EN)
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={newHighlightEn}
-                    onChange={(e) => setNewHighlightEn(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addToList('highlights_en', newHighlightEn, setNewHighlightEn))}
-                    placeholder="Add a highlight..."
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addToList('highlights_en', newHighlightEn, setNewHighlightEn)}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                  >
-                    Add
-                  </button>
-                </div>
-                <ul className="space-y-1">
-                  {form.highlights_en.map((h, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <span className="flex-1 px-3 py-1.5 bg-gray-50 rounded">{h}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeFromList('highlights_en', i)}
                         className="text-gray-400 hover:text-red-500"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -685,9 +675,9 @@ export default function CircuitEditPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Titre (FR)
+                        Titre
                       </label>
                       <input
                         type="text"
@@ -697,38 +687,13 @@ export default function CircuitEditPage() {
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Title (EN)
-                      </label>
-                      <input
-                        type="text"
-                        value={day.title_en}
-                        onChange={(e) => updateDay(index, { title_en: e.target.value })}
-                        placeholder="Ex: Arrival in Ulaanbaatar"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Description (FR)
-                      </label>
-                      <textarea
+                    <div className="md:col-span-2">
+                      <RichTextEditor
                         value={day.description_fr}
-                        onChange={(e) => updateDay(index, { description_fr: e.target.value })}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Description (EN)
-                      </label>
-                      <textarea
-                        value={day.description_en}
-                        onChange={(e) => updateDay(index, { description_en: e.target.value })}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
+                        onChange={(content) => updateDay(index, { description_fr: content })}
+                        label="Description"
+                        placeholder="Description des activités de la journée..."
+                        minHeight="120px"
                       />
                     </div>
                     <div>
@@ -748,21 +713,24 @@ export default function CircuitEditPage() {
                         Repas inclus
                       </label>
                       <div className="flex gap-4 mt-2">
-                        {['breakfast', 'lunch', 'dinner'].map((meal) => (
-                          <label key={meal} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={day.meals[meal as keyof typeof day.meals]}
-                              onChange={(e) => updateDay(index, {
-                                meals: { ...day.meals, [meal]: e.target.checked }
-                              })}
-                              className="w-4 h-4 text-terracotta-500 border-gray-300 rounded"
-                            />
-                            <span className="text-sm text-gray-700">
-                              {meal === 'breakfast' ? 'Petit-déj' : meal === 'lunch' ? 'Déjeuner' : 'Dîner'}
-                            </span>
-                          </label>
-                        ))}
+                        {['breakfast', 'lunch', 'dinner'].map((meal) => {
+                          const meals = day.meals || { breakfast: false, lunch: false, dinner: false };
+                          return (
+                            <label key={meal} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={meals[meal as keyof typeof meals] || false}
+                                onChange={(e) => updateDay(index, {
+                                  meals: { ...meals, [meal]: e.target.checked }
+                                })}
+                                className="w-4 h-4 text-terracotta-500 border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {meal === 'breakfast' ? 'Petit-déj' : meal === 'lunch' ? 'Déjeuner' : 'Dîner'}
+                              </span>
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -849,190 +817,257 @@ export default function CircuitEditPage() {
 
           {/* Inclusions Tab */}
           {activeTab === 'inclusions' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Included */}
-              <div className="space-y-6">
-                <h3 className="font-medium text-gray-900">Le prix comprend</h3>
-
-                {/* Included FR */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Inclus (FR)
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={newIncludedFr}
-                      onChange={(e) => setNewIncludedFr(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addToList('included_fr', newIncludedFr, setNewIncludedFr))}
-                      placeholder="Ex: Vols internationaux"
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addToList('included_fr', newIncludedFr, setNewIncludedFr)}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <ul className="space-y-1">
-                    {form.included_fr.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <svg className="w-4 h-4 text-sage-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="flex-1">{item}</span>
-                        <button type="button" onClick={() => removeFromList('included_fr', i)} className="text-gray-400 hover:text-red-500">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Included EN */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Included (EN)
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={newIncludedEn}
-                      onChange={(e) => setNewIncludedEn(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addToList('included_en', newIncludedEn, setNewIncludedEn))}
-                      placeholder="Ex: International flights"
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addToList('included_en', newIncludedEn, setNewIncludedEn)}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <ul className="space-y-1">
-                    {form.included_en.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <svg className="w-4 h-4 text-sage-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="flex-1">{item}</span>
-                        <button type="button" onClick={() => removeFromList('included_en', i)} className="text-gray-400 hover:text-red-500">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <div className="space-y-6">
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Rédigez en français uniquement.</strong> Les traductions seront générées automatiquement via le bouton &quot;Push Traductions&quot;.
+                </p>
               </div>
 
-              {/* Not Included */}
-              <div className="space-y-6">
-                <h3 className="font-medium text-gray-900">Le prix ne comprend pas</h3>
-
-                {/* Not Included FR */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Non inclus (FR)
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={newNotIncludedFr}
-                      onChange={(e) => setNewNotIncludedFr(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addToList('not_included_fr', newNotIncludedFr, setNewNotIncludedFr))}
-                      placeholder="Ex: Assurance voyage"
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addToList('not_included_fr', newNotIncludedFr, setNewNotIncludedFr)}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <ul className="space-y-1">
-                    {form.not_included_fr.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        <span className="flex-1">{item}</span>
-                        <button type="button" onClick={() => removeFromList('not_included_fr', i)} className="text-gray-400 hover:text-red-500">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Included */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900">Le prix comprend</h3>
+                  <div>
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={newIncludedFr}
+                        onChange={(e) => setNewIncludedFr(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addToList('included_fr', newIncludedFr, setNewIncludedFr))}
+                        placeholder="Ex: Vols internationaux"
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addToList('included_fr', newIncludedFr, setNewIncludedFr)}
+                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <ul className="space-y-1">
+                      {form.included_fr.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <svg className="w-4 h-4 text-sage-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                          <span className="flex-1">{item}</span>
+                          <button type="button" onClick={() => removeFromList('included_fr', i)} className="text-gray-400 hover:text-red-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
-                {/* Not Included EN */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Not included (EN)
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={newNotIncludedEn}
-                      onChange={(e) => setNewNotIncludedEn(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addToList('not_included_en', newNotIncludedEn, setNewNotIncludedEn))}
-                      placeholder="Ex: Travel insurance"
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addToList('not_included_en', newNotIncludedEn, setNewNotIncludedEn)}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <ul className="space-y-1">
-                    {form.not_included_en.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        <span className="flex-1">{item}</span>
-                        <button type="button" onClick={() => removeFromList('not_included_en', i)} className="text-gray-400 hover:text-red-500">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Not Included */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900">Le prix ne comprend pas</h3>
+                  <div>
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={newNotIncludedFr}
+                        onChange={(e) => setNewNotIncludedFr(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addToList('not_included_fr', newNotIncludedFr, setNewNotIncludedFr))}
+                        placeholder="Ex: Assurance voyage"
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addToList('not_included_fr', newNotIncludedFr, setNewNotIncludedFr)}
+                        className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <ul className="space-y-1">
+                      {form.not_included_fr.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                          <span className="flex-1">{item}</span>
+                          <button type="button" onClick={() => removeFromList('not_included_fr', i)} className="text-gray-400 hover:text-red-500">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
+          {/* Commission & Sync Tab */}
+          {activeTab === 'commission' && (
+            <div className="space-y-8">
+              {isNew ? (
+                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
+                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-gray-500">
+                    Veuillez d&apos;abord créer le circuit pour configurer les commissions et la synchronisation.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Commission Section */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-terracotta-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Commission évolutive
+                    </h3>
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <CommissionTiersEditor
+                        circuitId={params.id as string}
+                        baseCommissionRate={form.base_commission_rate}
+                        useTieredCommission={form.use_tiered_commission}
+                        onBaseRateChange={(rate) => setForm({ ...form, base_commission_rate: rate })}
+                        onUseTieredChange={(use) => setForm({ ...form, use_tiered_commission: use })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sync Section */}
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-sage-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Synchronisation externe
+                    </h3>
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <ExternalSourceEditor circuitId={params.id as string} />
+                    </div>
+                  </div>
+
+                  {/* Info Box */}
+                  <div className="bg-deep-blue-50 border border-deep-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-deep-blue-800 mb-2">💡 Comment ça fonctionne ?</h4>
+                    <ul className="text-sm text-deep-blue-700 space-y-1">
+                      <li>• <strong>Commission évolutive :</strong> Le taux de commission augmente automatiquement avec le nombre de participants confirmés</li>
+                      <li>• <strong>Synchronisation :</strong> Les places disponibles sont récupérées automatiquement depuis le site du partenaire</li>
+                      <li>• <strong>Notifications :</strong> Les agences abonnées sont notifiées des changements de commission</li>
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Import Tab */}
+          {activeTab === 'import' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-terracotta-50 to-sand-50 rounded-xl p-6 border border-terracotta-100">
+                <h3 className="text-lg font-heading text-gray-900 mb-2">
+                  Importer le contenu depuis une URL
+                </h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  Entrez l&apos;URL du circuit sur le site du partenaire. Le contenu sera automatiquement
+                  extrait et réécrit pour éviter la duplication SEO, tout en l&apos;adaptant à votre
+                  clientèle B2B professionnelle.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs text-gray-600 border">
+                    <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Description réécrite
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs text-gray-600 border">
+                    <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Itinéraire jour par jour
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs text-gray-600 border">
+                    <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Inclus / Non inclus
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-full text-xs text-gray-600 border">
+                    <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Traduction EN automatique
+                  </span>
+                </div>
+              </div>
+
+              <CircuitImporter
+                circuitId={isNew ? undefined : (params.id as string)}
+                destinationId={form.destination_id}
+                partnerId={form.partner_id}
+                onImportComplete={(data) => {
+                  // Si nouveau circuit créé, rediriger vers sa page d'édition
+                  if (data.success && data.action === 'created' && data.circuit_id) {
+                    router.push(`/admin/circuits/${data.circuit_id}`);
+                  } else if (data.success) {
+                    // Sinon, rafraîchir les données
+                    fetchData();
+                    setActiveTab('content');
+                  }
+                }}
+              />
+
+              {/* Note d'information */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <h4 className="font-medium text-amber-800 mb-2 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Important
+                </h4>
+                <ul className="text-sm text-amber-700 space-y-1">
+                  <li>• L&apos;import ne remplace pas les images - ajoutez-les manuellement dans l&apos;onglet Général</li>
+                  <li>• Vérifiez et ajustez le contenu réécrit avant publication</li>
+                  <li>• Pour les sites avec contenu dynamique (JavaScript), collez le HTML manuellement</li>
+                  <li>• L&apos;URL source sera enregistrée pour synchroniser les disponibilités</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
-          <div className="flex items-center justify-end gap-4 pt-6 mt-6 border-t border-gray-200">
-            <Link
-              href="/admin/circuits"
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Annuler
-            </Link>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? 'Enregistrement...' : (isNew ? 'Créer' : 'Enregistrer')}
-            </button>
+          <div className="flex items-center justify-between gap-4 pt-6 mt-6 border-t border-gray-200">
+            {/* Translation Push Button */}
+            {!isNew && (
+              <TranslationPushButton
+                contentType="circuit"
+                contentId={params.id as string}
+                onSuccess={() => console.log('Circuit translations completed')}
+              />
+            )}
+            {isNew && <div />}
+
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/circuits"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Annuler
+              </Link>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-6 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? 'Enregistrement...' : (isNew ? 'Créer' : 'Enregistrer')}
+              </button>
+            </div>
           </div>
         </form>
       </div>

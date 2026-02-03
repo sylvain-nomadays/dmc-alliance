@@ -110,10 +110,10 @@ export function Footer({ locale, translations }: FooterProps) {
             <Link href="/" className="inline-block mb-4">
               <Image
                 src="/images/logo-dmc-alliance-white.svg"
-                alt="The DMC Alliance"
-                width={160}
-                height={45}
-                className="h-10 w-auto"
+                alt="DMC Alliance"
+                width={168}
+                height={60}
+                className="h-12 w-auto"
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">

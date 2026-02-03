@@ -81,14 +81,40 @@ export async function updateSupabaseSession(request: NextRequest) {
     return response;
   }
 
-  // 🔐 Protection admin
+  // 🔐 Protection admin - Allow admin AND partner roles
   if (request.nextUrl.pathname.startsWith('/admin')) {
     console.log('🔐 [MIDDLEWARE] Checking admin access. Role:', profile.role);
-    if (profile.role !== 'admin') {
-      console.warn('⛔ [MIDDLEWARE] Not admin! Role is:', profile.role, '-> redirect to /fr');
+
+    // Allow admin and partner roles to access admin area
+    const allowedRoles = ['admin', 'partner'];
+
+    if (!allowedRoles.includes(profile.role)) {
+      console.warn('⛔ [MIDDLEWARE] Not allowed! Role is:', profile.role, '-> redirect to /fr');
       return NextResponse.redirect(new URL('/fr', request.url));
     }
-    console.log('✅ [MIDDLEWARE] Admin access granted!');
+
+    // Partners can only access certain admin pages
+    if (profile.role === 'partner') {
+      const allowedPartnerPaths = [
+        '/admin',
+        '/admin/destinations',
+        '/admin/circuits',
+        '/admin/articles',
+        '/admin/media',
+      ];
+
+      const currentPath = request.nextUrl.pathname;
+      const isAllowed = allowedPartnerPaths.some(
+        (path) => currentPath === path || currentPath.startsWith(path + '/')
+      );
+
+      if (!isAllowed) {
+        console.warn('⛔ [MIDDLEWARE] Partner cannot access:', currentPath, '-> redirect to /admin');
+        return NextResponse.redirect(new URL('/admin', request.url));
+      }
+    }
+
+    console.log('✅ [MIDDLEWARE] Admin access granted for role:', profile.role);
   }
 
   return response;

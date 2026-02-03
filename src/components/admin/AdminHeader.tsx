@@ -10,6 +10,7 @@ interface AdminHeaderProps {
   user: {
     name: string;
     avatar?: string | null;
+    role?: string;
   };
 }
 
@@ -84,9 +85,16 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                   </span>
                 </div>
               )}
-              <span className="hidden sm:block text-sm font-medium text-gray-700">
-                {user.name}
-              </span>
+              <div className="hidden sm:block text-left">
+                <span className="block text-sm font-medium text-gray-700">
+                  {user.name}
+                </span>
+                {user.role && (
+                  <span className="block text-xs text-gray-500">
+                    {user.role}
+                  </span>
+                )}
+              </div>
               <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>

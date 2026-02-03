@@ -5,6 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import TranslationPushButton from '@/components/admin/TranslationPushButton';
+import { RichTextEditor, MarkdownEditor } from '@/components/admin/RichTextEditor';
+import { ArticleAIAssistant } from '@/components/admin/ArticleAIAssistant';
 
 interface ArticleForm {
   slug: string;
@@ -82,8 +85,20 @@ export default function ArticleEditPage() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'content' | 'author'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'content' | 'author' | 'faq'>('general');
   const [newTag, setNewTag] = useState('');
+  const [editorMode, setEditorMode] = useState<'visual' | 'markdown'>('visual');
+
+  // FAQ state
+  interface FAQItem {
+    id?: string;
+    question_fr: string;
+    answer_fr: string;
+    order_index: number;
+    is_active: boolean;
+    isNew?: boolean;
+  }
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -130,10 +145,101 @@ export default function ArticleEditPage() {
           ...data,
           tags: data.tags || [],
         });
+
+        // Fetch FAQs for this article
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: faqData } = await (supabase as any)
+          .from('article_faqs')
+          .select('*')
+          .eq('article_id', params.id)
+          .order('order_index', { ascending: true });
+
+        if (faqData) {
+          setFaqs(faqData);
+        }
       }
     }
 
     setIsLoading(false);
+  }
+
+  // FAQ management functions
+  function addFAQ() {
+    setFaqs((prev) => [
+      ...prev,
+      {
+        question_fr: '',
+        answer_fr: '',
+        order_index: prev.length,
+        is_active: true,
+        isNew: true,
+      },
+    ]);
+  }
+
+  function updateFAQ(index: number, field: 'question_fr' | 'answer_fr', value: string) {
+    setFaqs((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  }
+
+  function removeFAQ(index: number) {
+    setFaqs((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function moveFAQ(index: number, direction: 'up' | 'down') {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === faqs.length - 1)
+    ) {
+      return;
+    }
+
+    setFaqs((prev) => {
+      const updated = [...prev];
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+      // Update order_index
+      return updated.map((faq, i) => ({ ...faq, order_index: i }));
+    });
+  }
+
+  async function saveFAQs() {
+    if (isNew) {
+      alert('Veuillez d\'abord créer l\'article avant d\'ajouter des FAQs');
+      return;
+    }
+
+    const supabase = createClient();
+
+    // Delete existing FAQs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('article_faqs').delete().eq('article_id', params.id);
+
+    // Insert new FAQs
+    const faqsToInsert = faqs
+      .filter((faq) => faq.question_fr && faq.answer_fr)
+      .map((faq, index) => ({
+        article_id: params.id,
+        question_fr: faq.question_fr,
+        answer_fr: faq.answer_fr,
+        order_index: index,
+        is_active: faq.is_active ?? true,
+      }));
+
+    if (faqsToInsert.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from('article_faqs').insert(faqsToInsert);
+
+      if (error) {
+        console.error('Error saving FAQs:', error);
+        alert('Erreur lors de la sauvegarde des FAQs');
+      } else {
+        alert('FAQs sauvegardées avec succès');
+      }
+    }
   }
 
   function generateSlug(title: string) {
@@ -263,6 +369,7 @@ export default function ArticleEditPage() {
               { id: 'general', label: 'Général' },
               { id: 'content', label: 'Contenu' },
               { id: 'author', label: 'Auteur' },
+              { id: 'faq', label: 'FAQ' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -283,30 +390,24 @@ export default function ArticleEditPage() {
           {/* General Tab */}
           {activeTab === 'general' && (
             <div className="space-y-6">
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Rédigez en français uniquement.</strong> Les traductions seront générées automatiquement via le bouton &quot;Push Traductions&quot;.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Title FR */}
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Titre (FR) *
+                    Titre *
                   </label>
                   <input
                     type="text"
                     value={form.title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     required
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                  />
-                </div>
-
-                {/* Title EN */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Title (EN)
-                  </label>
-                  <input
-                    type="text"
-                    value={form.title_en}
-                    onChange={(e) => setForm({ ...form, title_en: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
                   />
                 </div>
@@ -484,10 +585,17 @@ export default function ArticleEditPage() {
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div className="space-y-6">
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Rédigez en français uniquement.</strong> Les traductions seront générées automatiquement via le bouton &quot;Push Traductions&quot;.
+                </p>
+              </div>
+
               {/* Excerpt FR */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Extrait / Chapô (FR)
+                  Extrait / Chapô
                 </label>
                 <textarea
                   value={form.excerpt}
@@ -501,50 +609,71 @@ export default function ArticleEditPage() {
                 </p>
               </div>
 
-              {/* Excerpt EN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Excerpt (EN)
+              {/* Editor Mode Toggle */}
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Contenu
                 </label>
-                <textarea
-                  value={form.excerpt_en}
-                  onChange={(e) => setForm({ ...form, excerpt_en: e.target.value })}
-                  rows={3}
-                  placeholder="Catchy summary of the article..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
+                <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('visual')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      editorMode === 'visual'
+                        ? 'bg-white text-terracotta-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      Éditeur visuel
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('markdown')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      editorMode === 'markdown'
+                        ? 'bg-white text-terracotta-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      Markdown
+                    </span>
+                  </button>
+                </div>
               </div>
 
-              {/* Content FR */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contenu (FR)
-                </label>
-                <textarea
+              {/* Content Editor - Visual (HTML) */}
+              {editorMode === 'visual' && (
+                <RichTextEditor
                   value={form.content}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  rows={15}
-                  placeholder="Contenu de l'article... (Markdown supporté)"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500 font-mono text-sm"
+                  onChange={handleContentChange}
+                  placeholder="Contenu de l'article..."
+                  minHeight="400px"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Supporte le format Markdown. Temps de lecture estimé : {form.read_time} min
-                </p>
-              </div>
+              )}
 
-              {/* Content EN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Content (EN)
-                </label>
-                <textarea
-                  value={form.content_en}
-                  onChange={(e) => setForm({ ...form, content_en: e.target.value })}
-                  rows={15}
-                  placeholder="Article content... (Markdown supported)"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500 font-mono text-sm"
-                />
-              </div>
+              {/* Content Editor - Markdown */}
+              {editorMode === 'markdown' && (
+                <div>
+                  <MarkdownEditor
+                    value={form.content}
+                    onChange={handleContentChange}
+                    placeholder="Écrivez votre article en Markdown..."
+                    rows={20}
+                  />
+                  <p className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                    ⚠️ Note: Le contenu Markdown sera affiché tel quel sur le site. L&apos;éditeur visuel génère du HTML.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -619,24 +748,183 @@ export default function ArticleEditPage() {
             </div>
           )}
 
+          {/* FAQ Tab */}
+          {activeTab === 'faq' && (
+            <div className="space-y-6">
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  Ajoutez des questions fréquentes qui seront affichées en bas de l&apos;article. Les réponses seront traduites automatiquement.
+                </p>
+              </div>
+
+              {isNew && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-700">
+                    <strong>Note :</strong> Vous devez d&apos;abord créer l&apos;article avant de pouvoir ajouter des FAQs.
+                  </p>
+                </div>
+              )}
+
+              {/* FAQ List */}
+              <div className="space-y-4">
+                {faqs.map((faq, index) => (
+                  <div key={faq.id || `new-${index}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <span className="flex items-center justify-center w-8 h-8 bg-terracotta-100 text-terracotta-600 rounded-full text-sm font-medium">
+                        {index + 1}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => moveFAQ(index, 'up')}
+                          disabled={index === 0}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Monter"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveFAQ(index, 'down')}
+                          disabled={index === faqs.length - 1}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Descendre"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFAQ(index)}
+                          className="p-1.5 text-red-400 hover:text-red-600"
+                          title="Supprimer"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Question
+                        </label>
+                        <input
+                          type="text"
+                          value={faq.question_fr}
+                          onChange={(e) => updateFAQ(index, 'question_fr', e.target.value)}
+                          placeholder="Ex: Quelle est la meilleure période pour visiter ?"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
+                        />
+                      </div>
+                      <div>
+                        <RichTextEditor
+                          value={faq.answer_fr}
+                          onChange={(content) => updateFAQ(index, 'answer_fr', content)}
+                          label="Réponse"
+                          placeholder="Votre réponse détaillée..."
+                          minHeight="120px"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {faqs.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p>Aucune FAQ pour cet article</p>
+                    <p className="text-sm text-gray-400 mt-1">Cliquez sur le bouton ci-dessous pour ajouter une question</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Add FAQ Button */}
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={addFAQ}
+                  disabled={isNew}
+                  className="px-4 py-2 border border-terracotta-300 text-terracotta-600 rounded-lg hover:bg-terracotta-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  + Ajouter une question
+                </button>
+
+                {faqs.length > 0 && !isNew && (
+                  <button
+                    type="button"
+                    onClick={saveFAQs}
+                    className="px-4 py-2 bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors"
+                  >
+                    Sauvegarder les FAQs
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
-          <div className="flex items-center justify-end gap-4 pt-6 mt-6 border-t border-gray-200">
-            <Link
-              href="/admin/articles"
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Annuler
-            </Link>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? 'Enregistrement...' : (isNew ? 'Créer' : 'Enregistrer')}
-            </button>
+          <div className="flex items-center justify-between gap-4 pt-6 mt-6 border-t border-gray-200">
+            {/* Translation Push Button */}
+            {!isNew && (
+              <TranslationPushButton
+                contentType="article"
+                contentId={params.id as string}
+                onSuccess={() => console.log('Article translations completed')}
+              />
+            )}
+            {isNew && <div />}
+
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/articles"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Annuler
+              </Link>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-6 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? 'Enregistrement...' : (isNew ? 'Créer' : 'Enregistrer')}
+              </button>
+            </div>
           </div>
         </form>
       </div>
+
+      {/* AI Assistant */}
+      <ArticleAIAssistant
+        title={form.title}
+        excerpt={form.excerpt}
+        content={form.content}
+        tags={form.tags}
+        onInsertContent={(content) => {
+          // Append or replace content based on current state
+          if (form.content) {
+            setForm({ ...form, content: form.content + '\n\n' + content });
+          } else {
+            setForm({ ...form, content });
+          }
+        }}
+        onUpdateMeta={(meta) => {
+          const updates: Partial<ArticleForm> = {};
+          if (meta.title) updates.title = meta.title;
+          if (meta.excerpt) updates.excerpt = meta.excerpt;
+          if (meta.slug) updates.slug = meta.slug;
+          if (meta.tags) updates.tags = meta.tags;
+          setForm({ ...form, ...updates });
+        }}
+      />
     </div>
   );
 }

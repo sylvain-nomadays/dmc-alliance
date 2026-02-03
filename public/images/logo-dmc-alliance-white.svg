@@ -1,8 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50">
-  <text x="10" y="35" font-family="Georgia, serif" font-size="24" font-weight="bold" fill="white">
-    THE DMC
-  </text>
-  <text x="10" y="48" font-family="Arial, sans-serif" font-size="10" letter-spacing="3" fill="rgba(255,255,255,0.8)">
-    ALLIANCE
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 100">
+  <!-- Three figures forming a wave/connection - White version -->
+  <g transform="translate(40, 10)">
+    <!-- First figure -->
+    <circle cx="30" cy="18" r="8" fill="white"/>
+    <path d="M22 26 Q30 35 15 52" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+    <!-- Second figure - higher position -->
+    <circle cx="95" cy="8" r="8" fill="white" fill-opacity="0.9"/>
+    <path d="M38 36 Q65 20 87 16" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-opacity="0.9"/>
+    <path d="M103 16 Q115 22 130 38" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-opacity="0.85"/>
+
+    <!-- Third figure -->
+    <circle cx="165" cy="30" r="8" fill="white" fill-opacity="0.8"/>
+    <path d="M138 42 Q155 38 157 38" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-opacity="0.8"/>
+  </g>
+
+  <!-- Text: DMC Alliance -->
+  <text x="52" y="85" font-family="'Playfair Display', Georgia, serif" font-size="28" font-weight="700" fill="white" letter-spacing="1">DMC</text>
+  <text x="120" y="85" font-family="'Playfair Display', Georgia, serif" font-size="28" font-weight="400" fill="white" fill-opacity="0.9" letter-spacing="1">Alliance</text>
 </svg>

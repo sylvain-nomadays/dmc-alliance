@@ -5,34 +5,29 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
+interface ServiceData {
+  title: string;
+  description: string;
+  features: string[];
+  image?: string;
+}
+
 interface ServicesSectionProps {
   locale: string;
   translations: {
     title: string;
     subtitle: string;
-    tailorMade: {
-      title: string;
-      description: string;
-      features: string[];
-    };
-    groups: {
-      title: string;
-      description: string;
-      features: string[];
-    };
-    gir: {
-      title: string;
-      description: string;
-      features: string[];
-    };
+    tailorMade: ServiceData;
+    groups: ServiceData;
+    gir: ServiceData;
   };
 }
 
-const services = [
+const servicesConfig = [
   {
     key: 'tailorMade',
     href: '/contact?service=tailor-made',
-    image: '/images/services/tailor-made.jpg',
+    defaultImage: '/images/services/tailor-made.jpg',
     icon: (
       <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -43,7 +38,7 @@ const services = [
   {
     key: 'groups',
     href: '/contact?service=groups',
-    image: '/images/services/groups.jpg',
+    defaultImage: '/images/services/groups.jpg',
     icon: (
       <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -54,7 +49,7 @@ const services = [
   {
     key: 'gir',
     href: '/gir',
-    image: '/images/services/gir.jpg',
+    defaultImage: '/images/services/gir.jpg',
     icon: (
       <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -98,14 +93,11 @@ export function ServicesSection({ locale, translations }: ServicesSectionProps) 
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {services.map((service) => {
+          {servicesConfig.map((service) => {
             const translationKey = service.key as keyof typeof translations;
-            const serviceData = translations[translationKey] as {
-              title: string;
-              description: string;
-              features: string[];
-            };
+            const serviceData = translations[translationKey] as ServiceData;
             const colors = colorClasses[service.color as keyof typeof colorClasses];
+            const imageUrl = serviceData.image || service.defaultImage;
 
             return (
               <Link
@@ -117,7 +109,7 @@ export function ServicesSection({ locale, translations }: ServicesSectionProps) 
                   {/* Image */}
                   <div className="relative aspect-[16/10] overflow-hidden">
                     <Image
-                      src={service.image}
+                      src={imageUrl}
                       alt={serviceData.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"

@@ -21,6 +21,11 @@ export interface SupabaseDestination {
   highlights: string[] | null;
   best_time: string | null;
   ideal_duration: string | null;
+  // Video webinar fields
+  video_url: string | null;
+  video_title_fr: string | null;
+  video_title_en: string | null;
+  video_duration: string | null;
   partner?: {
     id: string;
     name: string;
@@ -63,7 +68,7 @@ export async function getDestinationWithImage(slug: string): Promise<Destination
 
   // Merge Supabase data with static data
   // Use Supabase image_url if available, otherwise use static
-  return {
+  const result: DestinationDetail = {
     ...staticData,
     // Override image with Supabase URL if available
     images: {
@@ -76,6 +81,20 @@ export async function getDestinationWithImage(slug: string): Promise<Destination
       en: data.description_en || staticData.description.en,
     },
   };
+
+  // Override webinarVideo with Supabase data if available
+  if (data.video_url) {
+    result.webinarVideo = {
+      url: data.video_url,
+      title: {
+        fr: data.video_title_fr || 'Vidéo de présentation',
+        en: data.video_title_en || 'Presentation video',
+      },
+      duration: data.video_duration || '',
+    };
+  }
+
+  return result;
 }
 
 /**

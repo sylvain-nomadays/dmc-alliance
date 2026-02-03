@@ -11,15 +11,18 @@ interface CtaSectionProps {
     subtitle: string;
     button: string;
   };
+  backgroundImage?: string;
 }
 
-export function CtaSection({ locale, translations }: CtaSectionProps) {
+export function CtaSection({ locale, translations, backgroundImage }: CtaSectionProps) {
+  const bgImage = backgroundImage || '/images/cta/collaboration.jpg';
+
   return (
     <section className="relative py-24 md:py-32 overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
-          src="/images/cta/collaboration.jpg"
+          src={bgImage}
           alt=""
           fill
           className="object-cover"

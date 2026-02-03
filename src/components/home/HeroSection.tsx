@@ -19,13 +19,14 @@ interface HeroSectionProps {
   images?: string[];
 }
 
-// Default local images - used as fallback
+// Default images - using destination images as fallback
+// These will be replaced by Supabase images when available
 const defaultLocalImages = [
-  '/images/hero/mongolia-horses.jpg',
-  '/images/hero/tanzania-safari.jpg',
-  '/images/hero/thailand-temple.jpg',
-  '/images/hero/kyrgyzstan-mountains.jpg',
-  '/images/hero/madagascar-lemur.jpg',
+  '/images/destinations/mongolie.jpg',
+  '/images/destinations/tanzanie.jpg',
+  '/images/destinations/thailande.jpg',
+  '/images/destinations/kirghizistan.jpg',
+  '/images/destinations/madagascar.jpg',
 ];
 
 export function HeroSection({ locale, translations, images }: HeroSectionProps) {

@@ -9,7 +9,9 @@ import { partners } from '@/data/partners';
 import { getPartnerProfile } from '@/data/partners-profiles';
 import { getCircuitsByPartner } from '@/data/circuits';
 import { getDestinationBySlug } from '@/data/destinations';
-import { getPartnerWithImage } from '@/lib/supabase/partners';
+import { getPartnerWithFullProfile, type PartnerVideo, type TeamMember, type Testimonial } from '@/lib/supabase/partners';
+import { getGirCircuitsByPartner, type DbCircuit } from '@/lib/supabase/circuits';
+import { VideoCarousel } from '@/components/partners/VideoCarousel';
 import { cn } from '@/lib/utils';
 import {
   GlobeAltIcon,
@@ -21,7 +23,6 @@ import {
   CalendarIcon,
   StarIcon,
   ArrowTopRightOnSquareIcon,
-  PlayCircleIcon,
   ChevronRightIcon,
   HeartIcon,
   ShieldCheckIcon,
@@ -73,15 +74,23 @@ export default async function PartnerProfilePage({ params }: Props) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  // Get partner with Supabase image (falls back to static if not in Supabase)
-  const partner = await getPartnerWithImage(slug);
+  // Get partner with full profile from Supabase (falls back to static if not in Supabase)
+  const partner = await getPartnerWithFullProfile(slug);
 
   if (!partner) {
     notFound();
   }
 
-  const profile = getPartnerProfile(partner.id);
-  const circuits = getCircuitsByPartner(partner.id);
+  // Get static profile as additional fallback for values, b2bServices, uniqueSellingPoints
+  const staticProfile = getPartnerProfile(partner.id);
+
+  // Get GIR circuits from Supabase first, fallback to static
+  const girCircuitsFromDb = await getGirCircuitsByPartner(partner.slug);
+  const staticCircuits = getCircuitsByPartner(partner.id);
+
+  // Use DB circuits if available, otherwise static
+  const hasDbCircuits = girCircuitsFromDb.length > 0;
+
   const isFr = locale === 'fr';
 
   // Get destination details
@@ -90,13 +99,32 @@ export default async function PartnerProfilePage({ params }: Props) {
     detail: getDestinationBySlug(d.slug)
   }));
 
+  // Determine if we have enough profile data to show the detailed view
+  const hasProfileData = partner.story || partner.mission || staticProfile;
+
   return (
     <div className="pt-16">
       {/* Hero Section */}
       <section className="relative bg-deep-blue-900 py-16 lg:py-24">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{ backgroundImage: 'url("/images/patterns/topography.svg")', backgroundSize: '400px' }} />
-        </div>
+        {/* Cover image if available */}
+        {partner.coverImage && (
+          <div className="absolute inset-0">
+            <Image
+              src={partner.coverImage}
+              alt={partner.name}
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-deep-blue-900/80" />
+          </div>
+        )}
+        {/* Pattern fallback if no cover image */}
+        {!partner.coverImage && (
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{ backgroundImage: 'url("/images/patterns/topography.svg")', backgroundSize: '400px' }} />
+          </div>
+        )}
 
         <div className="container mx-auto px-4 relative z-10">
           {/* Breadcrumb */}
@@ -115,19 +143,19 @@ export default async function PartnerProfilePage({ params }: Props) {
           <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-12">
             {/* Logo & Basic Info */}
             <div className="flex-shrink-0">
-              <div className="w-32 h-32 lg:w-40 lg:h-40 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4">
+              <div className="w-32 h-32 lg:w-40 lg:h-40 bg-white rounded-2xl shadow-xl overflow-hidden">
                 {partner.logo ? (
-                  <Image
-                    src={partner.logo}
-                    alt={partner.name}
-                    width={120}
-                    height={120}
-                    className="object-contain"
+                  <div
+                    className="w-full h-full bg-contain bg-center bg-no-repeat"
+                    style={{ backgroundImage: `url(${partner.logo})` }}
+                    aria-label={partner.name}
                   />
                 ) : (
-                  <span className="text-5xl font-heading text-deep-blue-600">
-                    {partner.name.charAt(0)}
-                  </span>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-5xl font-heading text-deep-blue-600">
+                      {partner.name.charAt(0)}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -191,27 +219,37 @@ export default async function PartnerProfilePage({ params }: Props) {
             </div>
 
             {/* Quick Stats (if profile exists) */}
-            {profile && (
+            {(staticProfile || partner.teamSize || partner.foundedYear) && (
               <div className="w-full lg:w-auto lg:flex-shrink-0">
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 grid grid-cols-2 lg:grid-cols-1 gap-4">
-                  <div className="text-center lg:text-left">
-                    <div className="text-3xl font-bold text-white">{profile.stats.yearsExperience}</div>
-                    <div className="text-white/60 text-sm">{isFr ? "années d'expérience" : 'years experience'}</div>
-                  </div>
-                  <div className="text-center lg:text-left">
-                    <div className="text-3xl font-bold text-white">{profile.stats.travelersPerYear}+</div>
-                    <div className="text-white/60 text-sm">{isFr ? 'voyageurs/an' : 'travelers/year'}</div>
-                  </div>
-                  {profile.stats.satisfactionRate && (
+                  {(partner.foundedYear || staticProfile?.stats.yearsExperience) && (
                     <div className="text-center lg:text-left">
-                      <div className="text-3xl font-bold text-white">{profile.stats.satisfactionRate}%</div>
+                      <div className="text-3xl font-bold text-white">
+                        {partner.foundedYear
+                          ? new Date().getFullYear() - partner.foundedYear
+                          : staticProfile?.stats.yearsExperience}
+                      </div>
+                      <div className="text-white/60 text-sm">{isFr ? "années d'expérience" : 'years experience'}</div>
+                    </div>
+                  )}
+                  {staticProfile?.stats.travelersPerYear && (
+                    <div className="text-center lg:text-left">
+                      <div className="text-3xl font-bold text-white">{staticProfile.stats.travelersPerYear}+</div>
+                      <div className="text-white/60 text-sm">{isFr ? 'voyageurs/an' : 'travelers/year'}</div>
+                    </div>
+                  )}
+                  {staticProfile?.stats.satisfactionRate && (
+                    <div className="text-center lg:text-left">
+                      <div className="text-3xl font-bold text-white">{staticProfile.stats.satisfactionRate}%</div>
                       <div className="text-white/60 text-sm">{isFr ? 'satisfaction' : 'satisfaction'}</div>
                     </div>
                   )}
-                  <div className="text-center lg:text-left">
-                    <div className="text-3xl font-bold text-white">{profile.teamSize}</div>
-                    <div className="text-white/60 text-sm">{isFr ? 'collaborateurs' : 'team members'}</div>
-                  </div>
+                  {(partner.teamSize || staticProfile?.teamSize) && (
+                    <div className="text-center lg:text-left">
+                      <div className="text-3xl font-bold text-white">{partner.teamSize || staticProfile?.teamSize}</div>
+                      <div className="text-white/60 text-sm">{isFr ? 'collaborateurs' : 'team members'}</div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -237,104 +275,141 @@ export default async function PartnerProfilePage({ params }: Props) {
       </section>
 
       {/* Main Content */}
-      {profile ? (
+      {hasProfileData ? (
         <div className="bg-white">
           <div className="container mx-auto px-4 py-12 lg:py-16">
             <div className="grid lg:grid-cols-3 gap-12">
               {/* Left Column - Main Content */}
               <div className="lg:col-span-2 space-y-12">
-                {/* Story Section */}
-                <section>
-                  <h2 className="text-2xl md:text-3xl font-heading text-gray-900 mb-6">
-                    {isFr ? 'Notre histoire' : 'Our Story'}
-                  </h2>
-                  <div className="prose prose-lg max-w-none text-gray-600">
-                    {(isFr ? profile.story.fr : profile.story.en).split('\n\n').map((p, i) => (
-                      <p key={i}>{p}</p>
-                    ))}
-                  </div>
-                </section>
-
-                {/* Video Presentation */}
-                {profile.presentationVideo && (
-                  <section className="bg-gray-900 rounded-2xl overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-center gap-3">
-                        <PlayCircleIcon className="w-8 h-8 text-terracotta-500" />
-                        <h2 className="text-xl font-heading text-white">
-                          {isFr ? profile.presentationVideo.title.fr : profile.presentationVideo.title.en}
-                        </h2>
-                      </div>
-                    </div>
-                    <div className="aspect-video">
-                      <iframe
-                        src={profile.presentationVideo.url}
-                        title={isFr ? profile.presentationVideo.title.fr : profile.presentationVideo.title.en}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
+                {/* Story Section - from Supabase or static */}
+                {(partner.story || staticProfile?.story) && (
+                  <section>
+                    <h2 className="text-2xl md:text-3xl font-heading text-gray-900 mb-6">
+                      {isFr ? 'Notre histoire' : 'Our Story'}
+                    </h2>
+                    <div
+                      className="prose prose-lg max-w-none text-gray-600 prose-headings:text-gray-900 prose-strong:text-gray-900 prose-ul:list-disc prose-li:marker:text-terracotta-500"
+                      dangerouslySetInnerHTML={{
+                        __html: isFr
+                          ? (partner.story?.fr || staticProfile?.story?.fr || '')
+                          : (partner.story?.en || staticProfile?.story?.en || '')
+                      }}
+                    />
                   </section>
                 )}
 
-                {/* Mission & Values */}
-                <section>
-                  <h2 className="text-2xl md:text-3xl font-heading text-gray-900 mb-4">
-                    {isFr ? 'Notre mission' : 'Our Mission'}
-                  </h2>
-                  <p className="text-lg text-gray-600 mb-8 italic border-l-4 border-terracotta-500 pl-4">
-                    "{isFr ? profile.mission.fr : profile.mission.en}"
-                  </p>
+                {/* Video Carousel - from Supabase or static */}
+                {((partner.videos && partner.videos.length > 0) || staticProfile?.presentationVideo) && (
+                  <VideoCarousel
+                    videos={partner.videos || []}
+                    staticVideo={staticProfile?.presentationVideo}
+                    locale={locale}
+                  />
+                )}
 
-                  <h3 className="text-xl font-heading text-gray-900 mb-6">
-                    {isFr ? 'Nos valeurs' : 'Our Values'}
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {profile.values.map((value, idx) => (
-                      <div key={idx} className="bg-sand-50 rounded-xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-terracotta-100 rounded-full flex items-center justify-center">
-                            {idx === 0 && <HeartIcon className="w-5 h-5 text-terracotta-600" />}
-                            {idx === 1 && <ShieldCheckIcon className="w-5 h-5 text-terracotta-600" />}
-                            {idx === 2 && <SparklesIcon className="w-5 h-5 text-terracotta-600" />}
-                            {idx === 3 && <AcademicCapIcon className="w-5 h-5 text-terracotta-600" />}
-                          </div>
-                          <h4 className="font-semibold text-gray-900">
-                            {isFr ? value.title.fr : value.title.en}
-                          </h4>
+                {/* Mission & Values - from Supabase or static */}
+                {(partner.mission || staticProfile?.mission) && (
+                  <section>
+                    <h2 className="text-2xl md:text-3xl font-heading text-gray-900 mb-4">
+                      {isFr ? 'Notre mission' : 'Our Mission'}
+                    </h2>
+                    <div
+                      className="prose prose-lg max-w-none text-gray-600 mb-8 prose-headings:text-gray-900 prose-strong:text-gray-900 prose-ul:list-disc prose-li:marker:text-terracotta-500 prose-blockquote:border-l-4 prose-blockquote:border-terracotta-500 prose-blockquote:pl-4 prose-blockquote:italic"
+                      dangerouslySetInnerHTML={{
+                        __html: isFr
+                          ? (partner.mission?.fr || staticProfile?.mission?.fr || '')
+                          : (partner.mission?.en || staticProfile?.mission?.en || '')
+                      }}
+                    />
+
+                    {staticProfile?.values && staticProfile.values.length > 0 && (
+                      <>
+                        <h3 className="text-xl font-heading text-gray-900 mb-6">
+                          {isFr ? 'Nos valeurs' : 'Our Values'}
+                        </h3>
+                        <div className="grid md:grid-cols-2 gap-6">
+                          {staticProfile.values.map((value, idx) => (
+                            <div key={idx} className="bg-sand-50 rounded-xl p-6">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-terracotta-100 rounded-full flex items-center justify-center">
+                                  {idx === 0 && <HeartIcon className="w-5 h-5 text-terracotta-600" />}
+                                  {idx === 1 && <ShieldCheckIcon className="w-5 h-5 text-terracotta-600" />}
+                                  {idx === 2 && <SparklesIcon className="w-5 h-5 text-terracotta-600" />}
+                                  {idx === 3 && <AcademicCapIcon className="w-5 h-5 text-terracotta-600" />}
+                                </div>
+                                <h4 className="font-semibold text-gray-900">
+                                  {isFr ? value.title.fr : value.title.en}
+                                </h4>
+                              </div>
+                              <p className="text-gray-600 text-sm">
+                                {isFr ? value.description.fr : value.description.en}
+                              </p>
+                            </div>
+                          ))}
                         </div>
-                        <p className="text-gray-600 text-sm">
-                          {isFr ? value.description.fr : value.description.en}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                      </>
+                    )}
+                  </section>
+                )}
 
-                {/* Unique Selling Points */}
-                <section className="bg-deep-blue-50 rounded-2xl p-8">
-                  <h2 className="text-2xl font-heading text-gray-900 mb-6">
-                    {isFr ? 'Ce qui nous rend uniques' : 'What makes us unique'}
-                  </h2>
-                  <ul className="space-y-4">
-                    {(isFr ? profile.uniqueSellingPoints.fr : profile.uniqueSellingPoints.en).map((point, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <CheckBadgeIcon className="w-6 h-6 text-deep-blue-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
+                {/* Unique Selling Points - from static only */}
+                {staticProfile?.uniqueSellingPoints && (
+                  <section className="bg-deep-blue-50 rounded-2xl p-8">
+                    <h2 className="text-2xl font-heading text-gray-900 mb-6">
+                      {isFr ? 'Ce qui nous rend uniques' : 'What makes us unique'}
+                    </h2>
+                    <ul className="space-y-4">
+                      {(isFr ? staticProfile.uniqueSellingPoints.fr : staticProfile.uniqueSellingPoints.en).map((point, idx) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <CheckBadgeIcon className="w-6 h-6 text-deep-blue-600 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700">{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
 
-                {/* Team Section */}
-                {profile.team.length > 0 && (
+                {/* Team Section - from Supabase or static */}
+                {(partner.teamMembers && partner.teamMembers.length > 0) || (staticProfile?.team && staticProfile.team.length > 0) ? (
                   <section>
                     <h2 className="text-2xl md:text-3xl font-heading text-gray-900 mb-6">
                       {isFr ? "L'équipe" : 'The Team'}
                     </h2>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {profile.team.map((member, idx) => (
+                      {/* Supabase team members first */}
+                      {partner.teamMembers?.map((member) => (
+                        <div key={member.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                          <div className="aspect-square bg-gray-100 relative">
+                            {member.photo_url ? (
+                              <Image
+                                src={member.photo_url}
+                                alt={member.name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-6xl text-gray-300">
+                                  {member.name.charAt(0)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-4">
+                            <h3 className="font-semibold text-gray-900">{member.name}</h3>
+                            <p className="text-terracotta-600 text-sm mb-2">
+                              {isFr ? member.role_fr : member.role_en}
+                            </p>
+                            {(member.bio_fr || member.bio_en) && (
+                              <p className="text-gray-600 text-sm">
+                                {isFr ? member.bio_fr : member.bio_en}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {/* Static team members if no Supabase data */}
+                      {!partner.teamMembers?.length && staticProfile?.team.map((member, idx) => (
                         <div key={idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                           <div className="aspect-square bg-gray-100 relative">
                             {member.photo ? (
@@ -367,16 +442,38 @@ export default async function PartnerProfilePage({ params }: Props) {
                       ))}
                     </div>
                   </section>
-                )}
+                ) : null}
 
-                {/* Testimonials */}
-                {profile.testimonials && profile.testimonials.length > 0 && (
+                {/* Testimonials - from Supabase or static */}
+                {((partner.testimonials && partner.testimonials.length > 0) || (staticProfile?.testimonials && staticProfile.testimonials.length > 0)) && (
                   <section className="bg-terracotta-50 rounded-2xl p-8">
                     <h2 className="text-2xl font-heading text-gray-900 mb-6">
                       {isFr ? 'Ils nous font confiance' : 'They trust us'}
                     </h2>
                     <div className="space-y-6">
-                      {profile.testimonials.map((testimonial, idx) => (
+                      {/* Supabase testimonials first */}
+                      {partner.testimonials?.map((testimonial) => (
+                        <blockquote key={testimonial.id} className="bg-white rounded-xl p-6">
+                          <p className="text-gray-700 italic mb-4">
+                            "{isFr ? testimonial.content_fr : (testimonial.content_en || testimonial.content_fr)}"
+                          </p>
+                          <footer className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-terracotta-100 rounded-full flex items-center justify-center">
+                              <span className="text-terracotta-600 font-semibold">
+                                {testimonial.author_name.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">{testimonial.author_name}</div>
+                              {testimonial.author_company && (
+                                <div className="text-gray-500 text-sm">{testimonial.author_company}</div>
+                              )}
+                            </div>
+                          </footer>
+                        </blockquote>
+                      ))}
+                      {/* Static testimonials if no Supabase data */}
+                      {!partner.testimonials?.length && staticProfile?.testimonials?.map((testimonial, idx) => (
                         <blockquote key={idx} className="bg-white rounded-xl p-6">
                           <p className="text-gray-700 italic mb-4">
                             "{isFr ? testimonial.quote.fr : testimonial.quote.en}"
@@ -402,40 +499,42 @@ export default async function PartnerProfilePage({ params }: Props) {
               {/* Right Column - Sidebar */}
               <div className="lg:col-span-1">
                 <div className="sticky top-24 space-y-6">
-                  {/* B2B Services Card */}
-                  <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-                    <div className="bg-sage-600 p-4">
-                      <h3 className="text-lg font-heading text-white text-center">
-                        {isFr ? 'Services B2B' : 'B2B Services'}
-                      </h3>
-                    </div>
-                    <div className="p-6">
-                      <ul className="space-y-3">
-                        {(isFr ? profile.b2bServices.fr : profile.b2bServices.en).map((service, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                            <CheckBadgeIcon className="w-5 h-5 text-sage-500 flex-shrink-0" />
-                            {service}
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="mt-6 pt-6 border-t border-gray-100">
-                        <Link href={`/${locale}/contact?partner=${partner.slug}&type=b2b`} className="block">
-                          <Button variant="primary" fullWidth>
-                            {isFr ? 'Devenir partenaire' : 'Become a partner'}
-                          </Button>
-                        </Link>
+                  {/* B2B Services Card - from static only */}
+                  {staticProfile?.b2bServices && (
+                    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+                      <div className="bg-sage-600 p-4">
+                        <h3 className="text-lg font-heading text-white text-center">
+                          {isFr ? 'Services B2B' : 'B2B Services'}
+                        </h3>
+                      </div>
+                      <div className="p-6">
+                        <ul className="space-y-3">
+                          {(isFr ? staticProfile.b2bServices.fr : staticProfile.b2bServices.en).map((service, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                              <CheckBadgeIcon className="w-5 h-5 text-sage-500 flex-shrink-0" />
+                              {service}
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-6 pt-6 border-t border-gray-100">
+                          <Link href={`/${locale}/contact?partner=${partner.slug}&type=b2b`} className="block">
+                            <Button variant="primary" fullWidth>
+                              {isFr ? 'Devenir partenaire' : 'Become a partner'}
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Certifications */}
-                  {profile.certifications && profile.certifications.length > 0 && (
+                  {/* Certifications - from Supabase or static */}
+                  {((partner.certifications && partner.certifications.length > 0) || (staticProfile?.certifications && staticProfile.certifications.length > 0)) && (
                     <div className="bg-sand-50 rounded-2xl p-6">
                       <h3 className="font-semibold text-gray-900 mb-4">
                         {isFr ? 'Certifications & Labels' : 'Certifications & Labels'}
                       </h3>
                       <div className="space-y-2">
-                        {profile.certifications.map((cert, idx) => (
+                        {(partner.certifications || staticProfile?.certifications || []).map((cert, idx) => (
                           <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
                             <CheckBadgeIcon className="w-5 h-5 text-terracotta-500" />
                             {cert}
@@ -492,7 +591,7 @@ export default async function PartnerProfilePage({ params }: Props) {
           </div>
         </div>
       ) : (
-        // Fallback for partners without detailed profile
+        // Fallback for partners without detailed profile data
         <div className="bg-white py-12">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
@@ -513,7 +612,7 @@ export default async function PartnerProfilePage({ params }: Props) {
       )}
 
       {/* GIR Section (if partner has GIR) */}
-      {circuits.length > 0 && (
+      {(hasDbCircuits || staticCircuits.length > 0) && (
         <section className="bg-sand-50 py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-10">
@@ -531,43 +630,82 @@ export default async function PartnerProfilePage({ params }: Props) {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {circuits.slice(0, 3).map((circuit) => (
-                <Link
-                  key={circuit.id}
-                  href={`/${locale}/gir/${circuit.slug}`}
-                  className="bg-white rounded-xl overflow-hidden shadow-card hover:shadow-lg transition-shadow group"
-                >
-                  <div className="aspect-[16/10] relative">
-                    <Image
-                      src={circuit.images.main}
-                      alt={isFr ? circuit.title.fr : circuit.title.en}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 left-3 bg-terracotta-500 text-white text-xs font-bold px-2 py-1 rounded">
-                      GIR
+              {/* Display DB circuits if available */}
+              {hasDbCircuits ? (
+                girCircuitsFromDb.slice(0, 3).map((circuit) => (
+                  <Link
+                    key={circuit.id}
+                    href={`/${locale}/gir/${circuit.slug}`}
+                    className="bg-white rounded-xl overflow-hidden shadow-card hover:shadow-lg transition-shadow group"
+                  >
+                    <div className="aspect-[16/10] relative bg-gray-100">
+                      <Image
+                        src={circuit.image_url || '/images/placeholder-circuit.jpg'}
+                        alt={circuit.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 bg-terracotta-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        GIR
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-heading text-lg text-gray-900 mb-2 group-hover:text-terracotta-600 transition-colors">
-                      {isFr ? circuit.title.fr : circuit.title.en}
-                    </h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon className="w-4 h-4" />
-                        {circuit.duration.days} {isFr ? 'jours' : 'days'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <UserGroupIcon className="w-4 h-4" />
-                        {circuit.departures.filter(d => d.status !== 'full').length} {isFr ? 'départs' : 'departures'}
-                      </span>
+                    <div className="p-5">
+                      <h3 className="font-heading text-lg text-gray-900 mb-2 group-hover:text-terracotta-600 transition-colors">
+                        {circuit.title}
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="w-4 h-4" />
+                          {circuit.duration_days} {isFr ? 'jours' : 'days'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <UserGroupIcon className="w-4 h-4" />
+                          {circuit.departures?.filter(d => d.status !== 'full').length || 0} {isFr ? 'départs' : 'departures'}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              ) : (
+                /* Fallback to static circuits */
+                staticCircuits.slice(0, 3).map((circuit) => (
+                  <Link
+                    key={circuit.id}
+                    href={`/${locale}/gir/${circuit.slug}`}
+                    className="bg-white rounded-xl overflow-hidden shadow-card hover:shadow-lg transition-shadow group"
+                  >
+                    <div className="aspect-[16/10] relative bg-gray-100">
+                      <Image
+                        src={circuit.images.main}
+                        alt={isFr ? circuit.title.fr : circuit.title.en}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 bg-terracotta-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        GIR
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-heading text-lg text-gray-900 mb-2 group-hover:text-terracotta-600 transition-colors">
+                        {isFr ? circuit.title.fr : circuit.title.en}
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="w-4 h-4" />
+                          {circuit.duration.days} {isFr ? 'jours' : 'days'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <UserGroupIcon className="w-4 h-4" />
+                          {circuit.departures.filter(d => d.status !== 'full').length} {isFr ? 'départs' : 'departures'}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
 
-            {circuits.length > 3 && (
+            {(hasDbCircuits ? girCircuitsFromDb.length : staticCircuits.length) > 3 && (
               <div className="text-center mt-8">
                 <Link href={`/${locale}/gir?partner=${partner.slug}`}>
                   <Button variant="outline" size="lg">

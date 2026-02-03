@@ -6,8 +6,8 @@ import { setRequestLocale } from 'next-intl/server';
 import { locales } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { partners } from '@/data/partners';
-import { getCircuitBySlug, getAllCircuitSlugs, type CircuitDeparture, type CircuitDay } from '@/data/circuits';
-import { getCircuitWithImage } from '@/lib/supabase/circuits';
+import { getCircuitBySlug, getAllCircuitSlugs, type CircuitDeparture, type CircuitDay, type Circuit } from '@/data/circuits';
+import { getCircuitBySlugFromDb, type DbCircuit } from '@/lib/supabase/circuits';
 import { cn } from '@/lib/utils';
 import {
   CalendarIcon,
@@ -28,10 +28,113 @@ type Props = {
   params: Promise<{ locale: string; slug: string }>;
 };
 
+// Helper to convert DB circuit to static circuit format for compatibility
+function convertDbCircuitToStatic(dbCircuit: DbCircuit): Circuit {
+  const getDifficultyString = (level: number | null): 'easy' | 'moderate' | 'challenging' | 'expert' => {
+    switch (level) {
+      case 1: return 'easy';
+      case 2: return 'moderate';
+      case 3: return 'challenging';
+      case 4:
+      case 5: return 'expert';
+      default: return 'moderate';
+    }
+  };
+
+  return {
+    id: dbCircuit.id,
+    slug: dbCircuit.slug,
+    partnerId: dbCircuit.partner?.id || dbCircuit.partner_id || '',
+    destinationSlug: dbCircuit.destination?.slug || '',
+    title: {
+      fr: dbCircuit.title,
+      en: dbCircuit.title, // Could add title_en field later
+    },
+    subtitle: {
+      fr: dbCircuit.subtitle || '',
+      en: dbCircuit.subtitle || '',
+    },
+    duration: {
+      days: dbCircuit.duration_days,
+      nights: dbCircuit.duration_days > 0 ? dbCircuit.duration_days - 1 : 0,
+    },
+    difficulty: getDifficultyString(dbCircuit.difficulty_level),
+    themes: [],
+    summary: {
+      fr: dbCircuit.description_fr || '',
+      en: dbCircuit.description_en || dbCircuit.description_fr || '',
+    },
+    highlights: {
+      fr: dbCircuit.highlights_fr || [],
+      en: dbCircuit.highlights_en || dbCircuit.highlights_fr || [],
+    },
+    itinerary: (dbCircuit.itinerary || []).map(day => ({
+      day: day.day,
+      title: {
+        fr: day.title_fr,
+        en: day.title_en || day.title_fr,
+      },
+      description: {
+        fr: day.description_fr,
+        en: day.description_en || day.description_fr,
+      },
+      meals: day.meals,
+      accommodation: day.accommodation ? {
+        fr: day.accommodation,
+        en: day.accommodation,
+      } : undefined,
+    })),
+    included: {
+      fr: dbCircuit.included_fr || [],
+      en: dbCircuit.included_en || dbCircuit.included_fr || [],
+    },
+    notIncluded: {
+      fr: dbCircuit.not_included_fr || [],
+      en: dbCircuit.not_included_en || dbCircuit.not_included_fr || [],
+    },
+    practicalInfo: {
+      groupSize: {
+        min: dbCircuit.group_size_min || 2,
+        max: dbCircuit.group_size_max || 16,
+      },
+      physicalCondition: {
+        fr: '',
+        en: '',
+      },
+      bestSeason: {
+        fr: '',
+        en: '',
+      },
+    },
+    departures: (dbCircuit.departures || []).map(d => ({
+      id: d.id,
+      startDate: d.start_date,
+      endDate: d.end_date || d.start_date,
+      availableSpots: (d.total_seats || 0) - (d.booked_seats || 0),
+      totalSpots: d.total_seats || 0,
+      status: (d.status || 'available') as 'available' | 'few_spots' | 'full' | 'guaranteed',
+      publicPrice: d.price || dbCircuit.price_from || 0,
+    })),
+    images: {
+      main: dbCircuit.image_url || '/images/placeholder-circuit.jpg',
+      gallery: dbCircuit.gallery_urls || [],
+    },
+    isGir: true,
+    commissionInfo: {
+      fr: 'Commission attractive sur demande. Contactez-nous pour connaître vos conditions partenaire.',
+      en: 'Attractive commission on request. Contact us to learn about your partner conditions.',
+    },
+  };
+}
+
 // Generate metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
-  const circuit = getCircuitBySlug(slug);
+
+  // Try DB first, then static
+  const dbCircuit = await getCircuitBySlugFromDb(slug);
+  const staticCircuit = getCircuitBySlug(slug);
+  const circuit = dbCircuit ? convertDbCircuitToStatic(dbCircuit) : staticCircuit;
 
   if (!circuit) {
     return { title: 'Circuit not found' };
@@ -71,15 +174,39 @@ export default async function CircuitPage({ params }: Props) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  // Get circuit with Supabase image (falls back to static if not in Supabase)
-  const circuit = await getCircuitWithImage(slug);
+  // Try DB first for circuits created via admin, then fall back to static data
+  const dbCircuit = await getCircuitBySlugFromDb(slug);
+  const staticCircuit = getCircuitBySlug(slug);
+
+  // Convert DB circuit if found, otherwise use static
+  const circuit = dbCircuit ? convertDbCircuitToStatic(dbCircuit) : staticCircuit;
 
   if (!circuit) {
     notFound();
   }
 
-  const partner = partners.find((p) => p.id === circuit.partnerId);
-  const destination = partner?.destinations.find((d) => d.slug === circuit.destinationSlug);
+  // Get partner info - from DB circuit or static partners
+  const dbPartner = dbCircuit?.partner;
+  const staticPartner = partners.find((p) => p.id === circuit.partnerId);
+
+  // Build partner object with available info
+  const partner = dbPartner ? {
+    ...staticPartner,
+    id: dbPartner.id,
+    name: dbPartner.name,
+    slug: dbPartner.slug,
+    logo_url: dbPartner.logo_url,
+    description: staticPartner?.description || { fr: '', en: '' },
+    destinations: staticPartner?.destinations || [],
+  } : staticPartner;
+
+  // Get destination info
+  const dbDestination = dbCircuit?.destination;
+  const destination = dbDestination ? {
+    slug: dbDestination.slug,
+    name: dbDestination.name_fr,
+    nameEn: dbDestination.name_en || dbDestination.name_fr,
+  } : partner?.destinations.find((d) => d.slug === circuit.destinationSlug);
   const isFr = locale === 'fr';
 
   // Get upcoming departures
@@ -363,67 +490,108 @@ export default async function CircuitPage({ params }: Props) {
             {/* Right Column - Sticky Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
-                {/* Departures Card */}
+                {/* Departures Card - Public view (only next departure) */}
                 <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
                   <div className="bg-terracotta-500 p-4 text-center">
                     <h3 className="text-lg font-heading text-white">
-                      {isFr ? 'Dates et tarifs' : 'Dates and prices'}
+                      {isFr ? 'Prochain départ' : 'Next departure'}
                     </h3>
-                    <p className="text-white/80 text-sm">
-                      {upcomingDepartures.length} {isFr ? 'départs disponibles' : 'departures available'}
-                    </p>
+                    {upcomingDepartures.length > 1 && (
+                      <p className="text-white/80 text-sm">
+                        +{upcomingDepartures.length - 1} {isFr ? 'autres dates disponibles' : 'more dates available'}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
-                    {upcomingDepartures.map((departure) => {
-                      const status = getStatusInfo(departure);
-                      return (
-                        <div
-                          key={departure.id}
-                          className={cn(
-                            'p-4 rounded-xl border',
-                            departure.status === 'full'
-                              ? 'bg-gray-50 opacity-60'
-                              : 'bg-white border-gray-200 hover:border-terracotta-300 transition-colors'
-                          )}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <div className="font-semibold text-gray-900">
-                                {formatShortDate(departure.startDate)} - {formatShortDate(departure.endDate)}
+                  <div className="p-4 space-y-3">
+                    {/* Show only the next departure */}
+                    {upcomingDepartures.length > 0 ? (
+                      <>
+                        {(() => {
+                          const departure = upcomingDepartures[0];
+                          const status = getStatusInfo(departure);
+                          return (
+                            <div
+                              className={cn(
+                                'p-4 rounded-xl border',
+                                departure.status === 'full'
+                                  ? 'bg-gray-50 opacity-60'
+                                  : 'bg-white border-gray-200'
+                              )}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <div className="font-semibold text-gray-900">
+                                    {formatShortDate(departure.startDate)} - {formatShortDate(departure.endDate)}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {new Date(departure.startDate).getFullYear()}
+                                  </div>
+                                </div>
+                                <span className={cn('text-xs font-medium px-2 py-1 rounded-full border', status.class)}>
+                                  {status.label}
+                                </span>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {new Date(departure.startDate).getFullYear()}
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <span className="text-2xl font-bold text-gray-900">
+                                    {departure.publicPrice.toLocaleString()}€
+                                  </span>
+                                  <span className="text-sm text-gray-500 ml-1">
+                                    /{isFr ? 'pers.' : 'pp'}
+                                  </span>
+                                </div>
+                                {departure.status !== 'full' && (
+                                  <Link
+                                    href={`/${locale}/contact?circuit=${circuit.slug}&departure=${departure.id}`}
+                                  >
+                                    <Button variant="primary" size="sm">
+                                      {isFr ? 'Réserver' : 'Book'}
+                                    </Button>
+                                  </Link>
+                                )}
                               </div>
                             </div>
-                            <span className={cn('text-xs font-medium px-2 py-1 rounded-full border', status.class)}>
-                              {status.label}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <span className="text-2xl font-bold text-gray-900">
-                                {departure.publicPrice.toLocaleString()}€
-                              </span>
-                              <span className="text-sm text-gray-500 ml-1">
-                                /{isFr ? 'pers.' : 'pp'}
-                              </span>
-                            </div>
-                            {departure.status !== 'full' && (
-                              <Link
-                                href={`/${locale}/contact?circuit=${circuit.slug}&departure=${departure.id}`}
-                              >
-                                <Button variant="primary" size="sm">
-                                  {isFr ? 'Réserver' : 'Book'}
-                                </Button>
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                          );
+                        })()}
 
-                    {upcomingDepartures.length === 0 && (
+                        {/* CTA to see all departures - requires agency account */}
+                        {upcomingDepartures.length > 1 && (
+                          <div className="mt-4 p-4 bg-deep-blue-50 rounded-xl border border-deep-blue-100">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 bg-deep-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <CalendarIcon className="w-5 h-5 text-deep-blue-600" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-deep-blue-900">
+                                  {isFr
+                                    ? `${upcomingDepartures.length - 1} autres dates disponibles`
+                                    : `${upcomingDepartures.length - 1} more dates available`
+                                  }
+                                </p>
+                                <p className="text-xs text-deep-blue-600 mt-1">
+                                  {isFr
+                                    ? 'Créez votre espace agence pour voir toutes les dates, les places disponibles et vos commissions.'
+                                    : 'Create your agency account to see all dates, available spots and your commissions.'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                            <Link href={`/${locale}/auth/register?redirect=/agency/circuits/${circuit.slug}`} className="block mt-3">
+                              <Button variant="primary" fullWidth size="sm">
+                                {isFr ? 'Créer mon espace agence' : 'Create my agency account'}
+                              </Button>
+                            </Link>
+                            <p className="text-xs text-center text-deep-blue-500 mt-2">
+                              {isFr ? 'Déjà inscrit ?' : 'Already registered?'}{' '}
+                              <Link href={`/${locale}/auth/login?redirect=/agency/circuits/${circuit.slug}`} className="underline hover:text-deep-blue-700">
+                                {isFr ? 'Se connecter' : 'Sign in'}
+                              </Link>
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
                       <div className="text-center py-8 text-gray-500">
                         {isFr ? 'Aucun départ programmé actuellement' : 'No departures currently scheduled'}
                       </div>
@@ -446,10 +614,20 @@ export default async function CircuitPage({ params }: Props) {
                 {partner && (
                   <div className="bg-deep-blue-900 rounded-2xl p-6 text-white">
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center">
-                        <span className="text-xl font-heading text-deep-blue-600">
-                          {partner.name.charAt(0)}
-                        </span>
+                      <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                        {partner.logo_url ? (
+                          <Image
+                            src={partner.logo_url}
+                            alt={partner.name}
+                            width={56}
+                            height={56}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xl font-heading text-deep-blue-600">
+                            {partner.name.charAt(0)}
+                          </span>
+                        )}
                       </div>
                       <div>
                         <h4 className="font-heading text-lg">{partner.name}</h4>

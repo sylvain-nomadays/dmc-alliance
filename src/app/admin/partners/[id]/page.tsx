@@ -5,6 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import { VideoManager, PartnerVideo } from '@/components/admin/VideoManager';
+import TranslationPushButton from '@/components/admin/TranslationPushButton';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 
 interface PartnerForm {
   slug: string;
@@ -35,6 +38,7 @@ interface PartnerForm {
   has_gir: boolean;
   is_active: boolean;
   is_featured: boolean;
+  videos: PartnerVideo[];
 }
 
 const defaultForm: PartnerForm = {
@@ -66,6 +70,7 @@ const defaultForm: PartnerForm = {
   has_gir: false,
   is_active: true,
   is_featured: false,
+  videos: [],
 };
 
 const regions = [
@@ -103,7 +108,7 @@ export default function PartnerEditPage() {
   const [form, setForm] = useState<PartnerForm>(defaultForm);
   const [isLoading, setIsLoading] = useState(!isNew);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'content' | 'contact' | 'business'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'content' | 'videos' | 'contact' | 'business'>('general');
   const [newCertification, setNewCertification] = useState('');
 
   useEffect(() => {
@@ -125,11 +130,38 @@ export default function PartnerEditPage() {
       console.error('Error fetching partner:', error);
       router.push('/admin/partners');
     } else if (data) {
+      // Ensure all string fields have default empty string instead of null
       setForm({
         ...defaultForm,
-        ...data,
+        slug: data.slug || '',
+        name: data.name || '',
+        country: data.country || '',
+        city: data.city || '',
+        region: data.region || 'asia',
+        logo_url: data.logo_url || '',
+        cover_image_url: data.cover_image_url || '',
+        description_fr: data.description_fr || '',
+        description_en: data.description_en || '',
+        story_fr: data.story_fr || '',
+        story_en: data.story_en || '',
+        mission_fr: data.mission_fr || '',
+        mission_en: data.mission_en || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        website: data.website || '',
+        facebook_url: data.facebook_url || '',
+        instagram_url: data.instagram_url || '',
+        linkedin_url: data.linkedin_url || '',
+        tier: data.tier || 'standard',
+        founded_year: data.founded_year,
+        team_size: data.team_size,
+        commission_rate: data.commission_rate,
+        has_gir: data.has_gir || false,
+        is_active: data.is_active ?? true,
+        is_featured: data.is_featured || false,
         languages: data.languages || [],
         certifications: data.certifications || [],
+        videos: data.videos || [],
       });
     }
     setIsLoading(false);
@@ -253,6 +285,7 @@ export default function PartnerEditPage() {
             {[
               { id: 'general', label: 'Général' },
               { id: 'content', label: 'Contenu' },
+              { id: 'videos', label: 'Vidéos' },
               { id: 'contact', label: 'Contact' },
               { id: 'business', label: 'B2B' },
             ].map((tab) => (
@@ -432,88 +465,73 @@ export default function PartnerEditPage() {
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div className="space-y-6">
-              {/* Description FR */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (FR)
-                </label>
-                <textarea
-                  value={form.description_fr}
-                  onChange={(e) => setForm({ ...form, description_fr: e.target.value })}
-                  rows={4}
-                  placeholder="Description courte du partenaire..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Rédigez en français uniquement.</strong> Les traductions vers les autres langues (anglais, allemand, espagnol, italien, néerlandais) seront générées automatiquement via le bouton &quot;Push Traductions&quot;.
+                </p>
               </div>
 
-              {/* Description EN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (EN)
-                </label>
-                <textarea
-                  value={form.description_en}
-                  onChange={(e) => setForm({ ...form, description_en: e.target.value })}
-                  rows={4}
-                  placeholder="Short description of the partner..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
-              </div>
+              {/* Description FR */}
+              <RichTextEditor
+                value={form.description_fr}
+                onChange={(content) => setForm({ ...form, description_fr: content })}
+                label="Description"
+                placeholder="Description courte du partenaire..."
+                minHeight="150px"
+              />
 
               {/* Story FR */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notre histoire (FR)
-                </label>
-                <textarea
-                  value={form.story_fr}
-                  onChange={(e) => setForm({ ...form, story_fr: e.target.value })}
-                  rows={6}
-                  placeholder="L'histoire de l'agence..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
-              </div>
-
-              {/* Story EN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Our story (EN)
-                </label>
-                <textarea
-                  value={form.story_en}
-                  onChange={(e) => setForm({ ...form, story_en: e.target.value })}
-                  rows={6}
-                  placeholder="The agency's story..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
-              </div>
+              <RichTextEditor
+                value={form.story_fr}
+                onChange={(content) => setForm({ ...form, story_fr: content })}
+                label="Notre histoire"
+                placeholder="L'histoire de l'agence..."
+                minHeight="200px"
+              />
 
               {/* Mission FR */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notre mission (FR)
-                </label>
-                <textarea
-                  value={form.mission_fr}
-                  onChange={(e) => setForm({ ...form, mission_fr: e.target.value })}
-                  rows={4}
-                  placeholder="La mission de l'agence..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
+              <RichTextEditor
+                value={form.mission_fr}
+                onChange={(content) => setForm({ ...form, mission_fr: content })}
+                label="Notre mission"
+                placeholder="La mission de l'agence..."
+                minHeight="150px"
+              />
+            </div>
+          )}
+
+          {/* Videos Tab */}
+          {activeTab === 'videos' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-terracotta-50 to-sand-50 rounded-xl p-6 border border-terracotta-100">
+                <h3 className="text-lg font-heading text-gray-900 mb-2">
+                  Vidéos de présentation
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Ajoutez des vidéos YouTube ou Vimeo pour présenter votre agence.
+                  La première vidéo mise en avant sera affichée en priorité sur la page du partenaire.
+                </p>
               </div>
 
-              {/* Mission EN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Our mission (EN)
-                </label>
-                <textarea
-                  value={form.mission_en}
-                  onChange={(e) => setForm({ ...form, mission_en: e.target.value })}
-                  rows={4}
-                  placeholder="The agency's mission..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
+              <VideoManager
+                videos={form.videos}
+                onChange={(videos) => setForm({ ...form, videos })}
+              />
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Conseils
+                </h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Utilisez des vidéos de présentation de votre agence ou de vos circuits</li>
+                  <li>• Les vidéos YouTube et Vimeo sont automatiquement détectées</li>
+                  <li>• La vidéo &quot;mise en avant&quot; apparaît en premier sur votre page partenaire</li>
+                  <li>• Vous pouvez ajouter plusieurs vidéos et les réorganiser</li>
+                </ul>
               </div>
             </div>
           )}
@@ -736,20 +754,32 @@ export default function PartnerEditPage() {
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-4 pt-6 mt-6 border-t border-gray-200">
-            <Link
-              href="/admin/partners"
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Annuler
-            </Link>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? 'Enregistrement...' : (isNew ? 'Créer' : 'Enregistrer')}
-            </button>
+          <div className="flex items-center justify-between gap-4 pt-6 mt-6 border-t border-gray-200">
+            {/* Translation Push Button */}
+            {!isNew && (
+              <TranslationPushButton
+                contentType="partner"
+                contentId={params.id as string}
+                onSuccess={() => console.log('Partner translations completed')}
+              />
+            )}
+            {isNew && <div />}
+
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/partners"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Annuler
+              </Link>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-6 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? 'Enregistrement...' : (isNew ? 'Créer' : 'Enregistrer')}
+              </button>
+            </div>
           </div>
         </form>
       </div>

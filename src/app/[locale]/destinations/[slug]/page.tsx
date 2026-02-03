@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { partners } from '@/data/partners';
 import { getDestinationBySlug, getAllDestinationSlugs, destinationsData } from '@/data/destinations';
 import { getDestinationWithImage, getAllDestinationsWithImages } from '@/lib/supabase/destinations';
+import { getPartnerWithImage } from '@/lib/supabase/partners';
+import { RelatedArticles } from '@/components/destinations/RelatedArticles';
 
 // Icons
 import {
@@ -78,7 +80,10 @@ export default async function DestinationPage({ params }: Props) {
     notFound();
   }
 
-  const partner = partners.find((p) => p.id === destination.partnerId);
+  // Get static partner data first for basic info
+  const staticPartner = partners.find((p) => p.id === destination.partnerId);
+  // Get partner with Supabase logo (falls back to static if not in Supabase)
+  const partner = staticPartner ? await getPartnerWithImage(staticPartner.slug) : null;
   const t = await getTranslations({ locale, namespace: 'destination' });
   const tCommon = await getTranslations({ locale, namespace: 'common' });
 
@@ -283,19 +288,19 @@ export default async function DestinationPage({ params }: Props) {
                   <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
                     {/* Partner Header */}
                     <div className="bg-deep-blue-900 p-6 text-center">
-                      <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 overflow-hidden">
                         {partner.logo ? (
-                          <Image
-                            src={partner.logo}
-                            alt={partner.name}
-                            width={60}
-                            height={60}
-                            className="object-contain"
+                          <div
+                            className="w-full h-full bg-contain bg-center bg-no-repeat"
+                            style={{ backgroundImage: `url(${partner.logo})` }}
+                            aria-label={partner.name}
                           />
                         ) : (
-                          <span className="text-2xl font-heading text-deep-blue-600">
-                            {partner.name.charAt(0)}
-                          </span>
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-2xl font-heading text-deep-blue-600">
+                              {partner.name.charAt(0)}
+                            </span>
+                          </div>
                         )}
                       </div>
                       <h3 className="text-xl font-heading text-white mb-1">{partner.name}</h3>
@@ -407,6 +412,13 @@ export default async function DestinationPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Related Articles from Magazine */}
+      <RelatedArticles
+        locale={locale}
+        destinationSlug={slug}
+        destinationName={destinationName}
+      />
 
       {/* Other Destinations in Same Region */}
       <OtherDestinationsSection

@@ -6,6 +6,15 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
+interface Destination {
+  name: string;
+  nameEn: string;
+  slug: string;
+  region: string;
+  image: string;
+  partner: string;
+}
+
 interface DestinationsSectionProps {
   locale: string;
   translations: {
@@ -20,80 +29,29 @@ interface DestinationsSectionProps {
       'middle-east': string;
     };
   };
+  /** Destinations data from Supabase */
+  destinations?: Destination[];
 }
 
-// Featured destinations with images
-const featuredDestinations = [
-  {
-    name: 'Mongolie',
-    nameEn: 'Mongolia',
-    slug: 'mongolie',
-    region: 'asia',
-    image: '/images/destinations/mongolia.jpg',
-    partner: 'Horseback Adventure',
-  },
-  {
-    name: 'Tanzanie',
-    nameEn: 'Tanzania',
-    slug: 'tanzanie',
-    region: 'africa',
-    image: '/images/destinations/tanzania.jpg',
-    partner: 'Galago Expeditions',
-  },
-  {
-    name: 'Thaïlande',
-    nameEn: 'Thailand',
-    slug: 'thailande',
-    region: 'asia',
-    image: '/images/destinations/thailand.jpg',
-    partner: 'Sawa Discovery',
-  },
-  {
-    name: 'Kirghizistan',
-    nameEn: 'Kyrgyzstan',
-    slug: 'kirghizistan',
-    region: 'asia',
-    image: '/images/destinations/kyrgyzstan.jpg',
-    partner: "Kyrgyz'What ?",
-  },
-  {
-    name: 'Costa Rica',
-    nameEn: 'Costa Rica',
-    slug: 'costa-rica',
-    region: 'americas',
-    image: '/images/destinations/costa-rica.jpg',
-    partner: 'Morpho Evasions',
-  },
-  {
-    name: 'Indonésie',
-    nameEn: 'Indonesia',
-    slug: 'indonesie',
-    region: 'asia',
-    image: '/images/destinations/indonesia.jpg',
-    partner: 'Azimuth Adventure Travel',
-  },
-  {
-    name: 'Madagascar',
-    nameEn: 'Madagascar',
-    slug: 'madagascar',
-    region: 'africa',
-    image: '/images/destinations/madagascar.jpg',
-    partner: 'Détours Opérator',
-  },
-  {
-    name: 'Pérou',
-    nameEn: 'Peru',
-    slug: 'perou',
-    region: 'americas',
-    image: '/images/destinations/peru.jpg',
-    partner: 'Pasión Andina',
-  },
+// Default fallback destinations
+const defaultDestinations: Destination[] = [
+  { name: 'Mongolie', nameEn: 'Mongolia', slug: 'mongolie', region: 'asia', image: '/images/destinations/mongolia.jpg', partner: 'Horseback Adventure' },
+  { name: 'Tanzanie', nameEn: 'Tanzania', slug: 'tanzanie', region: 'africa', image: '/images/destinations/tanzania.jpg', partner: 'Galago Expeditions' },
+  { name: 'Thaïlande', nameEn: 'Thailand', slug: 'thailande', region: 'asia', image: '/images/destinations/thailand.jpg', partner: 'Sawa Discovery' },
+  { name: 'Kirghizistan', nameEn: 'Kyrgyzstan', slug: 'kirghizistan', region: 'asia', image: '/images/destinations/kyrgyzstan.jpg', partner: "Kyrgyz'What ?" },
+  { name: 'Costa Rica', nameEn: 'Costa Rica', slug: 'costa-rica', region: 'americas', image: '/images/destinations/costa-rica.jpg', partner: 'Morpho Evasions' },
+  { name: 'Indonésie', nameEn: 'Indonesia', slug: 'indonesie', region: 'asia', image: '/images/destinations/indonesia.jpg', partner: 'Azimuth Adventure Travel' },
+  { name: 'Madagascar', nameEn: 'Madagascar', slug: 'madagascar', region: 'africa', image: '/images/destinations/madagascar.jpg', partner: 'Détours Opérator' },
+  { name: 'Pérou', nameEn: 'Peru', slug: 'perou', region: 'americas', image: '/images/destinations/peru.jpg', partner: 'Pasión Andina' },
 ];
 
 type Region = 'all' | 'asia' | 'africa' | 'europe' | 'americas' | 'middle-east';
 
-export function DestinationsSection({ locale, translations }: DestinationsSectionProps) {
+export function DestinationsSection({ locale, translations, destinations }: DestinationsSectionProps) {
   const [activeRegion, setActiveRegion] = useState<Region>('all');
+
+  // Use provided destinations or fallback to defaults
+  const featuredDestinations = destinations && destinations.length > 0 ? destinations : defaultDestinations;
 
   const regions: { key: Region; label: string }[] = [
     { key: 'all', label: locale === 'fr' ? 'Toutes' : 'All' },

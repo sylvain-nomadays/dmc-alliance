@@ -5,6 +5,19 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
+interface GirCircuit {
+  id: string;
+  slug: string;
+  title: string;
+  titleEn: string;
+  image: string;
+  destination: string;
+  duration: number;
+  price: number;
+  placesAvailable: number;
+  departureDate: string;
+}
+
 interface GirSectionProps {
   locale: string;
   translations: {
@@ -13,68 +26,58 @@ interface GirSectionProps {
     cta: string;
     requestCommission: string;
   };
+  /** Circuits data from Supabase */
+  circuits?: GirCircuit[];
 }
 
-// Sample GIR data - In production, this would come from API/CMS
-const upcomingGirs = [
+// Default fallback GIR data
+const defaultGirs = [
   {
     id: '1',
-    title: 'Entre Steppe et Désert',
     slug: 'entre-steppe-et-desert',
+    title: 'Entre Steppe et Désert',
+    titleEn: 'Between Steppe and Desert',
     destination: 'Mongolie',
     image: '/images/gir/mongolia-steppe.jpg',
     departureDate: '2024-06-15',
     duration: 15,
     price: 3290,
-    level: 'moderate' as const,
-    placesRemaining: 6,
-    partner: 'Horseback Adventure',
+    placesAvailable: 6,
   },
   {
     id: '2',
-    title: 'Merveilles de Kirghizie',
     slug: 'merveilles-de-kirghizie',
+    title: 'Merveilles de Kirghizie',
+    titleEn: 'Wonders of Kyrgyzstan',
     destination: 'Kirghizistan',
     image: '/images/gir/kyrgyzstan-mountains.jpg',
     departureDate: '2024-07-08',
     duration: 12,
     price: 2490,
-    level: 'challenging' as const,
-    placesRemaining: 4,
-    partner: "Kyrgyz'What ?",
+    placesAvailable: 4,
   },
   {
     id: '3',
-    title: 'Grande Migration Masai Mara',
     slug: 'grande-migration-masai-mara',
+    title: 'Grande Migration Masai Mara',
+    titleEn: 'Great Masai Mara Migration',
     destination: 'Kenya',
     image: '/images/gir/kenya-migration.jpg',
     departureDate: '2024-07-15',
     duration: 10,
     price: 4890,
-    level: 'easy' as const,
-    placesRemaining: 6,
-    partner: 'Galago Expeditions',
+    placesAvailable: 6,
   },
 ];
 
-const levelLabels = {
-  easy: { fr: 'Facile', en: 'Easy' },
-  moderate: { fr: 'Modéré', en: 'Moderate' },
-  challenging: { fr: 'Sportif', en: 'Challenging' },
-  expert: { fr: 'Expert', en: 'Expert' },
-};
+export function GirSection({ locale, translations, circuits }: GirSectionProps) {
+  // Use provided circuits or fallback to defaults
+  const upcomingGirs = circuits && circuits.length > 0 ? circuits : defaultGirs;
+  const isFr = locale === 'fr';
 
-const levelColors = {
-  easy: 'bg-sage-100 text-sage-700',
-  moderate: 'bg-terracotta-100 text-terracotta-700',
-  challenging: 'bg-deep-blue-100 text-deep-blue-700',
-  expert: 'bg-gray-800 text-white',
-};
-
-export function GirSection({ locale, translations }: GirSectionProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    if (!dateString) return isFr ? 'Dates à venir' : 'Dates TBC';
+    return new Date(dateString).toLocaleDateString(isFr ? 'fr-FR' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -88,7 +91,7 @@ export function GirSection({ locale, translations }: GirSectionProps) {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
           <div className="max-w-2xl">
             <span className="text-terracotta-500 font-accent font-medium uppercase tracking-wider text-sm mb-2 block">
-              {locale === 'fr' ? 'GIR Co-remplissage' : 'Shared Departures'}
+              {isFr ? 'GIR Co-remplissage' : 'Shared Departures'}
             </span>
             <h2 className="text-3xl md:text-4xl font-heading text-gray-900 mb-4">
               {translations.title}
@@ -113,10 +116,10 @@ export function GirSection({ locale, translations }: GirSectionProps) {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Image */}
-              <div className="relative aspect-[16/10] overflow-hidden">
+              <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
                 <Image
                   src={gir.image}
-                  alt={gir.title}
+                  alt={isFr ? gir.title : gir.titleEn}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -128,9 +131,21 @@ export function GirSection({ locale, translations }: GirSectionProps) {
                 </div>
 
                 {/* Places Badge */}
-                {gir.placesRemaining <= 5 && (
+                {gir.placesAvailable > 0 && gir.placesAvailable <= 6 && (
                   <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 rounded-full text-sm font-medium">
-                    {gir.placesRemaining} {locale === 'fr' ? 'places' : 'seats'}
+                    {gir.placesAvailable} {isFr ? 'places' : 'seats'}
+                  </div>
+                )}
+
+                {gir.placesAvailable === 0 && (
+                  <div className="absolute top-4 right-4 bg-gray-700 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                    {isFr ? 'Complet' : 'Full'}
+                  </div>
+                )}
+
+                {gir.placesAvailable < 0 && (
+                  <div className="absolute top-4 right-4 bg-terracotta-500 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                    GIR
                   </div>
                 )}
               </div>
@@ -141,14 +156,10 @@ export function GirSection({ locale, translations }: GirSectionProps) {
                   <span className="text-terracotta-500 text-sm font-accent font-medium uppercase tracking-wider">
                     {gir.destination}
                   </span>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-gray-500 text-sm">
-                    {gir.partner}
-                  </span>
                 </div>
 
                 <h3 className="text-lg font-heading text-gray-900 mb-3 line-clamp-2 group-hover:text-terracotta-600 transition-colors">
-                  {gir.title}
+                  {isFr ? gir.title : gir.titleEn}
                 </h3>
 
                 {/* Meta */}
@@ -157,13 +168,7 @@ export function GirSection({ locale, translations }: GirSectionProps) {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {gir.duration} {locale === 'fr' ? 'jours' : 'days'}
-                  </span>
-                  <span className={cn(
-                    'px-2 py-0.5 rounded-full text-xs font-medium',
-                    levelColors[gir.level]
-                  )}>
-                    {levelLabels[gir.level][locale === 'fr' ? 'fr' : 'en']}
+                    {gir.duration} {isFr ? 'jours' : 'days'}
                   </span>
                 </div>
 
@@ -171,11 +176,11 @@ export function GirSection({ locale, translations }: GirSectionProps) {
                 <div className="flex items-end justify-between pt-4 border-t border-gray-100">
                   <div>
                     <span className="text-gray-500 text-sm block">
-                      {locale === 'fr' ? 'À partir de' : 'From'}
+                      {isFr ? 'À partir de' : 'From'}
                     </span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-2xl font-heading text-gray-900">
-                        {gir.price.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                        {gir.price.toLocaleString(isFr ? 'fr-FR' : 'en-US')}
                       </span>
                       <span className="text-gray-500">€</span>
                     </div>
@@ -185,7 +190,7 @@ export function GirSection({ locale, translations }: GirSectionProps) {
                     href={`/${locale}/gir/${gir.slug}`}
                     className="text-deep-blue-600 font-medium text-sm hover:text-terracotta-500 transition-colors flex items-center gap-1"
                   >
-                    {locale === 'fr' ? 'Voir le circuit' : 'View tour'}
+                    {isFr ? 'Voir le circuit' : 'View tour'}
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -199,10 +204,10 @@ export function GirSection({ locale, translations }: GirSectionProps) {
         {/* Commission CTA */}
         <div className="mt-12 bg-sand-100 rounded-2xl p-8 md:p-10 text-center">
           <h3 className="text-xl font-heading text-gray-900 mb-3">
-            {locale === 'fr' ? 'Vous êtes professionnel du voyage ?' : 'Are you a travel professional?'}
+            {isFr ? 'Vous êtes professionnel du voyage ?' : 'Are you a travel professional?'}
           </h3>
           <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            {locale === 'fr'
+            {isFr
               ? 'Contactez-nous pour connaître vos conditions de commission et intégrer vos clients à nos départs.'
               : 'Contact us to learn about your commission terms and add your clients to our departures.'}
           </p>

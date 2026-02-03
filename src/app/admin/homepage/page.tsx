@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 
+interface ServiceSettings {
+  title_fr: string;
+  title_en: string;
+  description_fr: string;
+  description_en: string;
+  image_url: string;
+  features_fr: string[];
+  features_en: string[];
+}
+
 interface HomepageSettings {
   id?: string;
   section: string;
@@ -16,6 +26,15 @@ interface HomepageSettings {
   stats_partners: number;
   stats_years: number;
   stats_travelers: number;
+  // Services section
+  services_title_fr: string;
+  services_title_en: string;
+  services_subtitle_fr: string;
+  services_subtitle_en: string;
+  service_tailor_made: ServiceSettings;
+  service_groups: ServiceSettings;
+  service_gir: ServiceSettings;
+  // CTA section
   cta_title_fr: string;
   cta_title_en: string;
   cta_subtitle_fr: string;
@@ -28,6 +47,16 @@ interface HomepageSettings {
   featured_circuits: string[];
 }
 
+const defaultServiceSettings: ServiceSettings = {
+  title_fr: '',
+  title_en: '',
+  description_fr: '',
+  description_en: '',
+  image_url: '',
+  features_fr: ['', '', ''],
+  features_en: ['', '', ''],
+};
+
 const defaultSettings: HomepageSettings = {
   section: 'global',
   hero_title_fr: 'Votre réseau de DMC experts',
@@ -39,19 +68,51 @@ const defaultSettings: HomepageSettings = {
   stats_partners: 35,
   stats_years: 15,
   stats_travelers: 25000,
+  // Services defaults
+  services_title_fr: 'Une solution pour chaque besoin',
+  services_title_en: 'A solution for every need',
+  services_subtitle_fr: 'Que vous cherchiez du sur-mesure, des voyages de groupe ou des départs garantis, notre réseau vous accompagne.',
+  services_subtitle_en: 'Whether you\'re looking for tailor-made trips, group travel or guaranteed departures, our network supports you.',
+  service_tailor_made: {
+    title_fr: 'Voyages sur-mesure',
+    title_en: 'Tailor-made trips',
+    description_fr: 'Créez des itinéraires uniques avec nos DMC experts locaux.',
+    description_en: 'Create unique itineraries with our local DMC experts.',
+    image_url: '/images/services/tailor-made.jpg',
+    features_fr: ['Conseil personnalisé', 'Expertise locale', 'Flexibilité totale'],
+    features_en: ['Personalized advice', 'Local expertise', 'Total flexibility'],
+  },
+  service_groups: {
+    title_fr: 'Groupes',
+    title_en: 'Group travel',
+    description_fr: 'Organisez des voyages de groupe avec un accompagnement dédié.',
+    description_en: 'Organize group trips with dedicated support.',
+    image_url: '/images/services/groups.jpg',
+    features_fr: ['Tarifs négociés', 'Logistique complète', 'Accompagnement'],
+    features_en: ['Negotiated rates', 'Complete logistics', 'Support'],
+  },
+  service_gir: {
+    title_fr: 'GIR - Départs garantis',
+    title_en: 'GIR - Guaranteed departures',
+    description_fr: 'Rejoignez des départs garantis avec commission attractive.',
+    description_en: 'Join guaranteed departures with attractive commission.',
+    image_url: '/images/services/gir.jpg',
+    features_fr: ['Départs confirmés', 'Commission attractive', 'Sans risque'],
+    features_en: ['Confirmed departures', 'Attractive commission', 'Risk-free'],
+  },
   cta_title_fr: 'Prêt à rejoindre l\'alliance ?',
   cta_title_en: 'Ready to join the alliance?',
   cta_subtitle_fr: 'Découvrez les avantages de notre réseau de partenaires',
   cta_subtitle_en: 'Discover the benefits of our partner network',
   cta_button_text_fr: 'Contactez-nous',
   cta_button_text_en: 'Contact us',
-  cta_background_image: '/images/cta-background.jpg',
+  cta_background_image: '/images/cta/collaboration.jpg',
   featured_destinations: [],
   featured_partners: [],
   featured_circuits: [],
 };
 
-type Tab = 'hero' | 'stats' | 'cta' | 'featured';
+type Tab = 'hero' | 'stats' | 'services' | 'cta' | 'featured';
 
 export default function HomepageAdminPage() {
   const [settings, setSettings] = useState<HomepageSettings>(defaultSettings);
@@ -147,6 +208,7 @@ export default function HomepageAdminPage() {
   const tabs = [
     { id: 'hero' as Tab, label: 'Section Hero', icon: '🎬' },
     { id: 'stats' as Tab, label: 'Statistiques', icon: '📊' },
+    { id: 'services' as Tab, label: 'Services', icon: '🎯' },
     { id: 'cta' as Tab, label: 'Call to Action', icon: '📢' },
     { id: 'featured' as Tab, label: 'Contenus à la une', icon: '⭐' },
   ];
@@ -233,6 +295,9 @@ export default function HomepageAdminPage() {
         )}
         {activeTab === 'stats' && (
           <StatsSection settings={settings} setSettings={setSettings} />
+        )}
+        {activeTab === 'services' && (
+          <ServicesSectionAdmin settings={settings} setSettings={setSettings} onImageUpload={handleImageUpload} />
         )}
         {activeTab === 'cta' && (
           <CtaSection settings={settings} setSettings={setSettings} onImageUpload={handleImageUpload} />
@@ -526,6 +591,260 @@ function CtaSection({
             onChange={(e) => setSettings({ ...settings, cta_button_text_en: e.target.value })}
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent"
           />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Services Section Admin Form
+function ServicesSectionAdmin({
+  settings,
+  setSettings,
+  onImageUpload,
+}: {
+  settings: HomepageSettings;
+  setSettings: (s: HomepageSettings) => void;
+  onImageUpload: (e: React.ChangeEvent<HTMLInputElement>, field: keyof HomepageSettings) => void;
+}) {
+  const [activeService, setActiveService] = useState<'tailor_made' | 'groups' | 'gir'>('tailor_made');
+
+  const servicesList = [
+    { key: 'tailor_made' as const, label: 'Voyages sur-mesure', icon: '✏️' },
+    { key: 'groups' as const, label: 'Groupes', icon: '👥' },
+    { key: 'gir' as const, label: 'GIR', icon: '📅' },
+  ];
+
+  const updateService = (serviceKey: 'tailor_made' | 'groups' | 'gir', field: keyof ServiceSettings, value: string | string[]) => {
+    const settingsKey = `service_${serviceKey}` as keyof HomepageSettings;
+    const currentService = settings[settingsKey] as ServiceSettings;
+    setSettings({
+      ...settings,
+      [settingsKey]: {
+        ...currentService,
+        [field]: value,
+      },
+    });
+  };
+
+  const updateFeature = (serviceKey: 'tailor_made' | 'groups' | 'gir', lang: 'fr' | 'en', index: number, value: string) => {
+    const settingsKey = `service_${serviceKey}` as keyof HomepageSettings;
+    const currentService = settings[settingsKey] as ServiceSettings;
+    const featuresKey = `features_${lang}` as keyof ServiceSettings;
+    const currentFeatures = [...(currentService[featuresKey] as string[])];
+    currentFeatures[index] = value;
+    setSettings({
+      ...settings,
+      [settingsKey]: {
+        ...currentService,
+        [featuresKey]: currentFeatures,
+      },
+    });
+  };
+
+  const handleServiceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, serviceKey: 'tailor_made' | 'groups' | 'gir') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'homepage');
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      const { url } = await response.json();
+      updateService(serviceKey, 'image_url', url);
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
+  };
+
+  const currentService = settings[`service_${activeService}` as keyof HomepageSettings] as ServiceSettings;
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-heading text-gray-900 mb-4">Section Services</h3>
+      <p className="text-gray-600 text-sm mb-6">
+        Personnalisez les 3 services présentés sur la page d'accueil (sur-mesure, groupes, GIR).
+      </p>
+
+      {/* Section Title */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6 border-b border-gray-200">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Titre de la section <span className="text-gray-400">(FR)</span>
+          </label>
+          <input
+            type="text"
+            value={settings.services_title_fr}
+            onChange={(e) => setSettings({ ...settings, services_title_fr: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Titre de la section <span className="text-gray-400">(EN)</span>
+          </label>
+          <input
+            type="text"
+            value={settings.services_title_en}
+            onChange={(e) => setSettings({ ...settings, services_title_en: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Sous-titre <span className="text-gray-400">(FR)</span>
+          </label>
+          <textarea
+            value={settings.services_subtitle_fr}
+            onChange={(e) => setSettings({ ...settings, services_subtitle_fr: e.target.value })}
+            rows={2}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent resize-none"
+          />
+        </div>
+      </div>
+
+      {/* Service Tabs */}
+      <div className="flex gap-2 border-b border-gray-200">
+        {servicesList.map((service) => (
+          <button
+            key={service.key}
+            onClick={() => setActiveService(service.key)}
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeService === service.key
+                ? 'border-terracotta-500 text-terracotta-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span className="mr-2">{service.icon}</span>
+            {service.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Service Editor */}
+      <div className="space-y-6 pt-4">
+        {/* Image */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Image du service</label>
+          <div className="flex items-start gap-4">
+            {currentService?.image_url && (
+              <div className="relative w-40 h-24 rounded-lg overflow-hidden bg-gray-100">
+                <Image
+                  src={currentService.image_url}
+                  alt="Service"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleServiceImageUpload(e, activeService)}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-terracotta-50 file:text-terracotta-700 hover:file:bg-terracotta-100 cursor-pointer"
+              />
+              <p className="mt-1 text-xs text-gray-500">Recommandé: 800x500px</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Titles */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Titre <span className="text-gray-400">(FR)</span>
+            </label>
+            <input
+              type="text"
+              value={currentService?.title_fr || ''}
+              onChange={(e) => updateService(activeService, 'title_fr', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Titre <span className="text-gray-400">(EN)</span>
+            </label>
+            <input
+              type="text"
+              value={currentService?.title_en || ''}
+              onChange={(e) => updateService(activeService, 'title_en', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Descriptions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description <span className="text-gray-400">(FR)</span>
+            </label>
+            <textarea
+              value={currentService?.description_fr || ''}
+              onChange={(e) => updateService(activeService, 'description_fr', e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description <span className="text-gray-400">(EN)</span>
+            </label>
+            <textarea
+              value={currentService?.description_en || ''}
+              onChange={(e) => updateService(activeService, 'description_en', e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Features FR */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Points clés <span className="text-gray-400">(FR)</span>
+          </label>
+          <div className="space-y-2">
+            {[0, 1, 2].map((index) => (
+              <input
+                key={index}
+                type="text"
+                value={currentService?.features_fr?.[index] || ''}
+                onChange={(e) => updateFeature(activeService, 'fr', index, e.target.value)}
+                placeholder={`Point ${index + 1}`}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Features EN */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Points clés <span className="text-gray-400">(EN)</span>
+          </label>
+          <div className="space-y-2">
+            {[0, 1, 2].map((index) => (
+              <input
+                key={index}
+                type="text"
+                value={currentService?.features_en?.[index] || ''}
+                onChange={(e) => updateFeature(activeService, 'en', index, e.target.value)}
+                placeholder={`Point ${index + 1}`}
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-terracotta-500 focus:border-transparent"
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

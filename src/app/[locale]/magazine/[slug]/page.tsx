@@ -3,26 +3,16 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
-import { articles, categories, getArticleBySlug, getRecentArticles, type Article } from '@/data/articles';
+import { getArticleBySlug, getAllPublishedArticles, type ArticleDetail, type ArticleSummary } from '@/lib/supabase/articles';
+import { getArticleBySlug as getStaticArticle, getRecentArticles as getStaticRecentArticles, categories } from '@/data/articles';
+import { processContent } from '@/lib/utils/markdown';
+import { ArticleFAQ } from './ArticleFAQ';
 
 interface ArticlePageProps {
-  params: { locale: string; slug: string };
+  params: Promise<{ locale: string; slug: string }>;
 }
 
-export function generateStaticParams() {
-  const locales = ['fr', 'en', 'de', 'nl', 'es', 'it'];
-  const paths: { locale: string; slug: string }[] = [];
-
-  for (const locale of locales) {
-    for (const article of articles) {
-      paths.push({ locale, slug: article.slug });
-    }
-  }
-
-  return paths;
-}
-
-const categoryColors = {
+const categoryColors: Record<string, { bg: string; text: string }> = {
   destinations: {
     bg: 'bg-terracotta-100',
     text: 'text-terracotta-600',
@@ -45,35 +35,38 @@ const categoryColors = {
   },
 };
 
-function RelatedArticleCard({ article, locale }: { article: Article; locale: string }) {
+function RelatedArticleCard({ article, locale }: { article: ArticleSummary; locale: string }) {
   const isFr = locale === 'fr';
-  const categoryColor = categoryColors[article.category];
+  const categoryColor = categoryColors[article.category || 'destinations'] || categoryColors.destinations;
+  const categoryData = categories[article.category as keyof typeof categories];
 
   return (
     <Link href={`/${locale}/magazine/${article.slug}`} className="group block">
       <div className="bg-white rounded-xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1">
         <div className="relative aspect-[16/10] overflow-hidden">
           <Image
-            src={article.image}
-            alt={isFr ? article.title.fr : article.title.en}
+            src={article.image_url || '/images/magazine/default.jpg'}
+            alt={isFr ? article.title_fr : (article.title_en || article.title_fr)}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 33vw"
           />
-          <span className={cn(
-            'absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium',
-            categoryColor.bg,
-            categoryColor.text
-          )}>
-            {isFr ? categories[article.category].name.fr : categories[article.category].name.en}
-          </span>
+          {categoryData && (
+            <span className={cn(
+              'absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium',
+              categoryColor.bg,
+              categoryColor.text
+            )}>
+              {isFr ? categoryData.name.fr : categoryData.name.en}
+            </span>
+          )}
         </div>
         <div className="p-4">
           <h3 className="font-heading text-gray-900 group-hover:text-terracotta-500 transition-colors line-clamp-2">
-            {isFr ? article.title.fr : article.title.en}
+            {isFr ? article.title_fr : (article.title_en || article.title_fr)}
           </h3>
           <p className="text-sm text-gray-400 mt-2">
-            {article.readTime} min {isFr ? 'de lecture' : 'read'}
+            {article.read_time} min {isFr ? 'de lecture' : 'read'}
           </p>
         </div>
       </div>
@@ -81,18 +74,73 @@ function RelatedArticleCard({ article, locale }: { article: Article; locale: str
   );
 }
 
-export default function ArticlePage({ params: { locale, slug } }: ArticlePageProps) {
-  const article = getArticleBySlug(slug);
+export default async function ArticlePage({ params }: ArticlePageProps) {
+  const { locale, slug } = await params;
 
+  // Try to get article from Supabase first
+  let article: ArticleDetail | null = await getArticleBySlug(slug);
+  let relatedArticles: ArticleSummary[] = [];
+  let isFromSupabase = true;
+
+  // If not found in Supabase, try static data
   if (!article) {
-    notFound();
+    const staticArticle = getStaticArticle(slug);
+    if (!staticArticle) {
+      notFound();
+    }
+
+    // Convert static article to ArticleDetail format
+    article = {
+      id: staticArticle.id,
+      slug: staticArticle.slug,
+      title_fr: staticArticle.title.fr,
+      title_en: staticArticle.title.en,
+      excerpt_fr: staticArticle.excerpt.fr,
+      excerpt_en: staticArticle.excerpt.en,
+      content_fr: staticArticle.content?.fr || null,
+      content_en: staticArticle.content?.en || null,
+      image_url: staticArticle.image,
+      category: staticArticle.category,
+      tags: staticArticle.tags,
+      read_time: staticArticle.readTime,
+      published_at: staticArticle.publishedAt,
+      author_name: staticArticle.author.name,
+      author_role: staticArticle.author.role.fr,
+      author_avatar: staticArticle.author.avatar,
+      destination_id: null,
+      destination: null,
+    };
+    isFromSupabase = false;
+  }
+
+  // Get related articles
+  if (isFromSupabase) {
+    const allArticles = await getAllPublishedArticles(10, 0);
+    relatedArticles = allArticles.filter(a => a.id !== article!.id).slice(0, 3);
+  } else {
+    const staticRelated = getStaticRecentArticles(4).filter(a => a.id !== article!.id).slice(0, 3);
+    relatedArticles = staticRelated.map(a => ({
+      id: a.id,
+      slug: a.slug,
+      title_fr: a.title.fr,
+      title_en: a.title.en,
+      excerpt_fr: a.excerpt.fr,
+      excerpt_en: a.excerpt.en,
+      image_url: a.image,
+      category: a.category,
+      tags: a.tags,
+      read_time: a.readTime,
+      published_at: a.publishedAt,
+      destination_id: null,
+    }));
   }
 
   const isFr = locale === 'fr';
-  const categoryColor = categoryColors[article.category];
-  const relatedArticles = getRecentArticles(4).filter((a) => a.id !== article.id).slice(0, 3);
+  const categoryColor = categoryColors[article.category || 'destinations'] || categoryColors.destinations;
+  const categoryData = categories[article.category as keyof typeof categories];
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString(isFr ? 'fr-FR' : 'en-US', {
       day: 'numeric',
       month: 'long',
@@ -111,54 +159,15 @@ export default function ArticlePage({ params: { locale, slug } }: ArticlePagePro
     contactUs: isFr ? 'Nous contacter' : 'Contact us',
   };
 
-  // Sample article content - in production, this would come from a CMS
-  const sampleContent = isFr
-    ? `
-      <p class="lead">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+  // Get content - prioritize Supabase content, fallback to sample if empty
+  // Process content to convert Markdown to HTML if needed
+  const rawContent = isFr
+    ? (article.content_fr || getDefaultContent(isFr))
+    : (article.content_en || article.content_fr || getDefaultContent(isFr));
+  const content = processContent(rawContent);
 
-      <h2>Un titre de section</h2>
-      <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-      <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
-
-      <blockquote>"Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt."</blockquote>
-
-      <h2>Les points clés à retenir</h2>
-      <ul>
-        <li>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet</li>
-        <li>Consectetur, adipisci velit, sed quia non numquam eius modi tempora</li>
-        <li>Incidunt ut labore et dolore magnam aliquam quaerat voluptatem</li>
-        <li>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis</li>
-      </ul>
-
-      <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.</p>
-
-      <h2>Conclusion</h2>
-      <p>Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio.</p>
-    `
-    : `
-      <p class="lead">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
-
-      <h2>A Section Title</h2>
-      <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-      <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
-
-      <blockquote>"Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt."</blockquote>
-
-      <h2>Key Takeaways</h2>
-      <ul>
-        <li>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet</li>
-        <li>Consectetur, adipisci velit, sed quia non numquam eius modi tempora</li>
-        <li>Incidunt ut labore et dolore magnam aliquam quaerat voluptatem</li>
-        <li>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis</li>
-      </ul>
-
-      <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.</p>
-
-      <h2>Conclusion</h2>
-      <p>Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio.</p>
-    `;
+  const title = isFr ? article.title_fr : (article.title_en || article.title_fr);
+  const excerpt = isFr ? article.excerpt_fr : (article.excerpt_en || article.excerpt_fr);
 
   return (
     <div className="pt-20">
@@ -166,8 +175,8 @@ export default function ArticlePage({ params: { locale, slug } }: ArticlePagePro
       <section className="relative py-20 md:py-32 bg-deep-blue-900">
         <div className="absolute inset-0">
           <Image
-            src={article.image}
-            alt={isFr ? article.title.fr : article.title.en}
+            src={article.image_url || '/images/magazine/default.jpg'}
+            alt={title}
             fill
             className="object-cover opacity-40"
             priority
@@ -189,50 +198,62 @@ export default function ArticlePage({ params: { locale, slug } }: ArticlePagePro
 
             {/* Category & Meta */}
             <div className="flex flex-wrap items-center gap-4 mb-6">
-              <span className={cn(
-                'px-3 py-1 rounded-full text-sm font-medium',
-                categoryColor.bg,
-                categoryColor.text
-              )}>
-                {isFr ? categories[article.category].name.fr : categories[article.category].name.en}
-              </span>
+              {categoryData && (
+                <span className={cn(
+                  'px-3 py-1 rounded-full text-sm font-medium',
+                  categoryColor.bg,
+                  categoryColor.text
+                )}>
+                  {isFr ? categoryData.name.fr : categoryData.name.en}
+                </span>
+              )}
               <span className="text-white/60">
-                {formatDate(article.publishedAt)}
+                {formatDate(article.published_at)}
               </span>
               <span className="text-white/60">•</span>
               <span className="text-white/60">
-                {article.readTime} min {isFr ? 'de lecture' : 'read'}
+                {article.read_time} min {isFr ? 'de lecture' : 'read'}
               </span>
             </div>
 
             {/* Title */}
             <h1 className="text-3xl md:text-5xl font-heading text-white mb-6 leading-tight">
-              {isFr ? article.title.fr : article.title.en}
+              {title}
             </h1>
 
             {/* Excerpt */}
-            <p className="text-xl text-white/80 mb-8">
-              {isFr ? article.excerpt.fr : article.excerpt.en}
-            </p>
+            {excerpt && (
+              <p className="text-xl text-white/80 mb-8">
+                {excerpt}
+              </p>
+            )}
 
             {/* Author */}
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10">
-                <Image
-                  src={article.author.avatar}
-                  alt={article.author.name}
-                  width={48}
-                  height={48}
-                  className="object-cover"
-                />
+            {article.author_name && (
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10">
+                  {article.author_avatar ? (
+                    <Image
+                      src={article.author_avatar}
+                      alt={article.author_name}
+                      width={48}
+                      height={48}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white font-medium">
+                      {article.author_name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-white font-medium">{article.author_name}</p>
+                  {article.author_role && (
+                    <p className="text-white/60 text-sm">{article.author_role}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="text-white font-medium">{article.author.name}</p>
-                <p className="text-white/60 text-sm">
-                  {isFr ? article.author.role.fr : article.author.role.en}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
@@ -244,23 +265,25 @@ export default function ArticlePage({ params: { locale, slug } }: ArticlePagePro
             {/* Article Content */}
             <div className="lg:col-span-8">
               <article
-                className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-terracotta-500 prose-blockquote:border-terracotta-500 prose-blockquote:text-gray-700 prose-blockquote:italic"
-                dangerouslySetInnerHTML={{ __html: article.content?.[isFr ? 'fr' : 'en'] || sampleContent }}
+                className="prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-terracotta-500 prose-blockquote:border-terracotta-500 prose-blockquote:text-gray-700 prose-blockquote:italic prose-ul:text-gray-600 prose-ol:text-gray-600 prose-li:text-gray-600"
+                dangerouslySetInnerHTML={{ __html: content }}
               />
 
               {/* Tags */}
-              <div className="mt-12 pt-8 border-t border-gray-200">
-                <div className="flex flex-wrap gap-2">
-                  {article.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+              {article.tags && article.tags.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-2">
+                    {article.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Share */}
               <div className="mt-8 flex items-center gap-4">
@@ -304,30 +327,41 @@ export default function ArticlePage({ params: { locale, slug } }: ArticlePagePro
                 </div>
 
                 {/* Author Card */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
-                      <Image
-                        src={article.author.avatar}
-                        alt={article.author.name}
-                        width={64}
-                        height={64}
-                        className="object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-heading text-gray-900">{article.author.name}</p>
-                      <p className="text-gray-500 text-sm">
-                        {isFr ? article.author.role.fr : article.author.role.en}
-                      </p>
+                {article.author_name && (
+                  <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                        {article.author_avatar ? (
+                          <Image
+                            src={article.author_avatar}
+                            alt={article.author_name}
+                            width={64}
+                            height={64}
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-500 font-medium text-xl">
+                            {article.author_name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-heading text-gray-900">{article.author_name}</p>
+                        {article.author_role && (
+                          <p className="text-gray-500 text-sm">{article.author_role}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <ArticleFAQ articleId={article.id} locale={locale} />
 
       {/* Related Articles */}
       {relatedArticles.length > 0 && (
@@ -350,4 +384,11 @@ export default function ArticlePage({ params: { locale, slug } }: ArticlePagePro
       )}
     </div>
   );
+}
+
+// Default content when article has no content
+function getDefaultContent(isFr: boolean): string {
+  return isFr
+    ? `<p class="lead">Contenu de l'article à venir...</p>`
+    : `<p class="lead">Article content coming soon...</p>`;
 }

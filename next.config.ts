@@ -4,6 +4,9 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 
 const nextConfig: NextConfig = {
+  // Transpile mapbox-gl for ESM compatibility
+  transpilePackages: ['mapbox-gl'],
+
   // Image optimization
   images: {
     remotePatterns: [

@@ -250,10 +250,10 @@ export function Header({ locale, translations }: HeaderProps) {
           <Link href="/" className="flex-shrink-0">
             <Image
               src="/images/logo-dmc-alliance.svg"
-              alt="The DMC Alliance"
-              width={180}
-              height={50}
-              className={cn('h-10 w-auto', logoClasses)}
+              alt="DMC Alliance"
+              width={168}
+              height={60}
+              className={cn('h-12 w-auto', logoClasses)}
               priority
             />
           </Link>
@@ -319,7 +319,7 @@ export function Header({ locale, translations }: HeaderProps) {
             ))}
           </div>
 
-          {/* Right Side: Language + CTA */}
+          {/* Right Side: Language + Pro Space + CTA */}
           <div className="hidden lg:flex items-center gap-4">
             {/* Language Switcher */}
             <LanguageSwitcher
@@ -328,6 +328,22 @@ export function Header({ locale, translations }: HeaderProps) {
               isScrolled={isScrolled}
               isHomepage={isHomepage}
             />
+
+            {/* Pro Space Link */}
+            <NextLink
+              href={`/${locale}/auth/login`}
+              className={cn(
+                'flex items-center gap-1.5 text-sm font-medium transition-colors',
+                isScrolled || !isHomepage
+                  ? 'text-gray-600 hover:text-terracotta-500'
+                  : 'text-white/80 hover:text-white'
+              )}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              {translations.proSpace}
+            </NextLink>
 
             {/* Contact CTA */}
             <Link href="/contact">
@@ -414,8 +430,16 @@ export function Header({ locale, translations }: HeaderProps) {
               {/* Mobile Language Switcher */}
               <MobileLanguageSwitcher locale={locale} languages={languages} />
 
-              {/* Mobile CTA */}
-              <div className="px-4 pt-2">
+              {/* Mobile Pro Space + Contact CTAs */}
+              <div className="px-4 pt-2 space-y-2">
+                <NextLink href={`/${locale}/auth/login`}>
+                  <Button variant="outline" fullWidth>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    {translations.proSpace}
+                  </Button>
+                </NextLink>
                 <Link href="/contact">
                   <Button variant="primary" fullWidth>
                     {translations.contact}

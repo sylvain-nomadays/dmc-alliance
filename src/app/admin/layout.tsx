@@ -1,46 +1,47 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
-import type { Profile } from '@/types/database';
+import { getAuthContext } from '@/lib/auth/getAuthContext';
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  const authContext = await getAuthContext();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!authContext) {
     redirect('/auth/login?redirect=/admin');
   }
 
-  // Check if user is admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, full_name, avatar_url')
-    .eq('id', user.id)
-    .single() as { data: Pick<Profile, 'role' | 'full_name' | 'avatar_url'> | null };
-
-  if (profile?.role !== 'admin') {
+  // Check if user can access admin
+  if (!authContext.canAccessAdmin) {
     redirect('/');
   }
 
+  // Get display info
+  const displayName = authContext.isPartner && authContext.partner
+    ? authContext.partner.name
+    : authContext.profile.full_name || authContext.user.email;
+
+  const roleLabel = authContext.isAdmin ? 'Administrateur' : 'Partenaire';
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <AdminSidebar />
+      {/* Sidebar - pass role info */}
+      <AdminSidebar
+        isAdmin={authContext.isAdmin}
+        isPartner={authContext.isPartner}
+        partnerName={authContext.partner?.name}
+      />
 
       {/* Main content */}
       <div className="lg:pl-64">
         <AdminHeader
           user={{
-            name: profile?.full_name || user.email || 'Admin',
-            avatar: profile?.avatar_url,
+            name: displayName,
+            avatar: authContext.profile.avatar_url,
+            role: roleLabel,
           }}
         />
 

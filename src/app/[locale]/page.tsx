@@ -9,7 +9,11 @@ import { ServicesSection } from '@/components/home/ServicesSection';
 import { DestinationsSection } from '@/components/home/DestinationsSection';
 import { GirSection } from '@/components/home/GirSection';
 import { PartnersSection } from '@/components/home/PartnersSection';
+import { AgencyCtaSection } from '@/components/home/AgencyCtaSection';
 import { CtaSection } from '@/components/home/CtaSection';
+
+// Data fetchers
+import { getFeaturedDestinations, getFeaturedPartners, getFeaturedCircuits, getHeroImages, getHomepageSettings } from '@/lib/supabase/homepage';
 
 // Types
 type Props = {
@@ -44,6 +48,15 @@ export default async function HomePage({ params }: Props) {
   // Enable static rendering
   setRequestLocale(locale);
 
+  // Fetch data from Supabase in parallel
+  const [destinations, partners, circuits, heroImages, homepageSettings] = await Promise.all([
+    getFeaturedDestinations(),
+    getFeaturedPartners(),
+    getFeaturedCircuits(),
+    getHeroImages(),
+    getHomepageSettings(),
+  ]);
+
   // Get translations for each section
   const tHero = await getTranslations({ locale, namespace: 'home.hero' });
   const tStats = await getTranslations({ locale, namespace: 'home.stats' });
@@ -65,6 +78,7 @@ export default async function HomePage({ params }: Props) {
           cta: tHero('cta'),
           ctaSecondary: tHero('ctaSecondary'),
         }}
+        images={heroImages}
       />
 
       {/* Stats Section */}
@@ -82,34 +96,25 @@ export default async function HomePage({ params }: Props) {
       <ServicesSection
         locale={locale}
         translations={{
-          title: tServices('title'),
-          subtitle: tServices('subtitle'),
+          title: locale === 'fr' ? homepageSettings.services_title_fr : homepageSettings.services_title_en,
+          subtitle: locale === 'fr' ? homepageSettings.services_subtitle_fr : homepageSettings.services_subtitle_en,
           tailorMade: {
-            title: tServices('tailorMade.title'),
-            description: tServices('tailorMade.description'),
-            features: [
-              tServices('tailorMade.features.0'),
-              tServices('tailorMade.features.1'),
-              tServices('tailorMade.features.2'),
-            ],
+            title: locale === 'fr' ? homepageSettings.service_tailor_made.title_fr : homepageSettings.service_tailor_made.title_en,
+            description: locale === 'fr' ? homepageSettings.service_tailor_made.description_fr : homepageSettings.service_tailor_made.description_en,
+            features: locale === 'fr' ? homepageSettings.service_tailor_made.features_fr : homepageSettings.service_tailor_made.features_en,
+            image: homepageSettings.service_tailor_made.image_url,
           },
           groups: {
-            title: tServices('groups.title'),
-            description: tServices('groups.description'),
-            features: [
-              tServices('groups.features.0'),
-              tServices('groups.features.1'),
-              tServices('groups.features.2'),
-            ],
+            title: locale === 'fr' ? homepageSettings.service_groups.title_fr : homepageSettings.service_groups.title_en,
+            description: locale === 'fr' ? homepageSettings.service_groups.description_fr : homepageSettings.service_groups.description_en,
+            features: locale === 'fr' ? homepageSettings.service_groups.features_fr : homepageSettings.service_groups.features_en,
+            image: homepageSettings.service_groups.image_url,
           },
           gir: {
-            title: tServices('gir.title'),
-            description: tServices('gir.description'),
-            features: [
-              tServices('gir.features.0'),
-              tServices('gir.features.1'),
-              tServices('gir.features.2'),
-            ],
+            title: locale === 'fr' ? homepageSettings.service_gir.title_fr : homepageSettings.service_gir.title_en,
+            description: locale === 'fr' ? homepageSettings.service_gir.description_fr : homepageSettings.service_gir.description_en,
+            features: locale === 'fr' ? homepageSettings.service_gir.features_fr : homepageSettings.service_gir.features_en,
+            image: homepageSettings.service_gir.image_url,
           },
         }}
       />
@@ -129,6 +134,7 @@ export default async function HomePage({ params }: Props) {
             'middle-east': tRegions('middle-east'),
           },
         }}
+        destinations={destinations}
       />
 
       {/* GIR Section */}
@@ -140,6 +146,7 @@ export default async function HomePage({ params }: Props) {
           cta: tGir('cta'),
           requestCommission: tGir('requestCommission'),
         }}
+        circuits={circuits}
       />
 
       {/* Partners Section */}
@@ -150,7 +157,11 @@ export default async function HomePage({ params }: Props) {
           subtitle: tPartners('subtitle'),
           cta: tPartners('cta'),
         }}
+        partners={partners}
       />
+
+      {/* Agency CTA Section */}
+      <AgencyCtaSection locale={locale} />
 
       {/* CTA Section */}
       <CtaSection
@@ -160,6 +171,7 @@ export default async function HomePage({ params }: Props) {
           subtitle: tCta('subtitle'),
           button: tCta('button'),
         }}
+        backgroundImage={homepageSettings.cta_background_image}
       />
     </>
   );

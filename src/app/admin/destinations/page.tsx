@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useAuthContext } from '@/hooks/useAuthContext';
 
 interface Destination {
   id: string;
@@ -15,6 +16,7 @@ interface Destination {
   country: string;
   image_url: string | null;
   is_active: boolean;
+  partner_id: string;
   partner?: {
     name: string;
   };
@@ -30,19 +32,25 @@ const regions: Record<string, string> = {
 };
 
 export default function DestinationsListPage() {
+  const auth = useAuthContext();
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRegion, setFilterRegion] = useState<string>('all');
 
   useEffect(() => {
-    fetchDestinations();
-  }, []);
+    // Wait for auth context to load before fetching
+    if (!auth.isLoading) {
+      fetchDestinations();
+    }
+  }, [auth.isLoading, auth.partnerId]);
 
   async function fetchDestinations() {
     const supabase = createClient();
+
+    // Build query
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from('destinations')
       .select(`
         id,
@@ -53,9 +61,17 @@ export default function DestinationsListPage() {
         country,
         image_url,
         is_active,
+        partner_id,
         partner:partners(name)
       `)
       .order('name');
+
+    // If user is a partner, only show their destinations
+    if (auth.isPartner && auth.partnerId) {
+      query = query.eq('partner_id', auth.partnerId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching destinations:', error);
@@ -77,6 +93,9 @@ export default function DestinationsListPage() {
   });
 
   async function toggleActive(id: string, currentStatus: boolean) {
+    // Partners cannot change status
+    if (auth.isPartner) return;
+
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
@@ -92,6 +111,9 @@ export default function DestinationsListPage() {
   }
 
   async function deleteDestination(id: string) {
+    // Partners cannot delete
+    if (auth.isPartner) return;
+
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette destination ?')) return;
 
     const supabase = createClient();
@@ -103,26 +125,52 @@ export default function DestinationsListPage() {
     }
   }
 
+  // Show loading while auth is loading
+  if (auth.isLoading) {
+    return (
+      <div className="p-12 text-center">
+        <div className="w-10 h-10 border-4 border-terracotta-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="mt-4 text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-heading text-gray-900">Destinations</h1>
+          <h1 className="text-2xl font-heading text-gray-900">
+            {auth.isPartner ? 'Mes destinations' : 'Destinations'}
+          </h1>
           <p className="text-gray-600 mt-1">
-            Gérez les destinations affichées sur le site
+            {auth.isPartner
+              ? 'Gérez les destinations associées à votre compte'
+              : 'Gérez les destinations affichées sur le site'}
           </p>
         </div>
-        <Link
-          href="/admin/destinations/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nouvelle destination
-        </Link>
+        {auth.isAdmin && (
+          <Link
+            href="/admin/destinations/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nouvelle destination
+          </Link>
+        )}
       </div>
+
+      {/* Partner info banner */}
+      {auth.isPartner && auth.partner && (
+        <div className="bg-deep-blue-50 border border-deep-blue-100 rounded-xl p-4 mb-6">
+          <p className="text-sm text-deep-blue-700">
+            <span className="font-medium">Espace partenaire</span> — Vous pouvez modifier les informations et images de vos destinations.
+            Pour toute autre modification, contactez l&apos;équipe DMC Alliance.
+          </p>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
@@ -173,16 +221,22 @@ export default function DestinationsListPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <h3 className="text-lg font-medium text-gray-900 mb-1">Aucune destination</h3>
-            <p className="text-gray-500 mb-4">Commencez par ajouter votre première destination</p>
-            <Link
-              href="/admin/destinations/new"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Ajouter une destination
-            </Link>
+            <p className="text-gray-500 mb-4">
+              {auth.isPartner
+                ? 'Aucune destination n\'est encore associée à votre compte'
+                : 'Commencez par ajouter votre première destination'}
+            </p>
+            {auth.isAdmin && (
+              <Link
+                href="/admin/destinations/new"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Ajouter une destination
+              </Link>
+            )}
           </div>
         ) : (
           <table className="w-full">
@@ -194,9 +248,11 @@ export default function DestinationsListPage() {
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Région
                 </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Partenaire
-                </th>
+                {auth.isAdmin && (
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Partenaire
+                  </th>
+                )}
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Statut
                 </th>
@@ -238,21 +294,36 @@ export default function DestinationsListPage() {
                       {regions[destination.region] || destination.region}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {destination.partner?.name || '-'}
-                  </td>
+                  {auth.isAdmin && (
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {destination.partner?.name || '-'}
+                    </td>
+                  )}
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleActive(destination.id, destination.is_active)}
-                      className={cn(
-                        'inline-flex px-2 py-1 text-xs font-medium rounded-full transition-colors',
-                        destination.is_active
-                          ? 'bg-sage-100 text-sage-700 hover:bg-sage-200'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      )}
-                    >
-                      {destination.is_active ? 'Actif' : 'Inactif'}
-                    </button>
+                    {auth.isAdmin ? (
+                      <button
+                        onClick={() => toggleActive(destination.id, destination.is_active)}
+                        className={cn(
+                          'inline-flex px-2 py-1 text-xs font-medium rounded-full transition-colors',
+                          destination.is_active
+                            ? 'bg-sage-100 text-sage-700 hover:bg-sage-200'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        )}
+                      >
+                        {destination.is_active ? 'Actif' : 'Inactif'}
+                      </button>
+                    ) : (
+                      <span
+                        className={cn(
+                          'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                          destination.is_active
+                            ? 'bg-sage-100 text-sage-700'
+                            : 'bg-gray-100 text-gray-500'
+                        )}
+                      >
+                        {destination.is_active ? 'Actif' : 'Inactif'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
@@ -265,15 +336,17 @@ export default function DestinationsListPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </Link>
-                      <button
-                        onClick={() => deleteDestination(destination.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Supprimer"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      {auth.isAdmin && (
+                        <button
+                          onClick={() => deleteDestination(destination.id)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
