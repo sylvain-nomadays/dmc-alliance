@@ -204,8 +204,8 @@ export default async function CircuitPage({ params }: Props) {
   const dbDestination = dbCircuit?.destination;
   const destination = dbDestination ? {
     slug: dbDestination.slug,
-    name: dbDestination.name_fr,
-    nameEn: dbDestination.name_en || dbDestination.name_fr,
+    name: dbDestination.name,
+    nameEn: dbDestination.name_en || dbDestination.name,
   } : partner?.destinations.find((d) => d.slug === circuit.destinationSlug);
   const isFr = locale === 'fr';
 
@@ -615,9 +615,9 @@ export default async function CircuitPage({ params }: Props) {
                   <div className="bg-deep-blue-900 rounded-2xl p-6 text-white">
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center overflow-hidden">
-                        {partner.logo_url ? (
+                        {('logo_url' in partner && partner.logo_url) || ('logo' in partner && partner.logo) ? (
                           <Image
-                            src={partner.logo_url}
+                            src={('logo_url' in partner ? partner.logo_url : partner.logo) as string}
                             alt={partner.name}
                             width={56}
                             height={56}

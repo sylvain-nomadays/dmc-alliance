@@ -55,7 +55,8 @@ export default function CircuitDeparturesPage() {
     const supabase = createClient();
 
     // Fetch circuit info
-    const { data: circuitData, error: circuitError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: circuitData, error: circuitError } = await (supabase as any)
       .from('circuits')
       .select('id, title, slug, duration_days, price_from')
       .eq('id', circuitId)
@@ -70,7 +71,8 @@ export default function CircuitDeparturesPage() {
     setCircuit(circuitData);
 
     // Fetch departures
-    const { data: departuresData, error: departuresError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: departuresData, error: departuresError } = await (supabase as any)
       .from('circuit_departures')
       .select('*')
       .eq('circuit_id', circuitId)
@@ -135,7 +137,8 @@ export default function CircuitDeparturesPage() {
 
     if (editingDeparture) {
       // Update existing departure
-      const { error: updateError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase as any)
         .from('circuit_departures')
         .update(departureData)
         .eq('id', editingDeparture.id);
@@ -149,7 +152,8 @@ export default function CircuitDeparturesPage() {
       setSuccess('Départ mis à jour avec succès');
     } else {
       // Create new departure
-      const { error: insertError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: insertError } = await (supabase as any)
         .from('circuit_departures')
         .insert(departureData);
 
@@ -177,7 +181,8 @@ export default function CircuitDeparturesPage() {
 
     const supabase = createClient();
 
-    const { error: deleteError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: deleteError } = await (supabase as any)
       .from('circuit_departures')
       .delete()
       .eq('id', departureId);

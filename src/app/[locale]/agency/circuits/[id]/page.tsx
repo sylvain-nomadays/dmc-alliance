@@ -99,7 +99,8 @@ export default function AgencyCircuitDetailPage() {
     const loadCircuit = async () => {
       const supabase = createClient();
 
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('circuits')
         .select(`
           id, title, slug, description_fr, description_en, itinerary,
@@ -116,7 +117,7 @@ export default function AgencyCircuitDetailPage() {
 
       if (error) {
         console.error('Error loading circuit:', error);
-      } else {
+      } else if (data) {
         // Trier les départs par date
         const sortedDepartures = (data.departures || []).sort(
           (a: Departure, b: Departure) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
