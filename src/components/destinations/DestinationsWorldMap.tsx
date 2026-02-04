@@ -72,7 +72,7 @@ export function DestinationsWorldMap({ locale, destinations, translations }: Des
           x: svgCoords.x,
           y: svgCoords.y,
           region: dest.region as Region,
-          hasGir: dest.hasGir,
+          hasGir: dest.hasGir ?? false,
           partnerName: dest.partnerName,
         });
       }

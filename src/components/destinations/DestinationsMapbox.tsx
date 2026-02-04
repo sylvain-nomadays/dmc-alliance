@@ -80,7 +80,7 @@ export function DestinationsMapbox({ locale, destinations, translations }: Desti
           lng: coords.lng,
           lat: coords.lat,
           region: dest.region as Region,
-          hasGir: dest.hasGir,
+          hasGir: dest.hasGir ?? false,
           partnerName: dest.partnerName,
         });
       }

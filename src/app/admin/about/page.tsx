@@ -192,37 +192,42 @@ export default function AboutAdminPage() {
   const loadAllData = async () => {
     setIsLoading(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+
       // Load settings
-      const { data: settingsData } = await supabase
+      const { data: settingsData } = await db
         .from('about_page_settings')
         .select('*')
         .eq('section', 'global')
         .single();
-      if (settingsData) setSettings({ ...defaultSettings, ...settingsData });
+      if (settingsData && typeof settingsData === 'object') {
+        setSettings({ ...defaultSettings, ...(settingsData as typeof defaultSettings) });
+      }
 
       // Load stats
-      const { data: statsData } = await supabase
+      const { data: statsData } = await db
         .from('about_page_stats')
         .select('*')
         .order('display_order');
       if (statsData) setStats(statsData);
 
       // Load values
-      const { data: valuesData } = await supabase
+      const { data: valuesData } = await db
         .from('about_page_values')
         .select('*')
         .order('display_order');
       if (valuesData) setValues(valuesData);
 
       // Load milestones
-      const { data: milestonesData } = await supabase
+      const { data: milestonesData } = await db
         .from('about_page_milestones')
         .select('*')
         .order('display_order');
       if (milestonesData) setMilestones(milestonesData);
 
       // Load representatives
-      const { data: repsData } = await supabase
+      const { data: repsData } = await db
         .from('commercial_representatives')
         .select('*')
         .order('display_order');
@@ -242,11 +247,12 @@ export default function AboutAdminPage() {
     setMessage(null);
     try {
       // First check if settings row exists
-      const { data: existingData, error: selectError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existingData, error: selectError } = await (supabase as any)
         .from('about_page_settings')
         .select('id')
         .eq('section', 'global')
-        .single();
+        .single() as { data: { id: string } | null; error: { code?: string; message?: string } | null };
 
       if (selectError && selectError.code !== 'PGRST116') {
         // PGRST116 is "no rows found" - that's OK, we'll insert
@@ -260,14 +266,16 @@ export default function AboutAdminPage() {
 
       if (existingData?.id) {
         // Update existing row
-        const result = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await (supabase as any)
           .from('about_page_settings')
           .update({ ...settingsWithoutId, updated_at: new Date().toISOString() })
           .eq('id', existingData.id);
         error = result.error;
       } else {
         // Insert new row
-        const result = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await (supabase as any)
           .from('about_page_settings')
           .insert([{ ...settingsWithoutId, section: 'global' }]);
         error = result.error;
@@ -295,10 +303,12 @@ export default function AboutAdminPage() {
   // =====================================================
   const saveStat = async (stat: Partial<Stat>) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
       if (editingStat) {
-        await supabase.from('about_page_stats').update(stat).eq('id', editingStat.id);
+        await db.from('about_page_stats').update(stat).eq('id', editingStat.id);
       } else {
-        await supabase.from('about_page_stats').insert([{ ...stat, display_order: stats.length }]);
+        await db.from('about_page_stats').insert([{ ...stat, display_order: stats.length }]);
       }
       await loadAllData();
       setShowStatModal(false);
@@ -312,7 +322,8 @@ export default function AboutAdminPage() {
 
   const deleteStat = async (id: string) => {
     if (!confirm('Supprimer cette statistique ?')) return;
-    await supabase.from('about_page_stats').delete().eq('id', id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('about_page_stats').delete().eq('id', id);
     await loadAllData();
   };
 
@@ -321,10 +332,12 @@ export default function AboutAdminPage() {
   // =====================================================
   const saveValue = async (value: Partial<Value>) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
       if (editingValue) {
-        await supabase.from('about_page_values').update(value).eq('id', editingValue.id);
+        await db.from('about_page_values').update(value).eq('id', editingValue.id);
       } else {
-        await supabase.from('about_page_values').insert([{ ...value, display_order: values.length }]);
+        await db.from('about_page_values').insert([{ ...value, display_order: values.length }]);
       }
       await loadAllData();
       setShowValueModal(false);
@@ -338,7 +351,8 @@ export default function AboutAdminPage() {
 
   const deleteValue = async (id: string) => {
     if (!confirm('Supprimer cette valeur ?')) return;
-    await supabase.from('about_page_values').delete().eq('id', id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('about_page_values').delete().eq('id', id);
     await loadAllData();
   };
 
@@ -347,10 +361,12 @@ export default function AboutAdminPage() {
   // =====================================================
   const saveMilestone = async (milestone: Partial<Milestone>) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
       if (editingMilestone) {
-        await supabase.from('about_page_milestones').update(milestone).eq('id', editingMilestone.id);
+        await db.from('about_page_milestones').update(milestone).eq('id', editingMilestone.id);
       } else {
-        await supabase.from('about_page_milestones').insert([{ ...milestone, display_order: milestones.length }]);
+        await db.from('about_page_milestones').insert([{ ...milestone, display_order: milestones.length }]);
       }
       await loadAllData();
       setShowMilestoneModal(false);
@@ -364,7 +380,8 @@ export default function AboutAdminPage() {
 
   const deleteMilestone = async (id: string) => {
     if (!confirm('Supprimer ce jalon ?')) return;
-    await supabase.from('about_page_milestones').delete().eq('id', id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('about_page_milestones').delete().eq('id', id);
     await loadAllData();
   };
 
@@ -373,10 +390,12 @@ export default function AboutAdminPage() {
   // =====================================================
   const saveRepresentative = async (rep: Partial<Representative>) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
       if (editingRep) {
-        await supabase.from('commercial_representatives').update(rep).eq('id', editingRep.id);
+        await db.from('commercial_representatives').update(rep).eq('id', editingRep.id);
       } else {
-        await supabase.from('commercial_representatives').insert([{ ...rep, display_order: representatives.length }]);
+        await db.from('commercial_representatives').insert([{ ...rep, display_order: representatives.length }]);
       }
       await loadAllData();
       setShowRepModal(false);
@@ -390,12 +409,14 @@ export default function AboutAdminPage() {
 
   const deleteRepresentative = async (id: string) => {
     if (!confirm('Supprimer ce représentant ?')) return;
-    await supabase.from('commercial_representatives').delete().eq('id', id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('commercial_representatives').delete().eq('id', id);
     await loadAllData();
   };
 
   const toggleRepActive = async (rep: Representative) => {
-    await supabase.from('commercial_representatives').update({ is_active: !rep.is_active }).eq('id', rep.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('commercial_representatives').update({ is_active: !rep.is_active }).eq('id', rep.id);
     await loadAllData();
   };
 
