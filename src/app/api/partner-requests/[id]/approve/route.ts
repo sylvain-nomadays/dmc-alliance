@@ -66,7 +66,7 @@ export async function POST(
           phone: requestData.contact_phone,
           website: requestData.website,
           description_fr: requestData.description,
-          specialties: requestData.specialties || [],
+          // Note: specialties stockées dans partner_registration_requests, pas dans partners
           has_gir: requestData.has_gir,
           is_active: true,
         })
