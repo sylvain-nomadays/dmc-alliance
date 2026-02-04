@@ -448,7 +448,7 @@ async function handleAgencyJoinRequest(userId: string, data: {
             user_name: data.contactName,
             user_email: data.email,
             message: data.message || 'Aucun message',
-            dashboard_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/agency/settings`,
+            dashboard_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/espace-pro/settings`,
           }, 'fr');
 
           if (emailContent) {

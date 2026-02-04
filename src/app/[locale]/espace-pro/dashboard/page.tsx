@@ -283,7 +283,7 @@ export default async function AgencyDashboardPage({
               </div>
             </div>
             <Link
-              href={`/${locale}/agency/settings`}
+              href={`/${locale}/espace-pro/settings`}
               className="px-6 py-3 bg-white text-terracotta-600 font-medium rounded-lg hover:bg-terracotta-50 transition-colors text-center"
             >
               {isFr ? 'Compléter mon profil' : 'Complete Profile'}
@@ -324,7 +324,7 @@ export default async function AgencyDashboardPage({
                 ))}
               </div>
               <Link
-                href={`/${locale}/agency/settings?tab=team`}
+                href={`/${locale}/espace-pro/settings?tab=team`}
                 className="inline-block mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
               >
                 {isFr ? 'Gérer les demandes →' : 'Manage requests →'}
@@ -376,7 +376,7 @@ export default async function AgencyDashboardPage({
               {isFr ? 'Réservations récentes' : 'Recent Bookings'}
             </h2>
             <Link
-              href={`/${locale}/agency/bookings`}
+              href={`/${locale}/espace-pro/bookings`}
               className="text-sm text-terracotta-600 hover:text-terracotta-700"
             >
               {isFr ? 'Voir tout' : 'View all'}
@@ -389,7 +389,7 @@ export default async function AgencyDashboardPage({
               </svg>
               <p>{isFr ? 'Aucune réservation pour le moment' : 'No bookings yet'}</p>
               <Link
-                href={`/${locale}/agency/circuits`}
+                href={`/${locale}/espace-pro/circuits`}
                 className="inline-block mt-4 text-terracotta-600 hover:text-terracotta-700"
               >
                 {isFr ? 'Explorer les circuits' : 'Explore circuits'}
@@ -429,7 +429,7 @@ export default async function AgencyDashboardPage({
               {isFr ? 'Circuits suivis' : 'Watched Circuits'}
             </h2>
             <Link
-              href={`/${locale}/agency/watchlist`}
+              href={`/${locale}/espace-pro/watchlist`}
               className="text-sm text-terracotta-600 hover:text-terracotta-700"
             >
               {isFr ? 'Voir tout' : 'View all'}
@@ -442,7 +442,7 @@ export default async function AgencyDashboardPage({
               </svg>
               <p>{isFr ? 'Aucun circuit suivi' : 'No watched circuits'}</p>
               <Link
-                href={`/${locale}/agency/circuits`}
+                href={`/${locale}/espace-pro/circuits`}
                 className="inline-block mt-4 text-terracotta-600 hover:text-terracotta-700"
               >
                 {isFr ? 'Découvrir les circuits' : 'Discover circuits'}
@@ -453,7 +453,7 @@ export default async function AgencyDashboardPage({
               {watchedCircuits.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/${locale}/agency/circuits/${item.circuit?.id}`}
+                  href={`/${locale}/espace-pro/circuits/${item.circuit?.id}`}
                   className="block px-6 py-4 hover:bg-gray-50"
                 >
                   <div className="flex justify-between items-start mb-2">
@@ -497,7 +497,7 @@ export default async function AgencyDashboardPage({
         </h2>
         <div className="grid sm:grid-cols-4 gap-4">
           <Link
-            href={`/${locale}/agency/circuits`}
+            href={`/${locale}/espace-pro/circuits`}
             className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg p-4 transition-colors"
           >
             <svg className="w-8 h-8 text-terracotta-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,7 +509,7 @@ export default async function AgencyDashboardPage({
             </div>
           </Link>
           <Link
-            href={`/${locale}/agency/watchlist`}
+            href={`/${locale}/espace-pro/watchlist`}
             className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg p-4 transition-colors"
           >
             <svg className="w-8 h-8 text-terracotta-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -521,7 +521,7 @@ export default async function AgencyDashboardPage({
             </div>
           </Link>
           <Link
-            href={`/${locale}/agency/destinations`}
+            href={`/${locale}/espace-pro/destinations`}
             className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg p-4 transition-colors"
           >
             <svg className="w-8 h-8 text-terracotta-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -533,7 +533,7 @@ export default async function AgencyDashboardPage({
             </div>
           </Link>
           <Link
-            href={`/${locale}/agency/settings`}
+            href={`/${locale}/espace-pro/settings`}
             className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg p-4 transition-colors"
           >
             <svg className="w-8 h-8 text-terracotta-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

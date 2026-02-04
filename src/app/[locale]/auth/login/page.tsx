@@ -56,7 +56,7 @@ function LoginForm() {
       let targetUrl = `/${locale}`;
 
       if (profile?.role === 'agency') {
-        targetUrl = `/${locale}/agency/dashboard`;
+        targetUrl = `/${locale}/espace-pro/dashboard`;
       } else if (profile?.role === 'admin') {
         targetUrl = '/admin';
       } else if (profile?.role === 'partner') {

@@ -174,7 +174,7 @@ export default function AgencyWatchlistPage() {
               : 'Add circuits to your watchlist to track their filling and receive alerts.'}
           </p>
           <Link
-            href={`/${locale}/agency/circuits`}
+            href={`/${locale}/espace-pro/circuits`}
             className="inline-flex items-center gap-2 px-6 py-3 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
           >
             {isFr ? 'Parcourir les circuits' : 'Browse circuits'}
@@ -220,7 +220,7 @@ export default function AgencyWatchlistPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Link
-                            href={`/${locale}/agency/circuits/${circuit.id}`}
+                            href={`/${locale}/espace-pro/circuits/${circuit.id}`}
                             className="font-semibold text-gray-900 hover:text-terracotta-600"
                           >
                             {circuit.title_fr}
@@ -327,7 +327,7 @@ export default function AgencyWatchlistPage() {
                   {/* Actions */}
                   <div className="flex gap-2">
                     <Link
-                      href={`/${locale}/agency/circuits/${circuit.id}`}
+                      href={`/${locale}/espace-pro/circuits/${circuit.id}`}
                       className="px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors text-sm"
                     >
                       {isFr ? 'Voir le circuit' : 'View circuit'}

@@ -486,7 +486,7 @@ export default function AgencyCircuitsPage() {
                       </p>
                     </div>
                     <Link
-                      href={`/${locale}/agency/circuits/${circuit.id}`}
+                      href={`/${locale}/espace-pro/circuits/${circuit.id}`}
                       className="px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors text-sm font-medium"
                     >
                       {isFr ? 'Voir détails' : 'View details'}

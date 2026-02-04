@@ -72,7 +72,7 @@ export default function AgencySettingsPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const response = await fetch('/api/agency/profile');
+        const response = await fetch('/api/espace-pro/profile');
         if (response.ok) {
           const data = await response.json();
           setProfile(data.agency);
@@ -172,7 +172,7 @@ export default function AgencySettingsPage() {
     setMessage(null);
 
     try {
-      const response = await fetch('/api/agency/profile', {
+      const response = await fetch('/api/espace-pro/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

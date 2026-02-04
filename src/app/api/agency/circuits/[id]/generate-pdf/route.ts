@@ -1,7 +1,7 @@
 /**
  * API pour générer un PDF d'itinéraire personnalisé pour une agence
  *
- * POST /api/agency/circuits/[id]/generate-pdf
+ * POST /api/espace-pro/circuits/[id]/generate-pdf
  * Body: {
  *   language: 'fr' | 'en',
  *   customNote?: string,

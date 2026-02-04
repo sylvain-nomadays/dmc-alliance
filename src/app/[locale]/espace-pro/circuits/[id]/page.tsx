@@ -10,7 +10,7 @@ import {
   Calendar, MapPin, Users, Clock, ChevronLeft, Bookmark, BookmarkCheck,
   Check, X, Info, Send, Phone, Mail, AlertCircle
 } from 'lucide-react';
-import { CircuitPDFExport } from '@/components/agency/CircuitPDFExport';
+import { CircuitPDFExport } from '@/components/espace-pro/CircuitPDFExport';
 
 interface Departure {
   id: string;
@@ -223,7 +223,7 @@ export default function AgencyCircuitDetailPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/agency/requests', {
+      const response = await fetch('/api/espace-pro/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -319,7 +319,7 @@ export default function AgencyCircuitDetailPage() {
         <p className="text-gray-500 mb-4">
           {isFr ? 'Circuit non trouvé' : 'Circuit not found'}
         </p>
-        <Link href={`/${locale}/agency/circuits`}>
+        <Link href={`/${locale}/espace-pro/circuits`}>
           <Button>{isFr ? 'Retour aux circuits' : 'Back to circuits'}</Button>
         </Link>
       </div>
@@ -334,7 +334,7 @@ export default function AgencyCircuitDetailPage() {
     <div className="space-y-6">
       {/* Navigation */}
       <Link
-        href={`/${locale}/agency/circuits`}
+        href={`/${locale}/espace-pro/circuits`}
         className="inline-flex items-center text-gray-600 hover:text-terracotta-600"
       >
         <ChevronLeft className="w-4 h-4 mr-1" />

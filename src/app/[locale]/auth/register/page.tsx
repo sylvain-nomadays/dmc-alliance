@@ -328,7 +328,7 @@ function RegisterForm() {
       }
 
       // Rediriger vers l'espace agence
-      window.location.href = `/${locale}/agency/dashboard`;
+      window.location.href = `/${locale}/espace-pro/dashboard`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       setErrorType('generic');

@@ -53,7 +53,7 @@ export function CircuitPDFExport({
     setError(null);
 
     try {
-      const response = await fetch(`/api/agency/circuits/${circuitId}/generate-pdf`, {
+      const response = await fetch(`/api/espace-pro/circuits/${circuitId}/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

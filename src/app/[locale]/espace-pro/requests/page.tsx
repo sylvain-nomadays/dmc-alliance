@@ -209,7 +209,7 @@ export default function AgencyRequestsPage() {
                   : 'No requests of this type.')}
           </p>
           <Link
-            href={`/${locale}/agency/circuits`}
+            href={`/${locale}/espace-pro/circuits`}
             className="inline-flex items-center gap-2 px-6 py-3 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
           >
             {isFr ? 'Parcourir les circuits' : 'Browse circuits'}
@@ -230,7 +230,7 @@ export default function AgencyRequestsPage() {
 
                     {/* Circuit */}
                     <Link
-                      href={`/${locale}/agency/circuits/${req.circuit_id}`}
+                      href={`/${locale}/espace-pro/circuits/${req.circuit_id}`}
                       className="font-semibold text-gray-900 hover:text-terracotta-600 block mb-1"
                     >
                       {req.circuit?.title_fr}

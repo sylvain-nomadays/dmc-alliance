@@ -578,14 +578,14 @@ export default async function CircuitPage({ params }: Props) {
                                 </p>
                               </div>
                             </div>
-                            <Link href={`/${locale}/auth/register?redirect=/agency/circuits/${circuit.slug}`} className="block mt-3">
+                            <Link href={`/${locale}/auth/register?redirect=/espace-pro/circuits/${circuit.slug}`} className="block mt-3">
                               <Button variant="primary" fullWidth size="sm">
                                 {isFr ? 'Créer mon espace agence' : 'Create my agency account'}
                               </Button>
                             </Link>
                             <p className="text-xs text-center text-deep-blue-500 mt-2">
                               {isFr ? 'Déjà inscrit ?' : 'Already registered?'}{' '}
-                              <Link href={`/${locale}/auth/login?redirect=/agency/circuits/${circuit.slug}`} className="underline hover:text-deep-blue-700">
+                              <Link href={`/${locale}/auth/login?redirect=/espace-pro/circuits/${circuit.slug}`} className="underline hover:text-deep-blue-700">
                                 {isFr ? 'Se connecter' : 'Sign in'}
                               </Link>
                             </p>
