@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getAuthContext } from '@/lib/auth/getAuthContext';
 import { createClient } from '@/lib/supabase/server';
+import { LogoutButton } from '@/components/agency/LogoutButton';
 
 interface AgencyInfo {
   id: string;
@@ -128,7 +129,7 @@ export default async function AgencyLayout({
       ),
     },
     {
-      name: isFr ? 'Paramètres' : 'Settings',
+      name: isFr ? 'Mon agence' : 'My Agency',
       href: `/${locale}/agency/settings`,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,6 +181,12 @@ export default async function AgencyLayout({
                   </span>
                 )}
               </div>
+
+              {/* Logout button */}
+              <LogoutButton
+                locale={locale}
+                label={isFr ? 'Déconnexion' : 'Logout'}
+              />
             </div>
           </div>
         </div>

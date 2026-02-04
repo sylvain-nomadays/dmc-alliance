@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { Building2, Globe, Users, ChevronLeft, Check, AlertCircle, UserPlus } from 'lucide-react';
+import { Building2, Globe, Users, ChevronLeft, Check, AlertCircle, UserPlus, LogIn, KeyRound } from 'lucide-react';
 
 // Types pour le formulaire
 type AccountType = 'agency' | 'dmc' | null;
@@ -15,6 +15,12 @@ interface ExistingAgency {
   name: string;
   city: string | null;
   country: string | null;
+}
+
+interface ExistingPartner {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface AgencyFormData {
@@ -102,6 +108,7 @@ function RegisterForm() {
   const [step, setStep] = useState(1);
   const [accountType, setAccountType] = useState<AccountType>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'generic' | 'account_exists' | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [pendingJoin, setPendingJoin] = useState(false);
@@ -111,6 +118,13 @@ function RegisterForm() {
   const [checkingAgency, setCheckingAgency] = useState(false);
   const [joinMode, setJoinMode] = useState(false);
   const [joinMessage, setJoinMessage] = useState('');
+
+  // Pour la détection de partenaire DMC existant
+  const [existingPartner, setExistingPartner] = useState<ExistingPartner | null>(null);
+  const [checkingPartner, setCheckingPartner] = useState(false);
+  const [joinPartnerMode, setJoinPartnerMode] = useState(false);
+  const [joinPartnerMessage, setJoinPartnerMessage] = useState('');
+  const [pendingPartnerJoin, setPendingPartnerJoin] = useState(false);
 
   // Formulaire Agence
   const [agencyForm, setAgencyForm] = useState<AgencyFormData>({
@@ -183,18 +197,55 @@ function RegisterForm() {
     }
   }, [agencyForm.agencyName, accountType, checkExistingAgency]);
 
+  // Vérifier si un partenaire DMC existe avec ce nom
+  const checkExistingPartner = useCallback(async (name: string) => {
+    if (!name || name.length < 3) {
+      setExistingPartner(null);
+      return;
+    }
+
+    setCheckingPartner(true);
+    try {
+      const response = await fetch(`/api/auth/register?partnerName=${encodeURIComponent(name)}`);
+      const data = await response.json();
+
+      if (data.exists && data.partner) {
+        setExistingPartner(data.partner);
+      } else {
+        setExistingPartner(null);
+      }
+    } catch (err) {
+      console.error('Error checking partner:', err);
+    } finally {
+      setCheckingPartner(false);
+    }
+  }, []);
+
+  // Debounce pour la vérification du nom de partenaire
+  useEffect(() => {
+    if (accountType === 'dmc' && dmcForm.partnerName) {
+      const timer = setTimeout(() => {
+        checkExistingPartner(dmcForm.partnerName);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [dmcForm.partnerName, accountType, checkExistingPartner]);
+
   const handleAgencySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setErrorType(null);
 
     // Validation
     if (agencyForm.password !== agencyForm.confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
+      setErrorType('generic');
       return;
     }
 
     if (agencyForm.password.length < 8) {
       setError('Le mot de passe doit contenir au moins 8 caractères');
+      setErrorType('generic');
       return;
     }
 
@@ -219,7 +270,15 @@ function RegisterForm() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Erreur lors de la demande');
+          // Vérifier si c'est une erreur "compte existe déjà"
+          if (data.error?.includes('existe déjà') || data.error?.includes('already')) {
+            setError('Un compte existe déjà avec cette adresse email.');
+            setErrorType('account_exists');
+          } else {
+            setError(data.error || 'Erreur lors de la demande');
+            setErrorType('generic');
+          }
+          return;
         }
 
         // Afficher la page de confirmation
@@ -240,7 +299,15 @@ function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors de l\'inscription');
+        // Vérifier si c'est une erreur "compte existe déjà"
+        if (data.error?.includes('existe déjà') || data.error?.includes('already')) {
+          setError('Un compte existe déjà avec cette adresse email.');
+          setErrorType('account_exists');
+        } else {
+          setError(data.error || 'Erreur lors de l\'inscription');
+          setErrorType('generic');
+        }
+        return;
       }
 
       // Connexion automatique après inscription
@@ -260,6 +327,7 @@ function RegisterForm() {
       window.location.href = `/${locale}/agency/dashboard`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setErrorType('generic');
     } finally {
       setLoading(false);
     }
@@ -268,26 +336,67 @@ function RegisterForm() {
   const handleDMCSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setErrorType(null);
 
     // Validation
     if (dmcForm.password !== dmcForm.confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
+      setErrorType('generic');
       return;
     }
 
     if (dmcForm.password.length < 8) {
       setError('Le mot de passe doit contenir au moins 8 caractères');
+      setErrorType('generic');
       return;
     }
 
-    if (dmcForm.destinations.length === 0) {
+    // Validation des destinations seulement si on ne rejoint pas un partenaire existant
+    if (!joinPartnerMode && dmcForm.destinations.length === 0) {
       setError('Veuillez sélectionner au moins une destination');
+      setErrorType('generic');
       return;
     }
 
     setLoading(true);
 
     try {
+      // Si on est en mode "rejoindre un partenaire"
+      if (joinPartnerMode && existingPartner) {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'dmc_join',
+            email: dmcForm.email,
+            password: dmcForm.password,
+            partnerId: existingPartner.id,
+            contactName: dmcForm.contactName,
+            contactEmail: dmcForm.contactEmail,
+            contactPhone: dmcForm.contactPhone,
+            message: joinPartnerMessage,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (data.error?.includes('existe déjà') || data.error?.includes('already')) {
+            setError('Un compte existe déjà avec cette adresse email.');
+            setErrorType('account_exists');
+          } else {
+            setError(data.error || 'Erreur lors de la demande');
+            setErrorType('generic');
+          }
+          return;
+        }
+
+        // Afficher la page de confirmation
+        setPendingPartnerJoin(true);
+        return;
+      }
+
+      // Sinon, création normale de DMC
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -300,12 +409,26 @@ function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors de l\'inscription');
+        // Vérifier si c'est une erreur de partenaire existant (409 Conflict)
+        if (response.status === 409 && data.existingPartner) {
+          setError(`Le partenaire "${data.existingPartner.name}" existe déjà sur DMC Alliance. Si vous êtes membre de ce DMC, veuillez contacter l'administrateur à contact@dmc-alliance.org pour obtenir l'accès.`);
+          setErrorType('generic');
+        }
+        // Vérifier si c'est une erreur "compte existe déjà"
+        else if (data.error?.includes('existe déjà') || data.error?.includes('already')) {
+          setError(data.error);
+          setErrorType('account_exists');
+        } else {
+          setError(data.error || 'Erreur lors de l\'inscription');
+          setErrorType('generic');
+        }
+        return;
       }
 
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setErrorType('generic');
     } finally {
       setLoading(false);
     }
@@ -346,6 +469,32 @@ function RegisterForm() {
           </p>
           <p className="text-sm text-gray-500 mb-6">
             Vous recevrez un email de confirmation à <strong>{agencyForm.email}</strong> une fois votre demande acceptée.
+          </p>
+          <Link href="/">
+            <Button fullWidth>Retour à l&apos;accueil</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Page de succès pour demande de rejoindre un partenaire DMC
+  if (pendingPartnerJoin) {
+    return (
+      <div className="max-w-md w-full text-center">
+        <div className="bg-white rounded-2xl shadow-card p-8">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <UserPlus className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-xl font-heading text-gray-900 mb-4">
+            Demande de rattachement envoyée !
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Votre demande pour rejoindre <strong>{existingPartner?.name}</strong> a bien été envoyée.
+            Notre équipe va examiner votre demande et vous contactera sous 48h.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Vous recevrez un email de confirmation à <strong>{dmcForm.email}</strong> une fois votre demande acceptée.
           </p>
           <Link href="/">
             <Button fullWidth>Retour à l&apos;accueil</Button>
@@ -469,8 +618,26 @@ function RegisterForm() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-              {error}
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+              {errorType === 'account_exists' && (
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <Link
+                    href="/auth/login"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-terracotta-600 text-white text-sm font-medium rounded-lg hover:bg-terracotta-700 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Se connecter
+                  </Link>
+                  <Link
+                    href="/auth/forgot-password"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                  >
+                    <KeyRound className="w-4 h-4" />
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
@@ -731,8 +898,26 @@ function RegisterForm() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-              {error}
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+              {errorType === 'account_exists' && (
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <Link
+                    href="/auth/login"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-terracotta-600 text-white text-sm font-medium rounded-lg hover:bg-terracotta-700 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Se connecter
+                  </Link>
+                  <Link
+                    href="/auth/forgot-password"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                  >
+                    <KeyRound className="w-4 h-4" />
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
@@ -752,12 +937,95 @@ function RegisterForm() {
                   <input
                     type="text"
                     value={dmcForm.partnerName}
-                    onChange={(e) => setDmcForm({ ...dmcForm, partnerName: e.target.value })}
+                    onChange={(e) => {
+                      setDmcForm({ ...dmcForm, partnerName: e.target.value });
+                      setJoinPartnerMode(false);
+                    }}
                     required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-terracotta-500"
+                    disabled={joinPartnerMode}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-terracotta-500 disabled:bg-gray-100"
                     placeholder="Ex: Asia Travel Expert"
                   />
+                  {checkingPartner && (
+                    <p className="text-xs text-gray-500 mt-1">Vérification...</p>
+                  )}
                 </div>
+
+                {/* Alerte partenaire existant */}
+                {existingPartner && !joinPartnerMode && (
+                  <div className="md:col-span-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-800">
+                          Ce partenaire DMC existe déjà sur DMC Alliance
+                        </p>
+                        <p className="text-sm text-amber-700 mt-1">
+                          <strong>{existingPartner.name}</strong> est déjà inscrit sur notre plateforme.
+                        </p>
+                        <p className="text-sm text-amber-700 mt-2">
+                          Si vous êtes un collaborateur de ce DMC, vous pouvez demander à le rejoindre.
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setJoinPartnerMode(true)}
+                            className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                          >
+                            Rejoindre ce partenaire
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setExistingPartner(null)}
+                            className="px-4 py-2 bg-white text-amber-700 text-sm font-medium rounded-lg border border-amber-300 hover:bg-amber-50 transition-colors"
+                          >
+                            C&apos;est un autre DMC
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mode rejoindre un partenaire */}
+                {joinPartnerMode && existingPartner && (
+                  <div className="md:col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <UserPlus className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-800">
+                          Demande pour rejoindre {existingPartner.name}
+                        </p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          Vous allez demander à rejoindre ce partenaire DMC en tant que collaborateur.
+                          L&apos;administrateur DMC Alliance examinera votre demande.
+                        </p>
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-blue-800 mb-1">
+                            Message (optionnel)
+                          </label>
+                          <textarea
+                            value={joinPartnerMessage}
+                            onChange={(e) => setJoinPartnerMessage(e.target.value)}
+                            rows={2}
+                            placeholder="Expliquez votre rôle au sein de ce DMC..."
+                            className="w-full px-3 py-2 text-sm border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setJoinPartnerMode(false);
+                            setJoinPartnerMessage('');
+                          }}
+                          className="mt-2 text-sm text-blue-600 hover:underline"
+                        >
+                          Annuler et créer un nouveau DMC
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

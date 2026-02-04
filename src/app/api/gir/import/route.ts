@@ -369,6 +369,17 @@ Extrais les informations suivantes et retourne UNIQUEMENT du JSON valide (sans m
       "description_fr": "description des activités du jour 1"
     },
     ...
+  ],
+  "departures": [
+    {
+      "start_date": "YYYY-MM-DD (date de départ)",
+      "end_date": "YYYY-MM-DD (date de retour, optionnel)",
+      "price": prix en euros (integer),
+      "total_seats": nombre de places total (integer, défaut 16 si non spécifié),
+      "booked_seats": nombre de places réservées (integer, défaut 0 si non spécifié),
+      "status": "open" ou "confirmed" ou "full" selon disponibilité
+    },
+    ...
   ]
 }
 
@@ -378,6 +389,10 @@ RÈGLES:
 - Pour la durée, extrais le nombre de jours (ex: 14 pour "14 jours / 13 nuits")
 - Pour l'itinéraire, essaie d'extraire au moins les titres de chaque jour
 - La description doit être informative et complète
+- Pour les dates de départ (departures), cherche les sections "Dates", "Départs", "Planning", "Calendrier" etc.
+- Les dates doivent être au format YYYY-MM-DD (ex: 2025-06-15)
+- Si une date indique "complet" ou "full", met status: "full"
+- Si une date indique "confirmé" ou "garanti", met status: "confirmed"
 
 Réponds UNIQUEMENT avec le JSON, sans aucun texte avant ou après.`;
 
@@ -537,10 +552,18 @@ async function rewriteForB2B(data: ImportedCircuitData): Promise<ImportedCircuit
 
 Réécris le contenu suivant d'un circuit touristique pour qu'il soit :
 1. Adapté à un public professionnel B2B (pas de "vous" direct au voyageur)
-2. Unique et original (pour éviter le contenu dupliqué avec la source)
+2. Reformulé professionnellement (évite le copier-coller mot à mot mais CONSERVE TOUTES les informations)
 3. Professionnel mais engageant
 4. Orienté vers les arguments de vente (USP, points forts)
 5. Avec des informations pratiques utiles aux agents
+
+RÈGLES IMPORTANTES DE CONSERVATION DU CONTENU :
+- NE RÉSUME PAS : conserve TOUTES les informations, détails, lieux et descriptions du texte original
+- La description réécrite doit être AU MOINS aussi longue que l'originale
+- Chaque jour d'itinéraire doit CONSERVER tous les détails : lieux visités, activités, durées, distances, hébergements
+- Tu peux ENRICHIR le texte avec des informations complémentaires mais JAMAIS le réduire
+- Les noms propres (villes, sites, hôtels, parcs, monuments) doivent être conservés intégralement
+- Garde les informations pratiques (km, heures, altitudes, températures) telles quelles
 
 Contenu original à réécrire :
 
@@ -585,7 +608,7 @@ Réponds au format JSON avec les clés suivantes (toutes en français d'abord, p
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
+      max_tokens: 8000,
       messages: [
         {
           role: 'user',

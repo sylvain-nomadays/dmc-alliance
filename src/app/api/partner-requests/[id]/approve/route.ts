@@ -11,7 +11,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { mode, partnerId } = body;
+    const { mode, partnerId, tier = 'classic' } = body;
 
     // Vérifier que l'utilisateur est admin
     const supabase = await createServerClient();
@@ -53,10 +53,10 @@ export async function POST(
       const { data: newPartner, error: partnerError } = await supabaseAdmin
         .from('partners')
         .insert({
-          user_id: requestData.user_id,
+          owner_id: requestData.user_id,  // Note: colonne owner_id, pas user_id
           name: requestData.partner_name,
           slug: requestData.partner_slug,
-          tier: 'classic',
+          tier: tier,
           email: requestData.contact_email,
           phone: requestData.contact_phone,
           website: requestData.website,
@@ -85,19 +85,54 @@ export async function POST(
         return NextResponse.json({ error: 'Partenaire non spécifié' }, { status: 400 });
       }
 
-      // Mettre à jour le partenaire existant avec le user_id
-      const { error: updatePartnerError } = await supabaseAdmin
-        .from('partners')
-        .update({ user_id: requestData.user_id })
-        .eq('id', partnerId);
+      console.log('[Approve] Looking for partner with ID:', partnerId);
 
-      if (updatePartnerError) {
-        console.error('[Approve] Update partner error:', updatePartnerError);
+      // D'abord, vérifier si le partenaire existe et a déjà un owner_id
+      // Note: La colonne s'appelle owner_id (pas user_id) dans la table partners
+      const { data: existingPartner, error: fetchError } = await supabaseAdmin
+        .from('partners')
+        .select('id, name, owner_id')
+        .eq('id', partnerId)
+        .single();
+
+      console.log('[Approve] Partner lookup result:', { existingPartner, fetchError: fetchError?.message });
+
+      if (fetchError || !existingPartner) {
+        console.error('[Approve] Fetch partner error:', fetchError);
         return NextResponse.json(
-          { error: 'Erreur lors de la liaison au partenaire' },
-          { status: 500 }
+          { error: `Partenaire non trouvé (ID: ${partnerId}). Erreur: ${fetchError?.message || 'Aucun résultat'}` },
+          { status: 404 }
         );
       }
+
+      // Si le partenaire a déjà un owner_id différent, on ne peut pas le lier directement
+      // On doit demander à l'admin de choisir un autre mode ou créer un nouveau partenaire
+      if (existingPartner.owner_id && existingPartner.owner_id !== requestData.user_id) {
+        console.log('[Approve] Partner already has an owner_id:', existingPartner.owner_id);
+        return NextResponse.json(
+          { error: `Ce partenaire (${existingPartner.name}) est déjà lié à un autre utilisateur. Veuillez créer un nouveau partenaire ou contacter l'utilisateur existant.` },
+          { status: 400 }
+        );
+      }
+
+      // Le partenaire n'a pas de owner_id ou c'est le même utilisateur, on peut le lier
+      if (!existingPartner.owner_id) {
+        // Le partenaire n'a pas de owner_id, on peut le lier
+        const { error: updatePartnerError } = await supabaseAdmin
+          .from('partners')
+          .update({ owner_id: requestData.user_id })
+          .eq('id', partnerId);
+
+        if (updatePartnerError) {
+          console.error('[Approve] Update partner error:', updatePartnerError);
+          return NextResponse.json(
+            { error: `Erreur lors de la liaison au partenaire: ${updatePartnerError.message}` },
+            { status: 500 }
+          );
+        }
+      }
+
+      finalPartnerId = partnerId;
     }
 
     // Mettre à jour le profil utilisateur
@@ -136,7 +171,7 @@ export async function POST(
       const emailContent = await buildEmailFromTemplate('partner_request_approved', {
         contact_name: requestData.contact_name,
         partner_name: requestData.partner_name,
-        login_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.com'}/auth/login`,
+        login_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/auth/login`,
       }, 'fr');
 
       if (emailContent) {

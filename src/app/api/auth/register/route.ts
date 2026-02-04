@@ -13,35 +13,82 @@ function generateSlug(name: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-// Endpoint pour vérifier si une agence existe (utilisé avant inscription)
+// Endpoint pour vérifier si une agence ou un partenaire existe (utilisé avant inscription)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const agencyName = searchParams.get('agencyName');
+    const partnerName = searchParams.get('partnerName');
 
-    if (!agencyName) {
+    // Vérification d'agence
+    if (agencyName) {
+      const slug = generateSlug(agencyName);
+
+      // Chercher une agence avec ce slug
+      const { data: existingAgency } = await supabaseAdmin
+        .from('agencies')
+        .select('id, name, slug, city, country')
+        .eq('slug', slug)
+        .single();
+
+      if (existingAgency) {
+        return NextResponse.json({
+          exists: true,
+          agency: {
+            id: existingAgency.id,
+            name: existingAgency.name,
+            city: existingAgency.city,
+            country: existingAgency.country,
+          },
+        });
+      }
+
       return NextResponse.json({ exists: false });
     }
 
-    const slug = generateSlug(agencyName);
+    // Vérification de partenaire DMC
+    if (partnerName) {
+      const slug = generateSlug(partnerName);
 
-    // Chercher une agence avec ce slug
-    const { data: existingAgency } = await supabaseAdmin
-      .from('agencies')
-      .select('id, name, slug, city, country')
-      .eq('slug', slug)
-      .single();
+      // Chercher un partenaire avec ce slug
+      const { data: existingPartner } = await supabaseAdmin
+        .from('partners')
+        .select('id, name, slug')
+        .eq('slug', slug)
+        .single();
 
-    if (existingAgency) {
-      return NextResponse.json({
-        exists: true,
-        agency: {
-          id: existingAgency.id,
-          name: existingAgency.name,
-          city: existingAgency.city,
-          country: existingAgency.country,
-        },
-      });
+      if (existingPartner) {
+        return NextResponse.json({
+          exists: true,
+          partner: {
+            id: existingPartner.id,
+            name: existingPartner.name,
+            slug: existingPartner.slug,
+          },
+        });
+      }
+
+      // Vérifier aussi s'il y a une demande en cours
+      const { data: existingRequest } = await supabaseAdmin
+        .from('partner_registration_requests')
+        .select('id, partner_name, partner_slug, status')
+        .eq('partner_slug', slug)
+        .in('status', ['pending'])
+        .single();
+
+      if (existingRequest) {
+        return NextResponse.json({
+          exists: true,
+          pendingRequest: true,
+          partner: {
+            id: existingRequest.id,
+            name: existingRequest.partner_name,
+            slug: existingRequest.partner_slug,
+          },
+        });
+      }
+
+      return NextResponse.json({ exists: false });
     }
 
     return NextResponse.json({ exists: false });
@@ -73,7 +120,8 @@ export async function POST(request: Request) {
     if (authError) {
       console.error('[Register] Auth error:', authError);
 
-      // Message d'erreur plus clair pour l'utilisateur
+      // SÉCURITÉ: Ne JAMAIS exposer authError.message directement
+      // car il peut contenir des tokens, clés API ou informations sensibles
       if (authError.message.includes('already registered')) {
         return NextResponse.json(
           { error: 'Un compte existe déjà avec cet email' },
@@ -81,8 +129,23 @@ export async function POST(request: Request) {
         );
       }
 
+      if (authError.message.includes('invalid') && authError.message.includes('email')) {
+        return NextResponse.json(
+          { error: 'Adresse email invalide' },
+          { status: 400 }
+        );
+      }
+
+      if (authError.message.toLowerCase().includes('password')) {
+        return NextResponse.json(
+          { error: 'Le mot de passe doit contenir au moins 6 caractères' },
+          { status: 400 }
+        );
+      }
+
+      // Message générique pour toute autre erreur (sécurité)
       return NextResponse.json(
-        { error: authError.message },
+        { error: 'Erreur lors de la création du compte. Veuillez réessayer.' },
         { status: 400 }
       );
     }
@@ -102,6 +165,8 @@ export async function POST(request: Request) {
       return await handleAgencyJoinRequest(userId, body);
     } else if (type === 'dmc') {
       return await handleDMCRegistration(userId, body);
+    } else if (type === 'dmc_join') {
+      return await handleDMCJoinRequest(userId, body);
     } else {
       // Supprimer l'utilisateur créé si type invalide
       await supabaseAdmin.auth.admin.deleteUser(userId);
@@ -204,7 +269,7 @@ async function handleAgencyRegistration(userId: string, data: {
       const emailContent = await buildEmailFromTemplate('welcome_agency', {
         agency_name: data.agencyName,
         contact_name: data.contactName,
-        login_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.com'}/auth/login`,
+        login_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/auth/login`,
       }, 'fr');
 
       if (emailContent) {
@@ -336,7 +401,7 @@ async function handleAgencyJoinRequest(userId: string, data: {
             user_name: data.contactName,
             user_email: data.email,
             message: data.message || 'Aucun message',
-            dashboard_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.com'}/agency/settings`,
+            dashboard_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/agency/settings`,
           }, 'fr');
 
           if (emailContent) {
@@ -382,10 +447,54 @@ async function handleDMCRegistration(userId: string, data: {
   destinations: string[];
   specialties: string[];
   hasGir: boolean;
+  existingPartnerId?: string; // Si le DMC veut rejoindre un partenaire existant
 }) {
   const slug = generateSlug(data.partnerName);
 
   try {
+    // 0. Vérifier si un partenaire existe déjà avec ce nom/slug
+    const { data: existingPartner } = await supabaseAdmin
+      .from('partners')
+      .select('id, name, slug')
+      .eq('slug', slug)
+      .single();
+
+    // Si un partenaire existe et que l'utilisateur n'a pas explicitement choisi de le rejoindre
+    if (existingPartner && !data.existingPartnerId) {
+      // Supprimer l'utilisateur auth créé
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return NextResponse.json(
+        {
+          error: `Le partenaire "${existingPartner.name}" existe déjà sur DMC Alliance. Si vous êtes membre de ce DMC, veuillez contacter l'administrateur du site pour obtenir l'accès.`,
+          existingPartner: {
+            id: existingPartner.id,
+            name: existingPartner.name,
+          }
+        },
+        { status: 409 } // Conflict
+      );
+    }
+
+    // Vérifier aussi s'il y a une demande en cours avec ce slug
+    const { data: existingRequest } = await supabaseAdmin
+      .from('partner_registration_requests')
+      .select('id, partner_name, status')
+      .eq('partner_slug', slug)
+      .in('status', ['pending', 'approved'])
+      .single();
+
+    if (existingRequest) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return NextResponse.json(
+        {
+          error: existingRequest.status === 'pending'
+            ? `Une demande d'inscription pour "${existingRequest.partner_name}" est déjà en cours d'examen.`
+            : `Le partenaire "${existingRequest.partner_name}" existe déjà.`,
+        },
+        { status: 409 }
+      );
+    }
+
     // 1. Créer ou mettre à jour le profil utilisateur avec rôle 'member' (en attente)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -446,12 +555,13 @@ async function handleDMCRegistration(userId: string, data: {
 
     // 4. Notifier les admins par email
     try {
-      // Récupérer les admins
-      const { data: admins } = await supabaseAdmin
+      // Récupérer les admins (sans filtre is_active pour s'assurer que tous les admins sont notifiés)
+      const { data: admins, error: adminError } = await supabaseAdmin
         .from('profiles')
         .select('email')
-        .eq('role', 'admin')
-        .eq('is_active', true);
+        .eq('role', 'admin');
+
+      console.log('[Register] Found admins:', admins?.length || 0, adminError ? `Error: ${adminError.message}` : '');
 
       if (admins && admins.length > 0) {
         const adminEmails = admins.map((a: { email: string }) => a.email).filter(Boolean);
@@ -462,7 +572,7 @@ async function handleDMCRegistration(userId: string, data: {
           contact_email: data.contactEmail,
           website: data.website || 'Non renseigné',
           destinations: data.destinations.join(', '),
-          admin_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.com'}/admin/partner-requests`,
+          admin_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/admin/partner-requests`,
         }, 'fr');
 
         if (emailContent) {
@@ -483,8 +593,8 @@ async function handleDMCRegistration(userId: string, data: {
 
     // 5. Envoyer email de confirmation au demandeur
     try {
-      // Utiliser un email simple de confirmation
-      await sendEmail({
+      console.log('[Register] Sending confirmation email to:', data.email);
+      const result = await sendEmail({
         to: data.email,
         subject: 'DMC Alliance - Demande d\'inscription reçue',
         html: `
@@ -499,6 +609,7 @@ async function handleDMCRegistration(userId: string, data: {
         `,
         text: `Bonjour ${data.contactName},\n\nNous avons bien reçu votre demande d'inscription à DMC Alliance pour ${data.partnerName}.\n\nNotre équipe va examiner votre dossier et vous contactera sous 48h.\n\nCordialement,\nL'équipe DMC Alliance`,
       });
+      console.log('[Register] Confirmation email sent:', result);
     } catch (emailError) {
       console.error('[Register] Confirmation email error:', emailError);
     }
@@ -514,6 +625,167 @@ async function handleDMCRegistration(userId: string, data: {
     await supabaseAdmin.auth.admin.deleteUser(userId);
     return NextResponse.json(
       { error: 'Erreur lors de l\'inscription' },
+      { status: 500 }
+    );
+  }
+}
+
+// Demande pour rejoindre un partenaire DMC existant
+async function handleDMCJoinRequest(userId: string, data: {
+  email: string;
+  partnerId: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone?: string;
+  message?: string;
+}) {
+  try {
+    // 1. Vérifier que le partenaire existe
+    const { data: partner, error: partnerError } = await supabaseAdmin
+      .from('partners')
+      .select('id, name, slug, user_id')
+      .eq('id', data.partnerId)
+      .single();
+
+    if (partnerError || !partner) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return NextResponse.json(
+        { error: 'Partenaire DMC non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // 2. Créer ou mettre à jour le profil utilisateur (rôle member en attente)
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email: data.email,
+        full_name: data.contactName,
+        company_name: partner.name,
+        role: 'member', // Rôle temporaire en attente
+        phone: data.contactPhone || null,
+        pending_partner_approval: true,
+      }, { onConflict: 'id' });
+
+    if (profileError) {
+      console.error('[Register] Profile error:', profileError);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return NextResponse.json(
+        { error: 'Erreur lors de la création du profil' },
+        { status: 500 }
+      );
+    }
+
+    // 3. Créer la demande de rattachement partenaire
+    // On utilise partner_registration_requests avec un champ join_partner_id
+    const { data: requestData, error: requestError } = await supabaseAdmin
+      .from('partner_registration_requests')
+      .insert({
+        user_id: userId,
+        partner_name: partner.name,
+        partner_slug: partner.slug,
+        contact_name: data.contactName,
+        contact_email: data.contactEmail,
+        contact_phone: data.contactPhone || null,
+        description: data.message || null,
+        join_partner_id: data.partnerId, // Indique que c'est une demande de rattachement
+        status: 'pending',
+        destinations: [],
+        specialties: [],
+        has_gir: false,
+      })
+      .select('id')
+      .single();
+
+    if (requestError || !requestData) {
+      console.error('[Register] Join request error:', requestError);
+      await supabaseAdmin.from('profiles').delete().eq('id', userId);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return NextResponse.json(
+        { error: 'Erreur lors de la création de la demande' },
+        { status: 500 }
+      );
+    }
+
+    // 4. Mettre à jour le profil avec l'ID de la demande
+    await supabaseAdmin
+      .from('profiles')
+      .update({ partner_request_id: requestData.id })
+      .eq('id', userId);
+
+    // 5. Notifier les admins par email
+    try {
+      const { data: admins } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('role', 'admin')
+        .eq('is_active', true);
+
+      if (admins && admins.length > 0) {
+        const adminEmails = admins.map((a: { email: string }) => a.email).filter(Boolean);
+
+        for (const adminEmail of adminEmails) {
+          await sendEmail({
+            to: adminEmail,
+            subject: `DMC Alliance - Demande de rattachement à ${partner.name}`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #c75a3a;">Nouvelle demande de rattachement</h2>
+                <p><strong>${data.contactName}</strong> souhaite rejoindre le partenaire <strong>${partner.name}</strong>.</p>
+                <table style="margin: 20px 0; border-collapse: collapse;">
+                  <tr><td style="padding: 8px 0; color: #666;">Email :</td><td style="padding: 8px 0 8px 16px;">${data.contactEmail}</td></tr>
+                  <tr><td style="padding: 8px 0; color: #666;">Téléphone :</td><td style="padding: 8px 0 8px 16px;">${data.contactPhone || 'Non renseigné'}</td></tr>
+                  <tr><td style="padding: 8px 0; color: #666;">Message :</td><td style="padding: 8px 0 8px 16px;">${data.message || 'Aucun message'}</td></tr>
+                </table>
+                <p style="margin-top: 20px;">
+                  <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/admin/partner-requests"
+                     style="display: inline-block; background-color: #c75a3a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                    Voir les demandes
+                  </a>
+                </p>
+              </div>
+            `,
+            text: `Nouvelle demande de rattachement\n\n${data.contactName} souhaite rejoindre le partenaire ${partner.name}.\n\nEmail: ${data.contactEmail}\nTéléphone: ${data.contactPhone || 'Non renseigné'}\nMessage: ${data.message || 'Aucun message'}`,
+          });
+        }
+      }
+    } catch (emailError) {
+      console.error('[Register] Admin notification error:', emailError);
+    }
+
+    // 6. Envoyer email de confirmation au demandeur
+    try {
+      await sendEmail({
+        to: data.email,
+        subject: 'DMC Alliance - Demande de rattachement reçue',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #c75a3a;">Demande de rattachement reçue</h2>
+            <p>Bonjour ${data.contactName},</p>
+            <p>Nous avons bien reçu votre demande pour rejoindre <strong>${partner.name}</strong> sur DMC Alliance.</p>
+            <p>Notre équipe va examiner votre demande et vous contactera sous 48h pour vous informer de la suite.</p>
+            <p style="margin-top: 30px;">Cordialement,<br>L'équipe DMC Alliance</p>
+          </div>
+        `,
+        text: `Bonjour ${data.contactName},\n\nNous avons bien reçu votre demande pour rejoindre ${partner.name} sur DMC Alliance.\n\nNotre équipe va examiner votre demande et vous contactera sous 48h.\n\nCordialement,\nL'équipe DMC Alliance`,
+      });
+    } catch (emailError) {
+      console.error('[Register] Confirmation email error:', emailError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Demande de rattachement envoyée avec succès',
+      pending: true,
+      partnerName: partner.name,
+    });
+
+  } catch (error) {
+    console.error('[Register] DMC join request error:', error);
+    await supabaseAdmin.auth.admin.deleteUser(userId);
+    return NextResponse.json(
+      { error: 'Erreur lors de la demande' },
       { status: 500 }
     );
   }

@@ -107,6 +107,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       author_name: staticArticle.author.name,
       author_role: staticArticle.author.role.fr,
       author_avatar: staticArticle.author.avatar,
+      author_bio_fr: staticArticle.author.bio?.fr || null,
+      author_bio_en: staticArticle.author.bio?.en || null,
       destination_id: null,
       destination: null,
     };
@@ -330,14 +332,14 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 {article.author_name && (
                   <div className="bg-white rounded-2xl border border-gray-100 p-6">
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                         {article.author_avatar ? (
                           <Image
                             src={article.author_avatar}
                             alt={article.author_name}
                             width={64}
                             height={64}
-                            className="object-cover"
+                            className="object-cover w-full h-full"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-500 font-medium text-xl">
@@ -352,6 +354,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                         )}
                       </div>
                     </div>
+                    {/* Author Bio */}
+                    {(isFr ? article.author_bio_fr : (article.author_bio_en || article.author_bio_fr)) && (
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {isFr ? article.author_bio_fr : (article.author_bio_en || article.author_bio_fr)}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

@@ -45,7 +45,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   let partnerInfo: PartnerInfo | null = null;
 
   if (isPartner) {
-    // Find the partner record linked to this user
+    // Find the partner record linked to this user - note: column is owner_id, not user_id
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: partner, error: partnerError } = await (supabase as any)
       .from('partners')
@@ -56,7 +56,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
         tier,
         logo_url
       `)
-      .eq('user_id', user.id)
+      .eq('owner_id', user.id)
       .single();
 
     if (!partnerError && partner) {

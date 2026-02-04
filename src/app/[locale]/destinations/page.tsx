@@ -54,6 +54,7 @@ export default async function DestinationsPage({ params }: Props) {
     tryChangingFilters: t('tryChangingFilters'),
     ourGlobalNetwork: t('ourGlobalNetwork'),
     globalNetworkDescription: t('globalNetworkDescription'),
+    clickToDiscover: t('clickToDiscover'),
     cantFindDestination: t('cantFindDestination'),
     cantFindDescription: t('cantFindDescription'),
     contactUs: t('contactUs'),

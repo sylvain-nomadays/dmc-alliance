@@ -311,3 +311,144 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
   height: 0;
 }
+
+/* TipTap Callout Styles */
+.ProseMirror .callout {
+  border-left-width: 4px;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.ProseMirror .callout-tip {
+  background-color: #f0fdf4;
+  border-color: #22c55e;
+}
+
+.ProseMirror .callout-warning {
+  background-color: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.ProseMirror .callout-info {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.ProseMirror .callout-essential {
+  background-color: var(--color-terracotta-50);
+  border-color: var(--color-terracotta-500);
+}
+
+.ProseMirror .callout-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror .callout-content {
+  color: #4b5563;
+}
+
+.ProseMirror .callout-content p {
+  margin: 0;
+}
+
+/* TipTap Image Block Styles */
+.ProseMirror .image-block {
+  margin: 1.5rem 0;
+  max-width: 42rem;
+}
+
+.ProseMirror .image-block img {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.ProseMirror .image-block figcaption {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Public page callout styles */
+.prose .callout,
+article .callout {
+  border-left-width: 4px;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 1rem;
+  margin: 1.5rem 0;
+}
+
+.prose .callout-tip,
+article .callout-tip {
+  background-color: #f0fdf4;
+  border-color: #22c55e;
+}
+
+.prose .callout-warning,
+article .callout-warning {
+  background-color: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.prose .callout-info,
+article .callout-info {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.prose .callout-essential,
+article .callout-essential {
+  background-color: #fef7f4;
+  border-color: #e86f3d;
+}
+
+.prose .callout-header,
+article .callout-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.prose .callout-content,
+article .callout-content {
+  color: #4b5563;
+}
+
+.prose .callout-content p,
+article .callout-content p {
+  margin: 0;
+}
+
+/* Public page image block styles */
+.prose .image-block,
+article .image-block {
+  margin: 1.5rem auto;
+  max-width: 42rem;
+}
+
+.prose .image-block img,
+article .image-block img {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.prose .image-block figcaption,
+article .image-block figcaption {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}

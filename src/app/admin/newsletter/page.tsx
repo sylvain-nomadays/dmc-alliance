@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { NewsletterSubscribers } from '@/components/admin/NewsletterSubscribers';
+import { Sparkles, FileText } from 'lucide-react';
 
 interface Campaign {
   id: string;
@@ -11,7 +14,9 @@ interface Campaign {
   subject_en: string | null;
   content_fr: string;
   content_en: string | null;
-  target_audience: 'all' | 'agencies' | 'partners' | 'custom';
+  blocks_fr?: unknown[];
+  blocks_en?: unknown[];
+  target_audience: 'all' | 'fr' | 'en' | 'agencies' | 'partners' | 'custom';
   status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'cancelled';
   scheduled_at: string | null;
   sent_at: string | null;
@@ -24,7 +29,9 @@ interface Campaign {
 }
 
 const audienceLabels: Record<string, string> = {
-  all: 'Tous les utilisateurs',
+  all: 'Tous les contacts',
+  fr: '🇫🇷 Francophones',
+  en: '🇬🇧 Anglophones',
   agencies: 'Agences uniquement',
   partners: 'Partenaires uniquement',
   custom: 'Personnalisé',
@@ -39,12 +46,15 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 };
 
 export default function NewsletterPage() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'contacts'>('campaigns');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Partial<Campaign> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [showNewCampaignChoice, setShowNewCampaignChoice] = useState(false);
 
   useEffect(() => {
     fetchCampaigns();
@@ -162,26 +172,137 @@ export default function NewsletterPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-heading text-gray-900">Newsletter</h1>
           <p className="text-gray-600 mt-1">
-            Créez et envoyez des newsletters à vos utilisateurs
+            Gérez vos contacts et envoyez des newsletters
           </p>
         </div>
-        <button
-          onClick={() => {
-            setEditingCampaign({ target_audience: 'all', status: 'draft' });
-            setShowEditor(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nouvelle campagne
-        </button>
+        {activeTab === 'campaigns' && (
+          <button
+            onClick={() => setShowNewCampaignChoice(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nouvelle campagne
+          </button>
+        )}
       </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex gap-6">
+          <button
+            onClick={() => setActiveTab('campaigns')}
+            className={cn(
+              'py-3 px-1 border-b-2 font-medium text-sm transition-colors',
+              activeTab === 'campaigns'
+                ? 'border-terracotta-500 text-terracotta-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Campagnes
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('contacts')}
+            className={cn(
+              'py-3 px-1 border-b-2 font-medium text-sm transition-colors',
+              activeTab === 'contacts'
+                ? 'border-terracotta-500 text-terracotta-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Contacts
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      {/* Contacts Tab */}
+      {activeTab === 'contacts' && <NewsletterSubscribers />}
+
+      {/* Campaigns Tab */}
+      {activeTab === 'campaigns' && (
+        <>
+
+      {/* New Campaign Choice Modal */}
+      {showNewCampaignChoice && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+            <h2 className="text-xl font-heading text-gray-900 mb-4">
+              Créer une nouvelle campagne
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Choisissez le type d&apos;éditeur pour votre newsletter
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Visual Editor Option */}
+              <button
+                onClick={() => {
+                  setShowNewCampaignChoice(false);
+                  router.push('/admin/newsletter/editor');
+                }}
+                className="p-6 border-2 border-gray-200 rounded-xl hover:border-terracotta-500 hover:bg-terracotta-50 transition-all text-left group"
+              >
+                <div className="w-12 h-12 bg-terracotta-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-terracotta-200 transition-colors">
+                  <Sparkles className="w-6 h-6 text-terracotta-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  Éditeur visuel
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Drag & drop, templates, traduction auto FR/EN
+                </p>
+                <span className="inline-block mt-3 text-xs bg-terracotta-100 text-terracotta-700 px-2 py-1 rounded">
+                  Recommandé
+                </span>
+              </button>
+
+              {/* Simple Editor Option */}
+              <button
+                onClick={() => {
+                  setShowNewCampaignChoice(false);
+                  setEditingCampaign({ target_audience: 'all', status: 'draft' });
+                  setShowEditor(true);
+                }}
+                className="p-6 border-2 border-gray-200 rounded-xl hover:border-gray-400 transition-all text-left"
+              >
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                  <FileText className="w-6 h-6 text-gray-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  Éditeur simple
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Texte brut, rapide à utiliser
+                </p>
+              </button>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowNewCampaignChoice(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Editor Modal */}
       {showEditor && editingCampaign && (
@@ -277,7 +398,9 @@ export default function NewsletterPage() {
                   onChange={(e) => setEditingCampaign({ ...editingCampaign, target_audience: e.target.value as Campaign['target_audience'] })}
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500 bg-white"
                 >
-                  <option value="all">Tous les utilisateurs</option>
+                  <option value="all">Tous les contacts</option>
+                  <option value="fr">🇫🇷 Francophones uniquement</option>
+                  <option value="en">🇬🇧 Anglophones uniquement</option>
                   <option value="agencies">Agences uniquement</option>
                   <option value="partners">Partenaires uniquement</option>
                 </select>
@@ -386,8 +509,13 @@ export default function NewsletterPage() {
                         <>
                           <button
                             onClick={() => {
-                              setEditingCampaign(campaign);
-                              setShowEditor(true);
+                              // If campaign has blocks, open visual editor
+                              if (campaign.blocks_fr && campaign.blocks_fr.length > 0) {
+                                router.push(`/admin/newsletter/editor?id=${campaign.id}`);
+                              } else {
+                                setEditingCampaign(campaign);
+                                setShowEditor(true);
+                              }
                             }}
                             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Modifier"
@@ -438,6 +566,8 @@ export default function NewsletterPage() {
           Créez un compte sur <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-terracotta-600 hover:underline">resend.com</a> pour obtenir une clé API.
         </p>
       </div>
+      </>
+      )}
     </div>
   );
 }

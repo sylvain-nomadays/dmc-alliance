@@ -4,8 +4,16 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+
+interface SiteSettings {
+  contact: {
+    email: string;
+    phone: string;
+    address: string;
+  };
+  social: Record<string, string>;
+}
 
 function ContactForm({ locale }: { locale: string }) {
   const searchParams = useSearchParams();
@@ -302,15 +310,37 @@ export default function ContactPage() {
   const locale = (params?.locale as string) || 'fr';
   const isFr = locale === 'fr';
 
+  // Fetch site settings for contact info
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const response = await fetch(`/api/settings?locale=${locale}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    }
+    fetchSettings();
+  }, [locale]);
+
+  // Default values with fallback to settings
+  const contactInfo = {
+    email: settings?.contact?.email || 'contact@dmc-alliance.org',
+    phone: settings?.contact?.phone || '+33 1 23 45 67 89',
+    address: settings?.contact?.address || (isFr ? '123 Rue du Voyage, 75001 Paris, France' : '123 Travel Street, 75001 Paris, France'),
+  };
+
   const translations = {
     title: isFr ? 'Contactez-nous' : 'Contact us',
     subtitle: isFr
       ? 'Une question, un projet, une demande de partenariat ? Notre équipe vous répond sous 24h.'
       : 'A question, a project, a partnership request? Our team responds within 24 hours.',
     infoTitle: isFr ? 'Nos coordonnées' : 'Our contact details',
-    email: 'contact@dmc-alliance.com',
-    phone: '+33 1 23 45 67 89',
-    address: isFr ? '123 Rue du Voyage, 75001 Paris, France' : '123 Travel Street, 75001 Paris, France',
     hoursTitle: isFr ? 'Horaires' : 'Hours',
     hours: isFr
       ? 'Du lundi au vendredi, 9h - 18h (CET)'
@@ -423,7 +453,7 @@ export default function ContactPage() {
                 <div className="space-y-4">
                   {/* Email */}
                   <a
-                    href={`mailto:${translations.email}`}
+                    href={`mailto:${contactInfo.email}`}
                     className="flex items-start gap-4 group"
                   >
                     <div className="w-10 h-10 bg-terracotta-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -434,14 +464,14 @@ export default function ContactPage() {
                     <div>
                       <p className="text-sm text-gray-500">Email</p>
                       <p className="text-gray-900 group-hover:text-terracotta-500 transition-colors">
-                        {translations.email}
+                        {contactInfo.email}
                       </p>
                     </div>
                   </a>
 
                   {/* Phone */}
                   <a
-                    href={`tel:${translations.phone.replace(/\s/g, '')}`}
+                    href={`tel:${contactInfo.phone.replace(/\s/g, '')}`}
                     className="flex items-start gap-4 group"
                   >
                     <div className="w-10 h-10 bg-deep-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -452,7 +482,7 @@ export default function ContactPage() {
                     <div>
                       <p className="text-sm text-gray-500">{isFr ? 'Téléphone' : 'Phone'}</p>
                       <p className="text-gray-900 group-hover:text-terracotta-500 transition-colors">
-                        {translations.phone}
+                        {contactInfo.phone}
                       </p>
                     </div>
                   </a>
@@ -467,7 +497,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">{isFr ? 'Adresse' : 'Address'}</p>
-                      <p className="text-gray-900">{translations.address}</p>
+                      <p className="text-gray-900 whitespace-pre-line">{contactInfo.address}</p>
                     </div>
                   </div>
                 </div>

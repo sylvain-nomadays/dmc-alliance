@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getAuthContext } from '@/lib/auth/getAuthContext';
 
 // Stats card component
 function StatCard({
@@ -36,6 +38,12 @@ function StatCard({
 }
 
 export default async function AdminDashboardPage() {
+  // Check if user is partner - redirect to circuits page
+  const authContext = await getAuthContext();
+  if (authContext?.isPartner && !authContext?.isAdmin) {
+    redirect('/admin/circuits');
+  }
+
   const supabase = await createClient();
 
   // Fetch stats (with fallback for empty tables)

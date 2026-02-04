@@ -110,7 +110,7 @@ export async function POST(
           const emailContent = await buildEmailFromTemplate('agency_join_approved', {
             user_name: requestUser.full_name || 'Collaborateur',
             agency_name: agency?.name || 'L\'agence',
-            login_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.com'}/auth/login`,
+            login_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/auth/login`,
           }, 'fr');
 
           if (emailContent) {

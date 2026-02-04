@@ -32,6 +32,10 @@ export interface ArticleSummary {
     name: string;
     slug: string;
   } | null;
+  // Author info
+  author_name: string | null;
+  author_role: string | null;
+  author_avatar: string | null;
 }
 
 interface ArticleRow {
@@ -52,6 +56,10 @@ interface ArticleRow {
     name: string;
     slug: string;
   } | null;
+  // Author info
+  author_name: string | null;
+  author_role: string | null;
+  author_avatar: string | null;
 }
 
 interface ArticleDetailRow extends ArticleRow {
@@ -60,6 +68,8 @@ interface ArticleDetailRow extends ArticleRow {
   author_name: string | null;
   author_role: string | null;
   author_avatar: string | null;
+  author_bio_fr: string | null;
+  author_bio_en: string | null;
 }
 
 // Convert database row to our interface (rename title -> title_fr, etc.)
@@ -78,6 +88,9 @@ function mapArticleRow(article: ArticleRow): ArticleSummary {
     published_at: article.published_at,
     destination_id: article.destination_id,
     destination: article.destination,
+    author_name: article.author_name,
+    author_role: article.author_role,
+    author_avatar: article.author_avatar,
   };
 }
 
@@ -224,6 +237,9 @@ export async function getAllPublishedArticles(
       read_time,
       published_at,
       destination_id,
+      author_name,
+      author_role,
+      author_avatar,
       destination:destinations(id, name, slug)
     `)
     .eq('status', 'published')
@@ -258,6 +274,8 @@ export interface ArticleDetail {
   author_name: string | null;
   author_role: string | null;
   author_avatar: string | null;
+  author_bio_fr: string | null;
+  author_bio_en: string | null;
   destination_id: string | null;
   destination?: {
     id: string;
@@ -293,6 +311,8 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDetail | nu
       author_name,
       author_role,
       author_avatar,
+      author_bio_fr,
+      author_bio_en,
       destination_id,
       destination:destinations(id, name, slug)
     `)
@@ -324,6 +344,8 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDetail | nu
     author_name: article.author_name,
     author_role: article.author_role,
     author_avatar: article.author_avatar,
+    author_bio_fr: article.author_bio_fr,
+    author_bio_en: article.author_bio_en,
     destination_id: article.destination_id,
     destination: article.destination,
   };
@@ -352,6 +374,9 @@ export async function getFeaturedArticles(limit: number = 4): Promise<ArticleSum
       read_time,
       published_at,
       destination_id,
+      author_name,
+      author_role,
+      author_avatar,
       destination:destinations(id, name, slug)
     `)
     .eq('status', 'published')

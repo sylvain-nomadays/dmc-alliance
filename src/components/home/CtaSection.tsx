@@ -106,7 +106,7 @@ export function CtaSection({ locale, translations, backgroundImage }: CtaSection
             </Link>
 
             <a
-              href="mailto:contact@dmc-alliance.com"
+              href="mailto:contact@dmc-alliance.org"
               className="text-white/70 hover:text-white transition-colors flex items-center gap-2"
             >
               <svg
@@ -122,7 +122,7 @@ export function CtaSection({ locale, translations, backgroundImage }: CtaSection
                   d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                 />
               </svg>
-              contact@dmc-alliance.com
+              contact@dmc-alliance.org
             </a>
           </div>
 

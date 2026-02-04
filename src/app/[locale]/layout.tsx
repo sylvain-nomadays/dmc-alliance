@@ -7,6 +7,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { locales, type Locale } from '@/i18n';
+import { getSiteSettings, getLogoUrl, getFooterLogoUrl, getContactEmail, getContactPhone, getContactAddress, getSocialLinks } from '@/lib/supabase/site-settings';
 
 import '@/app/globals.css';
 
@@ -81,6 +82,20 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
   // Get messages for client provider
   const messages = await getMessages();
 
+  // Get site settings for logos, contact info, and social links
+  const siteSettings = await getSiteSettings();
+  const logoUrl = getLogoUrl(siteSettings);
+  const logoDarkUrl = siteSettings.site_logo_dark_url || logoUrl;
+  const footerLogoUrl = getFooterLogoUrl(siteSettings);
+
+  // Contact info and social links
+  const contactInfo = {
+    email: getContactEmail(siteSettings),
+    phone: getContactPhone(siteSettings),
+    address: getContactAddress(siteSettings, locale),
+  };
+  const socialLinks = getSocialLinks(siteSettings);
+
   return (
     <div
       lang={locale}
@@ -90,6 +105,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
         {/* Header */}
         <Header
           locale={locale}
+          logoUrl={logoUrl}
+          logoDarkUrl={logoDarkUrl}
           translations={{
             destinations: (messages.nav as Record<string, string>)?.destinations || 'Destinations',
             services: (messages.nav as Record<string, string>)?.services || 'Services',
@@ -113,6 +130,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
         {/* Footer */}
         <Footer
           locale={locale}
+          footerLogoUrl={footerLogoUrl}
+          contactInfo={contactInfo}
+          socialLinks={socialLinks}
           translations={{
             description: (messages.footer as Record<string, string>)?.description || '',
             quickLinks: (messages.footer as Record<string, string>)?.quickLinks || 'Quick Links',

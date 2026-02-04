@@ -5,11 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useAuthContext } from '@/hooks/useAuthContext';
 
 interface Circuit {
   id: string;
   slug: string;
   title: string;
+  partner_id: string;
   destination: {
     name: string;
   } | null;
@@ -30,24 +32,28 @@ const statusLabels: Record<string, { label: string; class: string }> = {
 };
 
 export default function CircuitsListPage() {
+  const auth = useAuthContext();
   const [circuits, setCircuits] = useState<Circuit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
-    fetchCircuits();
-  }, []);
+    if (!auth.isLoading) {
+      fetchCircuits();
+    }
+  }, [auth.isLoading, auth.partnerId]);
 
   async function fetchCircuits() {
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    let query = (supabase as any)
       .from('circuits')
       .select(`
         id,
         slug,
         title,
+        partner_id,
         duration_days,
         price_from,
         status,
@@ -56,6 +62,13 @@ export default function CircuitsListPage() {
         partner:partners(name)
       `)
       .order('created_at', { ascending: false });
+
+    // If user is a partner (not admin), only show their circuits
+    if (auth.isPartner && auth.partnerId) {
+      query = query.eq('partner_id', auth.partnerId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching circuits:', error);
@@ -110,14 +123,29 @@ export default function CircuitsListPage() {
     }).format(price);
   }
 
+  // Show loading while auth context is loading
+  if (auth.isLoading) {
+    return (
+      <div className="p-12 text-center">
+        <div className="w-10 h-10 border-4 border-terracotta-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="mt-4 text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-heading text-gray-900">Circuits GIR</h1>
+          <h1 className="text-2xl font-heading text-gray-900">
+            {auth.isPartner ? 'Mes Circuits GIR' : 'Circuits GIR'}
+          </h1>
           <p className="text-gray-600 mt-1">
-            Gérez vos circuits à dates de départ fixes
+            {auth.isPartner
+              ? 'Créez et gérez vos circuits à dates de départ fixes'
+              : 'Gérez vos circuits à dates de départ fixes'
+            }
           </p>
         </div>
         <Link

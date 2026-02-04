@@ -10,6 +10,7 @@ import {
   Calendar, MapPin, Users, Clock, ChevronLeft, Bookmark, BookmarkCheck,
   Check, X, Info, Send, Phone, Mail, AlertCircle
 } from 'lucide-react';
+import { CircuitPDFExport } from '@/components/agency/CircuitPDFExport';
 
 interface Departure {
   id: string;
@@ -397,7 +398,7 @@ export default function AgencyCircuitDetailPage() {
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={toggleWatchlist}
                 className={`px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-2 ${
@@ -409,6 +410,12 @@ export default function AgencyCircuitDetailPage() {
                 {isWatched ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
                 {isWatched ? (isFr ? 'Suivi' : 'Watching') : (isFr ? 'Suivre' : 'Watch')}
               </button>
+              <CircuitPDFExport
+                circuitId={circuit.id}
+                circuitTitle={circuit.title}
+                departures={circuit.departures}
+                locale={locale}
+              />
               <Button onClick={() => openRequestModal('info')}>
                 <Info className="w-4 h-4 mr-2" />
                 {isFr ? 'Demande d\'info' : 'Request info'}

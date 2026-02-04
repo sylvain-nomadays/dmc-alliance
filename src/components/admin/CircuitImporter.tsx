@@ -122,6 +122,14 @@ export function CircuitImporter({
         éviter la duplication de contenu tout en l'adaptant à une clientèle B2B.
       </p>
 
+      {/* Note sur les dates de départ */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-800">
+          <strong>💡 Dates de départ :</strong> Si la page source affiche les dates via JavaScript (onglets, AJAX),
+          elles ne seront pas extraites automatiquement. Vous pourrez les ajouter manuellement dans l'onglet "Départs" après l'import.
+        </p>
+      </div>
+
       {/* URL Source */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">

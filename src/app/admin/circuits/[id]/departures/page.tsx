@@ -24,6 +24,7 @@ interface Circuit {
   slug: string;
   duration_days: number;
   price_from: number | null;
+  group_size_max: number | null;
 }
 
 export default function CircuitDeparturesPage() {
@@ -41,6 +42,7 @@ export default function CircuitDeparturesPage() {
   // Form state for new departure
   const [showForm, setShowForm] = useState(false);
   const [editingDeparture, setEditingDeparture] = useState<Departure | null>(null);
+  const [lastEndDate, setLastEndDate] = useState<string | null>(null);
   const [form, setForm] = useState({
     start_date: '',
     end_date: '',
@@ -58,7 +60,7 @@ export default function CircuitDeparturesPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: circuitData, error: circuitError } = await (supabase as any)
       .from('circuits')
-      .select('id, title, slug, duration_days, price_from')
+      .select('id, title, slug, duration_days, price_from, group_size_max')
       .eq('id', circuitId)
       .single();
 
@@ -90,11 +92,11 @@ export default function CircuitDeparturesPage() {
     fetchData();
   }, [fetchData]);
 
-  const resetForm = () => {
+  const resetForm = (useLastEndDate: boolean = false) => {
     setForm({
-      start_date: '',
+      start_date: useLastEndDate && lastEndDate ? lastEndDate : '',
       end_date: '',
-      total_seats: 16,
+      total_seats: circuit?.group_size_max || 16,
       booked_seats: 0,
       price: circuit?.price_from?.toString() || '',
       status: 'open',
@@ -164,6 +166,8 @@ export default function CircuitDeparturesPage() {
       }
 
       setSuccess('Départ créé avec succès');
+      // Store the end date for next departure
+      setLastEndDate(form.end_date || form.start_date);
     }
 
     setIsSaving(false);
@@ -172,6 +176,56 @@ export default function CircuitDeparturesPage() {
     fetchData();
 
     setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const handleSaveAndNew = async () => {
+    setIsSaving(true);
+    setError(null);
+
+    const supabase = createClient();
+    const endDateToUse = form.end_date || form.start_date;
+
+    const departureData = {
+      circuit_id: circuitId,
+      start_date: form.start_date,
+      end_date: form.end_date || null,
+      total_seats: form.total_seats,
+      booked_seats: form.booked_seats,
+      price: form.price ? parseFloat(form.price) : null,
+      status: form.status,
+      notes: form.notes || null,
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
+      .from('circuit_departures')
+      .insert(departureData);
+
+    if (insertError) {
+      setError('Erreur lors de la création: ' + insertError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    setSuccess('Départ créé avec succès');
+    setLastEndDate(endDateToUse);
+
+    // Reset form but pre-fill with the end date of the just-created departure
+    setForm({
+      start_date: endDateToUse,
+      end_date: '',
+      total_seats: circuit?.group_size_max || 16,
+      booked_seats: 0,
+      price: circuit?.price_from?.toString() || '',
+      status: 'open',
+      notes: '',
+    });
+    setEditingDeparture(null);
+
+    setIsSaving(false);
+    fetchData();
+    setTimeout(() => setSuccess(null), 3000);
+    // Keep modal open
   };
 
   const handleDelete = async (departureId: string) => {
@@ -287,7 +341,7 @@ export default function CircuitDeparturesPage() {
             </div>
             <button
               onClick={() => {
-                resetForm();
+                resetForm(true);
                 setShowForm(true);
               }}
               className="px-4 py-2 bg-terracotta-600 text-white rounded-lg hover:bg-terracotta-700 flex items-center gap-2"
@@ -324,7 +378,7 @@ export default function CircuitDeparturesPage() {
                   <button
                     onClick={() => {
                       setShowForm(false);
-                      resetForm();
+                      resetForm(false);
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg"
                   >
@@ -378,6 +432,7 @@ export default function CircuitDeparturesPage() {
                       required
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Basé sur la taille max du groupe ({circuit?.group_size_max || 16})</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -441,14 +496,14 @@ export default function CircuitDeparturesPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => {
                       setShowForm(false);
-                      resetForm();
+                      resetForm(false);
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
                   >
                     Annuler
                   </button>
@@ -468,9 +523,22 @@ export default function CircuitDeparturesPage() {
                     ) : editingDeparture ? (
                       'Mettre à jour'
                     ) : (
-                      'Créer le départ'
+                      'Créer'
                     )}
                   </button>
+                  {!editingDeparture && (
+                    <button
+                      type="button"
+                      onClick={handleSaveAndNew}
+                      disabled={isSaving || !form.start_date}
+                      className="flex-1 px-4 py-2 border-2 border-terracotta-600 text-terracotta-600 rounded-lg hover:bg-terracotta-50 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Sauver et Nouveau
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
@@ -489,7 +557,7 @@ export default function CircuitDeparturesPage() {
             <p className="text-gray-500 mb-4">Commencez par ajouter des dates de départ pour ce circuit.</p>
             <button
               onClick={() => {
-                resetForm();
+                resetForm(true);
                 setShowForm(true);
               }}
               className="px-4 py-2 bg-terracotta-600 text-white rounded-lg hover:bg-terracotta-700"

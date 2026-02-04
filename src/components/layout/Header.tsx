@@ -25,6 +25,8 @@ interface NavItem {
 
 interface HeaderProps {
   locale: string;
+  logoUrl?: string;
+  logoDarkUrl?: string;
   translations: {
     destinations: string;
     services: string;
@@ -136,7 +138,19 @@ function MobileLanguageSwitcher({ locale, languages }: { locale: string; languag
   );
 }
 
-export function Header({ locale, translations }: HeaderProps) {
+export function Header({ locale, logoUrl, logoDarkUrl, translations }: HeaderProps) {
+  // Logo management:
+  // - On homepage (not scrolled): use light logo (logoUrl or default white-friendly logo)
+  // - On other pages or scrolled: use dark logo (logoDarkUrl or default dark logo)
+  // - If only one custom logo is provided (logoUrl without logoDarkUrl), use it everywhere
+  const defaultLogo = '/images/logo-dmc-alliance.svg';
+  const defaultLogoDark = '/images/logo-dmc-alliance-dark.svg';
+
+  // If user provides custom logoUrl but no dark version, use the same logo for both
+  const hasCustomLogo = !!logoUrl;
+  const lightLogo = logoUrl || defaultLogo;
+  const darkLogo = logoDarkUrl || (hasCustomLogo ? logoUrl : defaultLogoDark);
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -237,10 +251,9 @@ export function Header({ locale, translations }: HeaderProps) {
       : 'text-white hover:text-white/80'
   );
 
-  const logoClasses = cn(
-    'transition-all duration-300',
-    isScrolled || !isHomepage ? 'brightness-0' : ''
-  );
+  // Determine which logo to use based on header state
+  const needsDarkLogo = isScrolled || !isHomepage;
+  const activeLogo = needsDarkLogo ? darkLogo : lightLogo;
 
   return (
     <header className={headerClasses}>
@@ -249,12 +262,16 @@ export function Header({ locale, translations }: HeaderProps) {
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
             <Image
-              src="/images/logo-dmc-alliance.svg"
+              src={activeLogo}
               alt="DMC Alliance"
-              width={168}
-              height={60}
-              className={cn('h-12 w-auto', logoClasses)}
+              width={280}
+              height={100}
+              className={cn(
+                'w-auto transition-all duration-300',
+                isScrolled || !isHomepage ? 'h-20 lg:h-24' : 'h-24 lg:h-32'
+              )}
               priority
+              unoptimized={activeLogo.startsWith('http')}
             />
           </Link>
 

@@ -23,6 +23,8 @@ interface ArticleForm {
   author_name: string;
   author_role: string;
   author_avatar: string;
+  author_bio_fr: string;
+  author_bio_en: string;
   read_time: number;
   destination_id: string;
   partner_id: string;
@@ -54,6 +56,8 @@ const defaultForm: ArticleForm = {
   author_name: '',
   author_role: '',
   author_avatar: '',
+  author_bio_fr: '',
+  author_bio_en: '',
   read_time: 5,
   destination_id: '',
   partner_id: '',
@@ -657,6 +661,7 @@ export default function ArticleEditPage() {
                   onChange={handleContentChange}
                   placeholder="Contenu de l'article..."
                   minHeight="400px"
+                  enableAdvancedFeatures={true}
                 />
               )}
 
@@ -680,6 +685,13 @@ export default function ArticleEditPage() {
           {/* Author Tab */}
           {activeTab === 'author' && (
             <div className="space-y-6">
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Rédigez en français uniquement.</strong> Les traductions de la bio seront générées automatiquement via le bouton &quot;Push Traductions&quot;.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Author Name */}
                 <div>
@@ -723,17 +735,34 @@ export default function ArticleEditPage() {
                 />
               </div>
 
+              {/* Author Bio */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Bio de l&apos;auteur
+                </label>
+                <textarea
+                  value={form.author_bio_fr || ''}
+                  onChange={(e) => setForm({ ...form, author_bio_fr: e.target.value })}
+                  rows={4}
+                  placeholder="Courte biographie de l'auteur (2-3 phrases). Ex: Spécialiste de l'Asie depuis 15 ans, Marie a vécu 5 ans au Japon et parcourt la région chaque année. Elle partage sa passion pour les voyages authentiques et hors des sentiers battus."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {(form.author_bio_fr || '').length}/300 caractères recommandés
+                </p>
+              </div>
+
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Aperçu</h4>
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   {form.author_avatar ? (
                     <img
                       src={form.author_avatar}
                       alt={form.author_name}
-                      className="w-12 h-12 rounded-full object-cover"
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                       <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
@@ -742,6 +771,9 @@ export default function ArticleEditPage() {
                   <div>
                     <p className="font-medium text-gray-900">{form.author_name || 'Nom de l\'auteur'}</p>
                     <p className="text-sm text-gray-500">{form.author_role || 'Fonction'}</p>
+                    {form.author_bio_fr && (
+                      <p className="text-sm text-gray-600 mt-2">{form.author_bio_fr}</p>
+                    )}
                   </div>
                 </div>
               </div>

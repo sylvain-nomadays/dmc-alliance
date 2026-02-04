@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 100">
+  <defs>
+    <!-- Gradient for the connecting line -->
+    <linearGradient id="lineGradientDark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C05A3C"/>
+      <stop offset="35%" stop-color="#8BA58E"/>
+      <stop offset="70%" stop-color="#5A7A8A"/>
+      <stop offset="100%" stop-color="#3D4F6F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Three figures forming a wave/connection -->
+  <g transform="translate(40, 10)">
+    <!-- First figure (terracotta/orange) -->
+    <circle cx="30" cy="18" r="8" fill="#C05A3C"/>
+    <path d="M22 26 Q30 35 15 52" stroke="#C05A3C" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+    <!-- Second figure (sage/green) - higher position -->
+    <circle cx="95" cy="8" r="8" fill="#8BA58E"/>
+    <path d="M38 36 Q65 20 87 16" stroke="#8BA58E" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M103 16 Q115 22 130 38" stroke="#5A7A8A" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+    <!-- Third figure (blue) -->
+    <circle cx="165" cy="30" r="8" fill="#3D4F6F"/>
+    <path d="M138 42 Q155 38 157 38" stroke="#3D4F6F" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Text: DMC Alliance - Dark colors for light backgrounds -->
+  <text x="52" y="85" font-family="'Playfair Display', Georgia, serif" font-size="28" font-weight="700" fill="#1F2937" letter-spacing="1">DMC</text>
+  <text x="120" y="85" font-family="'Playfair Display', Georgia, serif" font-size="28" font-weight="400" fill="#C05A3C" letter-spacing="1">Alliance</text>
+</svg>

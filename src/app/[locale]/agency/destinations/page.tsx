@@ -170,76 +170,90 @@ export default function AgencyDestinationsPage() {
       </div>
 
       {/* Destinations par région */}
-      <div className="space-y-8">
-        {Object.entries(REGION_LABELS).map(([regionKey, labels]) => {
-          const regionDestinations = destinationsByRegion[regionKey];
-          if (!regionDestinations || regionDestinations.length === 0) return null;
+      {destinations.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {isFr ? 'Destinations bientôt disponibles' : 'Destinations coming soon'}
+          </h3>
+          <p className="text-gray-500 max-w-md mx-auto">
+            {isFr
+              ? 'Les destinations de nos partenaires seront bientôt disponibles pour personnaliser vos notifications. Revenez prochainement !'
+              : 'Destinations from our partners will be available soon to customize your notifications. Check back later!'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {Object.entries(REGION_LABELS).map(([regionKey, labels]) => {
+            const regionDestinations = destinationsByRegion[regionKey];
+            if (!regionDestinations || regionDestinations.length === 0) return null;
 
-          return (
-            <div key={regionKey}>
-              <h2 className="text-lg font-heading text-gray-900 mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-terracotta-500" />
-                {isFr ? labels.fr : labels.en}
-                <span className="text-sm font-normal text-gray-500">
-                  ({regionDestinations.length})
-                </span>
-              </h2>
+            return (
+              <div key={regionKey}>
+                <h2 className="text-lg font-heading text-gray-900 mb-4 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-terracotta-500" />
+                  {isFr ? labels.fr : labels.en}
+                  <span className="text-sm font-normal text-gray-500">
+                    ({regionDestinations.length})
+                  </span>
+                </h2>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {regionDestinations.map((dest) => {
-                  const isSelected = selectedDestinations.has(dest.id);
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {regionDestinations.map((dest) => {
+                    const isSelected = selectedDestinations.has(dest.id);
 
-                  return (
-                    <button
-                      key={dest.id}
-                      onClick={() => toggleDestination(dest.id)}
-                      className={`relative rounded-xl overflow-hidden border-2 transition-all ${
-                        isSelected
-                          ? 'border-terracotta-500 ring-2 ring-terracotta-200'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      {/* Image */}
-                      <div className="aspect-[4/3] bg-gray-100 relative">
-                        {dest.image_url ? (
-                          <img
-                            src={dest.image_url}
-                            alt={dest.name_fr}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300">
-                            <MapPin className="w-8 h-8" />
-                          </div>
-                        )}
-
-                        {/* Overlay sélection */}
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-terracotta-500/20 flex items-center justify-center">
-                            <div className="w-8 h-8 bg-terracotta-500 rounded-full flex items-center justify-center">
-                              <Check className="w-5 h-5 text-white" />
+                    return (
+                      <button
+                        key={dest.id}
+                        onClick={() => toggleDestination(dest.id)}
+                        className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+                          isSelected
+                            ? 'border-terracotta-500 ring-2 ring-terracotta-200'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {/* Image */}
+                        <div className="aspect-[4/3] bg-gray-100 relative">
+                          {dest.image_url ? (
+                            <img
+                              src={dest.image_url}
+                              alt={dest.name_fr}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                              <MapPin className="w-8 h-8" />
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
 
-                      {/* Nom */}
-                      <div className={`p-3 text-left ${isSelected ? 'bg-terracotta-50' : 'bg-white'}`}>
-                        <p className={`font-medium ${isSelected ? 'text-terracotta-800' : 'text-gray-900'}`}>
-                          {dest.name_fr}
-                        </p>
-                        <p className="text-xs text-gray-500 uppercase">
-                          {dest.country_code}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
+                          {/* Overlay sélection */}
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-terracotta-500/20 flex items-center justify-center">
+                              <div className="w-8 h-8 bg-terracotta-500 rounded-full flex items-center justify-center">
+                                <Check className="w-5 h-5 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Nom */}
+                        <div className={`p-3 text-left ${isSelected ? 'bg-terracotta-50' : 'bg-white'}`}>
+                          <p className={`font-medium ${isSelected ? 'text-terracotta-800' : 'text-gray-900'}`}>
+                            {dest.name_fr}
+                          </p>
+                          <p className="text-xs text-gray-500 uppercase">
+                            {dest.country_code}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

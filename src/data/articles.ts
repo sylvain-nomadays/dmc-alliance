@@ -22,6 +22,10 @@ export interface Article {
       en: string;
     };
     avatar: string;
+    bio?: {
+      fr: string;
+      en: string;
+    };
   };
   publishedAt: string;
   readTime: number; // in minutes

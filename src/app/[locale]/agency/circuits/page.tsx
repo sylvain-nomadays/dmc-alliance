@@ -6,26 +6,33 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar, MapPin, Users, Clock, Search, Filter, Bookmark, BookmarkCheck } from 'lucide-react';
 
+interface Departure {
+  id: string;
+  start_date: string;
+  end_date: string | null;
+  total_seats: number;
+  booked_seats: number;
+  status: string;
+  price_override: number | null;
+}
+
 interface Circuit {
   id: string;
-  title_fr: string;
+  title: string;
   slug: string;
   destination: {
     name_fr: string;
+    name_en: string;
     country_code: string;
-  };
+  } | null;
   partner: {
     name: string;
     slug: string;
-  };
+  } | null;
   duration_days: number;
   price_from: number;
-  places_total: number;
-  places_available: number;
-  departure_date: string;
-  return_date: string;
   image_url: string | null;
-  status: string;
+  departures: Departure[];
 }
 
 interface WatchlistItem {
@@ -44,83 +51,134 @@ export default function AgencyCircuitsPage() {
   const [destinations, setDestinations] = useState<{ id: string; name_fr: string }[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'limited'>('all');
 
-  // Charger les circuits
+  const isFr = locale === 'fr';
+
+  // Charger les circuits avec leurs départs
   const loadCircuits = async () => {
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
-      .from('circuits')
-      .select(`
-        id, title_fr, slug, duration_days, price_from,
-        places_total, places_available, departure_date, return_date,
-        image_url, status,
-        destination:destinations(name_fr, country_code),
-        partner:partners(name, slug)
-      `)
-      .eq('status', 'published')
-      .gte('departure_date', new Date().toISOString().split('T')[0])
-      .order('departure_date', { ascending: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (supabase as any)
+        .from('circuits')
+        .select(`
+          id, title, slug, duration_days, price_from, image_url,
+          destination:destinations(name_fr, name_en, country_code),
+          partner:partners(name, slug),
+          departures:circuit_departures(id, start_date, end_date, total_seats, booked_seats, status, price_override)
+        `)
+        .eq('status', 'published')
+        .eq('is_gir', true);
 
-    if (destinationFilter) {
-      query = query.eq('destination_id', destinationFilter);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error loading circuits:', error);
-    } else {
-      let filtered: Circuit[] = (data || []) as Circuit[];
-
-      // Filtrer par recherche
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (c: Circuit) =>
-            c.title_fr?.toLowerCase().includes(q) ||
-            c.destination?.name_fr?.toLowerCase().includes(q) ||
-            c.partner?.name?.toLowerCase().includes(q)
-        );
+      if (destinationFilter) {
+        query = query.eq('destination_id', destinationFilter);
       }
 
-      // Filtrer par disponibilité
-      if (statusFilter === 'available') {
-        filtered = filtered.filter((c: Circuit) => c.places_available > 5);
-      } else if (statusFilter === 'limited') {
-        filtered = filtered.filter((c: Circuit) => c.places_available <= 5 && c.places_available > 0);
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error loading circuits:', error);
+        // Si la colonne is_gir n'existe pas, essayer sans ce filtre
+        if (error.message?.includes('is_gir')) {
+          console.warn('Column is_gir may not exist, please run migrations');
+        }
+        setLoading(false);
+        return;
       }
 
-      setCircuits(filtered);
+    // Filtrer les circuits qui ont au moins un départ futur ouvert
+    const today = new Date().toISOString().split('T')[0];
+    let filtered: Circuit[] = (data || []).filter((circuit: Circuit) => {
+      // Garder uniquement les départs futurs et ouverts
+      const futureDepartures = (circuit.departures || []).filter(
+        (dep: Departure) => dep.start_date >= today && dep.status === 'open'
+      );
+      return futureDepartures.length > 0;
+    }).map((circuit: Circuit) => ({
+      ...circuit,
+      // Garder uniquement les départs futurs et ouverts, triés par date
+      departures: (circuit.departures || [])
+        .filter((dep: Departure) => dep.start_date >= today && dep.status === 'open')
+        .sort((a: Departure, b: Departure) => a.start_date.localeCompare(b.start_date))
+    }));
+
+    // Filtrer par recherche
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (c: Circuit) =>
+          c.title?.toLowerCase().includes(q) ||
+          c.destination?.name_fr?.toLowerCase().includes(q) ||
+          c.partner?.name?.toLowerCase().includes(q)
+      );
     }
+
+    // Filtrer par disponibilité (basé sur le prochain départ)
+    if (statusFilter === 'available') {
+      filtered = filtered.filter((c: Circuit) => {
+        const nextDeparture = c.departures[0];
+        if (!nextDeparture) return false;
+        const available = nextDeparture.total_seats - nextDeparture.booked_seats;
+        return available > 5;
+      });
+    } else if (statusFilter === 'limited') {
+      filtered = filtered.filter((c: Circuit) => {
+        const nextDeparture = c.departures[0];
+        if (!nextDeparture) return false;
+        const available = nextDeparture.total_seats - nextDeparture.booked_seats;
+        return available <= 5 && available > 0;
+      });
+    }
+
+    // Trier par date du prochain départ
+    filtered.sort((a: Circuit, b: Circuit) => {
+      const dateA = a.departures[0]?.start_date || '9999-12-31';
+      const dateB = b.departures[0]?.start_date || '9999-12-31';
+      return dateA.localeCompare(dateB);
+    });
+
+    setCircuits(filtered);
     setLoading(false);
+    } catch (error) {
+      console.error('Error in loadCircuits:', error);
+      setLoading(false);
+    }
   };
 
   // Charger la watchlist
   const loadWatchlist = async () => {
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    // Récupérer l'agence de l'utilisateur
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+      // Récupérer l'agence de l'utilisateur
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: agency } = await (supabase as any)
-      .from('agencies')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: agency } = await (supabase as any)
+        .from('agencies')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-    if (!agency) return;
+      if (!agency) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
-      .from('gir_watchlist')
-      .select('circuit_id')
-      .eq('agency_id', agency.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('gir_watchlist')
+        .select('circuit_id')
+        .eq('agency_id', agency.id);
 
-    if (data) {
-      setWatchlist(new Set(data.map((w: WatchlistItem) => w.circuit_id)));
+      if (error) {
+        console.error('Watchlist table may not exist:', error.message);
+        return; // Table doesn't exist yet - ignore silently
+      }
+
+      if (data) {
+        setWatchlist(new Set(data.map((w: WatchlistItem) => w.circuit_id)));
+      }
+    } catch (error) {
+      console.error('Error loading watchlist:', error);
     }
   };
 
@@ -148,53 +206,67 @@ export default function AgencyCircuitsPage() {
 
   // Toggle watchlist
   const toggleWatchlist = async (circuitId: string) => {
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: agency } = await (supabase as any)
-      .from('agencies')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!agency) return;
-
-    if (watchlist.has(circuitId)) {
-      // Supprimer de la watchlist
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from('gir_watchlist')
-        .delete()
-        .eq('agency_id', agency.id)
-        .eq('circuit_id', circuitId);
+      const { data: agency } = await (supabase as any)
+        .from('agencies')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-      setWatchlist((prev) => {
-        const next = new Set(prev);
-        next.delete(circuitId);
-        return next;
-      });
-    } else {
-      // Ajouter à la watchlist
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from('gir_watchlist')
-        .insert({
-          agency_id: agency.id,
-          circuit_id: circuitId,
-          notify_on_booking: true,
-          notify_on_availability_change: true,
+      if (!agency) return;
+
+      if (watchlist.has(circuitId)) {
+        // Supprimer de la watchlist
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('gir_watchlist')
+          .delete()
+          .eq('agency_id', agency.id)
+          .eq('circuit_id', circuitId);
+
+        if (error) {
+          console.error('Error removing from watchlist:', error.message);
+          return;
+        }
+
+        setWatchlist((prev) => {
+          const next = new Set(prev);
+          next.delete(circuitId);
+          return next;
         });
+      } else {
+        // Ajouter à la watchlist
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('gir_watchlist')
+          .insert({
+            agency_id: agency.id,
+            circuit_id: circuitId,
+            notify_on_booking: true,
+            notify_on_availability_change: true,
+          });
 
-      setWatchlist((prev) => new Set([...prev, circuitId]));
+        if (error) {
+          console.error('Error adding to watchlist:', error.message);
+          return;
+        }
+
+        setWatchlist((prev) => new Set([...prev, circuitId]));
+      }
+    } catch (error) {
+      console.error('Error toggling watchlist:', error);
     }
   };
 
   // Calculer le pourcentage de remplissage
-  const getFillPercentage = (available: number, total: number) => {
-    return Math.round(((total - available) / total) * 100);
+  const getFillPercentage = (departure: Departure) => {
+    return Math.round((departure.booked_seats / departure.total_seats) * 100);
   };
 
   // Couleur de la jauge selon le remplissage
@@ -204,7 +276,13 @@ export default function AgencyCircuitsPage() {
     return 'bg-green-500';
   };
 
-  const isFr = locale === 'fr';
+  // Formater la date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -280,15 +358,31 @@ export default function AgencyCircuitsPage() {
       ) : circuits.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
           <Filter className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">
-            {isFr ? 'Aucun circuit ne correspond à vos critères' : 'No circuits match your criteria'}
+          <p className="text-gray-600 font-medium mb-2">
+            {isFr ? 'Aucun circuit GIR disponible' : 'No GIR circuits available'}
+          </p>
+          <p className="text-gray-500 text-sm max-w-md mx-auto">
+            {searchQuery || destinationFilter ? (
+              isFr
+                ? 'Aucun circuit ne correspond à vos critères de recherche. Essayez de modifier vos filtres.'
+                : 'No circuits match your search criteria. Try adjusting your filters.'
+            ) : (
+              isFr
+                ? 'Les circuits GIR de nos partenaires seront bientôt disponibles. Revenez régulièrement pour découvrir les nouvelles offres.'
+                : 'GIR circuits from our partners will be available soon. Check back regularly for new offers.'
+            )}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {circuits.map((circuit) => {
-            const fillPercentage = getFillPercentage(circuit.places_available, circuit.places_total);
+            const nextDeparture = circuit.departures[0];
+            const fillPercentage = nextDeparture ? getFillPercentage(nextDeparture) : 0;
+            const availableSeats = nextDeparture
+              ? nextDeparture.total_seats - nextDeparture.booked_seats
+              : 0;
             const isWatched = watchlist.has(circuit.id);
+            const departureCount = circuit.departures.length;
 
             return (
               <div
@@ -300,7 +394,7 @@ export default function AgencyCircuitsPage() {
                   {circuit.image_url ? (
                     <img
                       src={circuit.image_url}
-                      alt={circuit.title_fr}
+                      alt={circuit.title}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -326,19 +420,26 @@ export default function AgencyCircuitsPage() {
                   <div className="absolute bottom-3 left-3 px-2 py-1 bg-white/90 rounded text-xs font-medium text-gray-700">
                     {circuit.partner?.name}
                   </div>
+
+                  {/* Badge nombre de départs */}
+                  {departureCount > 1 && (
+                    <div className="absolute bottom-3 right-3 px-2 py-1 bg-terracotta-500 text-white rounded text-xs font-medium">
+                      {departureCount} {isFr ? 'départs' : 'departures'}
+                    </div>
+                  )}
                 </div>
 
                 {/* Contenu */}
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-semibold text-gray-900 line-clamp-2">
-                      {circuit.title_fr}
+                      {circuit.title}
                     </h3>
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
                     <MapPin className="w-4 h-4" />
-                    <span>{circuit.destination?.name_fr}</span>
+                    <span>{isFr ? circuit.destination?.name_fr : (circuit.destination?.name_en || circuit.destination?.name_fr)}</span>
                   </div>
 
                   {/* Infos */}
@@ -347,37 +448,41 @@ export default function AgencyCircuitsPage() {
                       <Clock className="w-4 h-4" />
                       <span>{circuit.duration_days} {isFr ? 'jours' : 'days'}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      <span>{new Date(circuit.departure_date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}</span>
-                    </div>
+                    {nextDeparture && (
+                      <div className="flex items-center gap-1 text-gray-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(nextDeparture.start_date)}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Jauge de remplissage */}
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-600">
-                        <Users className="w-3 h-3 inline mr-1" />
-                        {circuit.places_available} {isFr ? 'places restantes' : 'spots left'}
-                      </span>
-                      <span className={`font-medium ${fillPercentage >= 80 ? 'text-red-600' : fillPercentage >= 50 ? 'text-orange-600' : 'text-green-600'}`}>
-                        {fillPercentage}%
-                      </span>
+                  {nextDeparture && (
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-600">
+                          <Users className="w-3 h-3 inline mr-1" />
+                          {availableSeats} {isFr ? 'places restantes' : 'spots left'}
+                        </span>
+                        <span className={`font-medium ${fillPercentage >= 80 ? 'text-red-600' : fillPercentage >= 50 ? 'text-orange-600' : 'text-green-600'}`}>
+                          {fillPercentage}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${getGaugeColor(fillPercentage)} transition-all duration-500`}
+                          style={{ width: `${fillPercentage}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${getGaugeColor(fillPercentage)} transition-all duration-500`}
-                        style={{ width: `${fillPercentage}%` }}
-                      />
-                    </div>
-                  </div>
+                  )}
 
                   {/* Prix et action */}
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-xs text-gray-500">{isFr ? 'À partir de' : 'From'}</span>
                       <p className="text-lg font-bold text-terracotta-600">
-                        {circuit.price_from?.toLocaleString()} €
+                        {(nextDeparture?.price_override || circuit.price_from)?.toLocaleString()} €
                       </p>
                     </div>
                     <Link

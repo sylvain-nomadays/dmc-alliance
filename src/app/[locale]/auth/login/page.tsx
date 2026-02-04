@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 
@@ -14,6 +14,8 @@ function LoginForm() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const locale = (params.locale as string) || 'fr';
 
   // ✅ redirect fiable (ex: /admin)
   const redirect = searchParams.get('redirect');
@@ -25,7 +27,7 @@ function LoginForm() {
 
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -36,10 +38,38 @@ function LoginForm() {
       return;
     }
 
-    // ✅ IMPORTANT : Utiliser window.location pour forcer une vraie navigation
-    // Cela permet au middleware de s'exécuter et vérifier les permissions
-    const targetUrl = redirect ?? '/';
-    window.location.href = targetUrl;
+    // Si un redirect est spécifié, l'utiliser directement
+    if (redirect) {
+      window.location.href = redirect;
+      return;
+    }
+
+    // Sinon, récupérer le profil pour déterminer le rôle et rediriger
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user?.id)
+        .single();
+
+      let targetUrl = `/${locale}`;
+
+      if (profile?.role === 'agency') {
+        targetUrl = `/${locale}/agency/dashboard`;
+      } else if (profile?.role === 'admin') {
+        targetUrl = '/admin';
+      } else if (profile?.role === 'partner') {
+        targetUrl = '/admin';
+      }
+
+      // ✅ IMPORTANT : Utiliser window.location pour forcer une vraie navigation
+      // Cela permet au middleware de s'exécuter et vérifier les permissions
+      window.location.href = targetUrl;
+    } catch {
+      // En cas d'erreur, rediriger vers la home
+      window.location.href = `/${locale}`;
+    }
   };
 
   const handleGoogleLogin = async () => {

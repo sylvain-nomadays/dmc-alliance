@@ -3,8 +3,31 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
-import { partners } from '@/data/partners';
+import { createClient } from '@/lib/supabase/client';
+import { Linkedin, Mail, Phone } from 'lucide-react';
+
+interface CommercialRepresentative {
+  id: string;
+  name: string;
+  photo_url: string | null;
+  linkedin_url: string | null;
+  email: string | null;
+  phone: string | null;
+  bio_fr: string | null;
+  bio_en: string | null;
+  region: string;
+}
+
+interface Partner {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  tier: string;
+  destinations: { name_fr: string; name_en: string }[];
+}
 
 const values = [
   {
@@ -94,8 +117,60 @@ export default function AboutPage() {
   const locale = (params?.locale as string) || 'fr';
   const isFr = locale === 'fr';
 
-  // Get some featured partners to display
-  const featuredPartners = partners.filter(p => p.tier === 'premium').slice(0, 6);
+  const [representatives, setRepresentatives] = useState<CommercialRepresentative[]>([]);
+  const [featuredPartners, setFeaturedPartners] = useState<Partner[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function loadData() {
+      try {
+        // Load commercial representatives
+        const { data: reps } = await supabase
+          .from('commercial_representatives')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (reps) setRepresentatives(reps);
+
+        // Load partners from Supabase with their destinations
+        const { data: partnersData } = await supabase
+          .from('partners')
+          .select(`
+            id,
+            name,
+            slug,
+            logo_url,
+            tier,
+            destinations:partner_destinations(
+              destination:destinations(name_fr, name_en)
+            )
+          `)
+          .eq('tier', 'premium')
+          .limit(6);
+
+        if (partnersData) {
+          // Transform the data to flatten the destinations
+          const transformedPartners = partnersData.map(p => ({
+            ...p,
+            destinations: p.destinations?.map((d: { destination: { name_fr: string; name_en: string } }) => ({
+              name_fr: d.destination?.name_fr || '',
+              name_en: d.destination?.name_en || ''
+            })) || []
+          }));
+          setFeaturedPartners(transformedPartners);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
 
   const translations = {
     title: isFr ? 'Qui sommes-nous' : 'About us',
@@ -146,6 +221,10 @@ export default function AboutPage() {
       : 'Are you a local DMC and share our values? Join The DMC Alliance.',
     ctaButton: isFr ? 'Devenir partenaire' : 'Become a partner',
     viewAllPartners: isFr ? 'Voir tous nos partenaires' : 'View all our partners',
+    representativesTitle: isFr ? 'Nos représentants commerciaux en Europe' : 'Our commercial representatives in Europe',
+    representativesSubtitle: isFr
+      ? 'Votre point de contact privilégié pour découvrir notre réseau.'
+      : 'Your privileged point of contact to discover our network.',
   };
 
   const valueTranslations = [
@@ -200,6 +279,101 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      {/* Commercial Representatives */}
+      {representatives.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-heading text-gray-900 mb-3">
+                {translations.representativesTitle}
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                {translations.representativesSubtitle}
+              </p>
+            </div>
+
+            <div className={`grid gap-8 max-w-4xl mx-auto ${representatives.length === 1 ? 'grid-cols-1 max-w-lg' : 'grid-cols-1 md:grid-cols-2'}`}>
+              {representatives.map((rep) => (
+                <div
+                  key={rep.id}
+                  className="flex gap-6 bg-sand-50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  {/* Photo */}
+                  <div className="flex-shrink-0">
+                    {rep.photo_url ? (
+                      <Image
+                        src={rep.photo_url}
+                        alt={rep.name}
+                        width={96}
+                        height={96}
+                        className="w-24 h-24 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-3xl text-gray-500">
+                          {rep.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl font-heading text-gray-900">
+                        {rep.name}
+                      </h3>
+                      {rep.linkedin_url && (
+                        <a
+                          href={rep.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 transition-colors"
+                          title="LinkedIn"
+                        >
+                          <Linkedin className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-sm text-terracotta-500 font-medium mb-2">
+                      {rep.region}
+                    </p>
+
+                    {/* Contact Info */}
+                    <div className="flex flex-wrap gap-3 mb-3">
+                      {rep.email && (
+                        <a
+                          href={`mailto:${rep.email}`}
+                          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-terracotta-500 transition-colors"
+                        >
+                          <Mail className="w-4 h-4" />
+                          {rep.email}
+                        </a>
+                      )}
+                      {rep.phone && (
+                        <a
+                          href={`tel:${rep.phone.replace(/\s/g, '')}`}
+                          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-terracotta-500 transition-colors"
+                        >
+                          <Phone className="w-4 h-4" />
+                          {rep.phone}
+                        </a>
+                      )}
+                    </div>
+
+                    {(isFr ? rep.bio_fr : rep.bio_en) && (
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {isFr ? rep.bio_fr : rep.bio_en}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* History & Mission */}
       <section className="py-20 bg-sand-50">
@@ -326,34 +500,44 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-10">
-            {featuredPartners.map((partner) => (
-              <Link
-                key={partner.slug}
-                href={`/${locale}/partners/${partner.slug}`}
-                className="group"
-              >
-                <div className="bg-white rounded-xl p-6 text-center shadow-card hover:shadow-card-hover transition-all hover:-translate-y-1">
-                  <div className="relative w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden bg-gray-100">
-                    {partner.logo && (
-                      <Image
-                        src={partner.logo}
-                        alt={partner.name}
-                        fill
-                        className="object-contain p-2"
-                      />
-                    )}
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-terracotta-500"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-10">
+              {featuredPartners.map((partner) => (
+                <Link
+                  key={partner.slug}
+                  href={`/${locale}/partners/${partner.slug}`}
+                  className="group"
+                >
+                  <div className="bg-white rounded-xl p-6 text-center shadow-card hover:shadow-card-hover transition-all hover:-translate-y-1">
+                    <div className="relative w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden bg-white border-2 border-sand-200 flex items-center justify-center">
+                      {partner.logo_url ? (
+                        <Image
+                          src={partner.logo_url}
+                          alt={partner.name}
+                          fill
+                          className="object-contain p-2"
+                        />
+                      ) : (
+                        <span className="text-2xl font-heading text-gray-400">
+                          {partner.name.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900 group-hover:text-terracotta-500 transition-colors truncate">
+                      {partner.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {partner.destinations[0] && (isFr ? partner.destinations[0].name_fr : partner.destinations[0].name_en)}
+                    </p>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-terracotta-500 transition-colors truncate">
-                    {partner.name}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {partner.destinations[0]?.name}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
 
           <div className="text-center">
             <Link href={`/${locale}/partners`}>

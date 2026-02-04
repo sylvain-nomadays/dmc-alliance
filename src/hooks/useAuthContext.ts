@@ -75,12 +75,12 @@ export function useAuthContext(): AuthContextClient {
       let destinationIds: string[] = [];
 
       if (isPartner) {
-        // Get partner info
+        // Get partner info - note: column is owner_id, not user_id
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: partner } = await (supabase as any)
           .from('partners')
           .select('id, name, slug')
-          .eq('user_id', user.id)
+          .eq('owner_id', user.id)
           .single();
 
         if (partner) {

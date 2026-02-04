@@ -36,9 +36,12 @@ function convertDbArticleToStatic(dbArticle: ArticleSummary): Article {
     image: dbArticle.image_url || '/images/magazine/default.jpg',
     category: (dbArticle.category as Article['category']) || 'destinations',
     author: {
-      name: 'DMC Alliance',
-      role: { fr: 'Équipe éditoriale', en: 'Editorial team' },
-      avatar: '/images/team/default.jpg',
+      name: dbArticle.author_name || 'DMC Alliance',
+      role: {
+        fr: dbArticle.author_role || 'Équipe éditoriale',
+        en: dbArticle.author_role || 'Editorial team'
+      },
+      avatar: dbArticle.author_avatar || '/images/team/default.jpg',
     },
     publishedAt: dbArticle.published_at || new Date().toISOString(),
     readTime: dbArticle.read_time || 5,

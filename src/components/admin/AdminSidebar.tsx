@@ -6,18 +6,31 @@ import { cn } from '@/lib/utils';
 
 interface NavigationItem {
   name: string;
+  partnerName?: string; // Alternative name for partners
   href: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
+  partnerOnly?: boolean; // Only visible for partners
 }
 
 const navigation: NavigationItem[] = [
   {
     name: 'Dashboard',
     href: '/admin',
+    adminOnly: true, // Hide dashboard for partners - they go directly to circuits
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Mon Agence',
+    href: '/admin/my-agency',
+    partnerOnly: true, // Only visible for partners
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
       </svg>
     ),
   },
@@ -33,6 +46,7 @@ const navigation: NavigationItem[] = [
   },
   {
     name: 'Circuits GIR',
+    partnerName: 'Mes Circuits GIR',
     href: '/admin/circuits',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,6 +76,7 @@ const navigation: NavigationItem[] = [
   },
   {
     name: 'Destinations',
+    partnerName: 'Ma Destination',
     href: '/admin/destinations',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,6 +87,7 @@ const navigation: NavigationItem[] = [
   {
     name: 'Articles',
     href: '/admin/articles',
+    adminOnly: true, // Hide articles for partners
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
@@ -101,6 +117,7 @@ const navigation: NavigationItem[] = [
   {
     name: 'Médiathèque',
     href: '/admin/media',
+    adminOnly: true, // Hide media library for partners
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -148,6 +165,16 @@ const navigation: NavigationItem[] = [
       </svg>
     ),
   },
+  {
+    name: 'Qui sommes-nous',
+    href: '/admin/about',
+    adminOnly: true,
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+  },
 ];
 
 interface AdminSidebarProps {
@@ -161,9 +188,9 @@ export function AdminSidebar({ isAdmin = false, isPartner = false, partnerName }
 
   // Filter navigation items based on role
   const visibleNavigation = navigation.filter((item) => {
-    // Admin sees everything
-    if (isAdmin) return true;
-    // Partners see items that are not admin-only
+    // Admin sees everything except partner-only items
+    if (isAdmin) return !item.partnerOnly;
+    // Partners see items that are not admin-only (including partner-only items)
     if (isPartner) return !item.adminOnly;
     return false;
   });
@@ -201,6 +228,9 @@ export function AdminSidebar({ isAdmin = false, isPartner = false, partnerName }
                 pathname === item.href ||
                 (item.href !== '/admin' && pathname.startsWith(item.href));
 
+              // Use partner-specific name if available and user is partner
+              const displayName = isPartner && item.partnerName ? item.partnerName : item.name;
+
               return (
                 <Link
                   key={item.name}
@@ -213,7 +243,7 @@ export function AdminSidebar({ isAdmin = false, isPartner = false, partnerName }
                   )}
                 >
                   {item.icon}
-                  {item.name}
+                  {displayName}
                 </Link>
               );
             })}

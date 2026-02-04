@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { regions, type Region } from '@/data/partners';
 import type { DestinationListItem } from '@/lib/supabase/destinations-list';
+import { DestinationsMapbox } from './DestinationsMapbox';
 
 interface DestinationsPageClientProps {
   locale: string;
@@ -19,6 +20,7 @@ interface DestinationsPageClientProps {
     tryChangingFilters: string;
     ourGlobalNetwork: string;
     globalNetworkDescription: string;
+    clickToDiscover: string;
     cantFindDestination: string;
     cantFindDescription: string;
     contactUs: string;
@@ -235,25 +237,17 @@ export function DestinationsPageClient({
       {/* Map Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-heading text-gray-900 mb-4">
-              {translations.ourGlobalNetwork}
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              {translations.globalNetworkDescription}
-            </p>
-          </div>
-
-          {/* Interactive Map placeholder */}
-          <div className="relative aspect-[21/9] bg-deep-blue-50 rounded-2xl overflow-hidden">
-            <Image
-              src="/images/destinations/world-map.svg"
-              alt="World map"
-              fill
-              className="object-contain p-8"
-            />
-            {/* Map dots would be dynamically placed here */}
-          </div>
+          <DestinationsMapbox
+            locale={locale}
+            destinations={destinations}
+            translations={{
+              ourGlobalNetwork: translations.ourGlobalNetwork,
+              globalNetworkDescription: translations.globalNetworkDescription,
+              clickToDiscover: translations.clickToDiscover,
+              all: translations.all,
+              regions: translations.regions,
+            }}
+          />
         </div>
       </section>
 
