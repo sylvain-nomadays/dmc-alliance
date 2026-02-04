@@ -50,6 +50,10 @@ export async function POST(
 
     // Mode: créer un nouveau partenaire
     if (mode === 'new') {
+      // Déterminer le pays à partir des destinations (prendre la première ou "International")
+      const destinations = requestData.destinations || [];
+      const country = destinations.length > 0 ? destinations[0] : 'International';
+
       const { data: newPartner, error: partnerError } = await supabaseAdmin
         .from('partners')
         .insert({
@@ -57,6 +61,7 @@ export async function POST(
           name: requestData.partner_name,
           slug: requestData.partner_slug,
           tier: tier,
+          country: country,  // Colonne obligatoire
           email: requestData.contact_email,
           phone: requestData.contact_phone,
           website: requestData.website,
@@ -70,8 +75,14 @@ export async function POST(
 
       if (partnerError || !newPartner) {
         console.error('[Approve] Create partner error:', partnerError);
+        console.error('[Approve] Request data:', {
+          partner_name: requestData.partner_name,
+          partner_slug: requestData.partner_slug,
+          destinations: requestData.destinations,
+          country: country,
+        });
         return NextResponse.json(
-          { error: 'Erreur lors de la création du partenaire' },
+          { error: `Erreur lors de la création du partenaire: ${partnerError?.message || 'Erreur inconnue'}` },
           { status: 500 }
         );
       }
