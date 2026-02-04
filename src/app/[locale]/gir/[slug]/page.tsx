@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { setRequestLocale } from 'next-intl/server';
 import { locales } from '@/i18n';
 import { Button } from '@/components/ui/Button';
+import { InterestButton } from '@/components/ui/InterestButton';
 import { partners } from '@/data/partners';
 import { getCircuitBySlug, getAllCircuitSlugs, type CircuitDeparture, type CircuitDay, type Circuit } from '@/data/circuits';
 import { getCircuitBySlugFromDb, type DbCircuit } from '@/lib/supabase/circuits';
@@ -608,6 +609,17 @@ export default async function CircuitPage({ params }: Props) {
                       </Button>
                     </Link>
                   </div>
+                </div>
+
+                {/* Watchlist Button */}
+                <div className="mt-4">
+                  <InterestButton
+                    entityType="gir"
+                    entitySlug={circuit.slug}
+                    entityId={circuit.id}
+                    locale={locale}
+                    variant="outline"
+                  />
                 </div>
 
                 {/* Partner Card */}

@@ -34,6 +34,7 @@ interface AgencyFormData {
   country: string;
   phone: string;
   contactName: string;
+  subscribeNewsletter: boolean;
 }
 
 interface DMCFormData {
@@ -49,6 +50,7 @@ interface DMCFormData {
   destinations: string[];
   specialties: string[];
   hasGir: boolean;
+  subscribeNewsletter: boolean;
 }
 
 // Liste des destinations disponibles
@@ -138,6 +140,7 @@ function RegisterForm() {
     country: 'France',
     phone: '',
     contactName: '',
+    subscribeNewsletter: true,
   });
 
   // Formulaire DMC
@@ -154,6 +157,7 @@ function RegisterForm() {
     destinations: [],
     specialties: [],
     hasGir: false,
+    subscribeNewsletter: true,
   });
 
   const handleAccountTypeSelect = (type: AccountType) => {
@@ -865,6 +869,26 @@ function RegisterForm() {
               </div>
             </div>
 
+            {/* Newsletter opt-in */}
+            <div className="pt-4 border-t border-gray-200">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agencyForm.subscribeNewsletter}
+                  onChange={(e) => setAgencyForm({ ...agencyForm, subscribeNewsletter: e.target.checked })}
+                  className="mt-1 w-4 h-4 rounded border-gray-300 text-terracotta-600 focus:ring-terracotta-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Je souhaite recevoir la newsletter DMC Alliance
+                  </span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Actualités GIR, destinations, offres du réseau
+                  </p>
+                </div>
+              </label>
+            </div>
+
             <div className="pt-4">
               <Button type="submit" fullWidth loading={loading}>
                 {joinMode ? 'Envoyer ma demande' : 'Créer mon compte agence'}
@@ -1205,6 +1229,26 @@ function RegisterForm() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Newsletter opt-in */}
+            <div className="pt-4 border-t border-gray-200">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={dmcForm.subscribeNewsletter}
+                  onChange={(e) => setDmcForm({ ...dmcForm, subscribeNewsletter: e.target.checked })}
+                  className="mt-1 w-4 h-4 rounded border-gray-300 text-terracotta-600 focus:ring-terracotta-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Je souhaite recevoir la newsletter DMC Alliance
+                  </span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Actualités GIR, destinations, offres du réseau
+                  </p>
+                </div>
+              </label>
             </div>
 
             <div className="pt-4">

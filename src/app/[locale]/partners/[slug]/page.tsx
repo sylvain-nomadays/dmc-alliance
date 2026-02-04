@@ -12,6 +12,7 @@ import { getDestinationBySlug } from '@/data/destinations';
 import { getPartnerWithFullProfile, type PartnerVideo, type TeamMember, type Testimonial } from '@/lib/supabase/partners';
 import { getGirCircuitsByPartner, type DbCircuit } from '@/lib/supabase/circuits';
 import { VideoCarousel } from '@/components/partners/VideoCarousel';
+import { InterestButton } from '@/components/ui/InterestButton';
 import { cn } from '@/lib/utils';
 import {
   GlobeAltIcon,
@@ -584,6 +585,17 @@ export default async function PartnerProfilePage({ params }: Props) {
                         {isFr ? 'Nous contacter' : 'Contact us'}
                       </Button>
                     </Link>
+                  </div>
+
+                  {/* Interest Button - Agency CTA */}
+                  <div className="mt-4">
+                    <InterestButton
+                      entityType="partner"
+                      entitySlug={partner.slug}
+                      entityName={partner.name}
+                      locale={locale}
+                      variant="outline"
+                    />
                   </div>
                 </div>
               </div>

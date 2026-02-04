@@ -10,6 +10,7 @@ import { getDestinationBySlug, getAllDestinationSlugs, destinationsData } from '
 import { getDestinationWithImage, getAllDestinationsWithImages } from '@/lib/supabase/destinations';
 import { getPartnerWithImage } from '@/lib/supabase/partners';
 import { RelatedArticles } from '@/components/destinations/RelatedArticles';
+import { InterestButton } from '@/components/ui/InterestButton';
 
 // Icons
 import {
@@ -406,6 +407,17 @@ export default async function DestinationPage({ params }: Props) {
                       {isFr ? 'Demander un devis' : 'Request a quote'}
                     </Button>
                   </Link>
+                </div>
+
+                {/* Interest Button - Agency CTA */}
+                <div className="mt-4">
+                  <InterestButton
+                    entityType="destination"
+                    entitySlug={slug}
+                    entityName={destinationName}
+                    locale={locale}
+                    variant="outline"
+                  />
                 </div>
               </div>
             </div>

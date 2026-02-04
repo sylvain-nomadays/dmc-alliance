@@ -194,6 +194,7 @@ async function handleAgencyRegistration(userId: string, data: {
   country?: string;
   phone?: string;
   contactName: string;
+  subscribeNewsletter?: boolean;
 }) {
   const slug = generateSlug(data.agencyName);
 
@@ -302,6 +303,26 @@ async function handleAgencyRegistration(userId: string, data: {
           status: 'active',
           joined_at: new Date().toISOString(),
         });
+    }
+
+    // 6. Inscription newsletter si opt-in
+    if (data.subscribeNewsletter !== false) {
+      try {
+        await supabaseAdmin
+          .from('newsletter_subscribers')
+          .upsert({
+            email: data.email.toLowerCase(),
+            company_name: data.agencyName,
+            locale: 'fr',
+            interests: ['gir', 'destinations', 'offers', 'magazine'],
+            is_active: true,
+            confirmed_at: new Date().toISOString(), // Pas de double opt-in pour les inscrits
+            source: 'registration',
+          }, { onConflict: 'email' });
+      } catch (newsletterError) {
+        console.error('[Register] Newsletter subscription error:', newsletterError);
+        // Ne pas bloquer l'inscription si la newsletter échoue
+      }
     }
 
     return NextResponse.json({
@@ -448,6 +469,7 @@ async function handleDMCRegistration(userId: string, data: {
   specialties: string[];
   hasGir: boolean;
   existingPartnerId?: string; // Si le DMC veut rejoindre un partenaire existant
+  subscribeNewsletter?: boolean;
 }) {
   const slug = generateSlug(data.partnerName);
 
@@ -612,6 +634,26 @@ async function handleDMCRegistration(userId: string, data: {
       console.log('[Register] Confirmation email sent:', result);
     } catch (emailError) {
       console.error('[Register] Confirmation email error:', emailError);
+    }
+
+    // 6. Inscription newsletter si opt-in
+    if (data.subscribeNewsletter !== false) {
+      try {
+        await supabaseAdmin
+          .from('newsletter_subscribers')
+          .upsert({
+            email: data.email.toLowerCase(),
+            company_name: data.partnerName,
+            locale: 'fr',
+            interests: ['gir', 'destinations', 'offers', 'magazine'],
+            is_active: true,
+            confirmed_at: new Date().toISOString(), // Pas de double opt-in pour les inscrits
+            source: 'registration',
+          }, { onConflict: 'email' });
+      } catch (newsletterError) {
+        console.error('[Register] Newsletter subscription error:', newsletterError);
+        // Ne pas bloquer l'inscription si la newsletter échoue
+      }
     }
 
     return NextResponse.json({
