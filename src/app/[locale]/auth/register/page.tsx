@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { Building2, Globe, Users, ChevronLeft, Check, AlertCircle, UserPlus, LogIn, KeyRound } from 'lucide-react';
+import { Building2, Globe, Users, ChevronLeft, Check, AlertCircle, UserPlus, LogIn, KeyRound, X, Search } from 'lucide-react';
 
 // Types pour le formulaire
 type AccountType = 'agency' | 'dmc' | null;
@@ -53,39 +53,11 @@ interface DMCFormData {
   subscribeNewsletter: boolean;
 }
 
-// Liste des destinations disponibles
-const AVAILABLE_DESTINATIONS = [
-  { value: 'vietnam', label: 'Vietnam' },
-  { value: 'cambodge', label: 'Cambodge' },
-  { value: 'laos', label: 'Laos' },
-  { value: 'thailande', label: 'Thaïlande' },
-  { value: 'myanmar', label: 'Myanmar' },
-  { value: 'indonesie', label: 'Indonésie' },
-  { value: 'malaisie', label: 'Malaisie' },
-  { value: 'philippines', label: 'Philippines' },
-  { value: 'japon', label: 'Japon' },
-  { value: 'coree', label: 'Corée du Sud' },
-  { value: 'chine', label: 'Chine' },
-  { value: 'inde', label: 'Inde' },
-  { value: 'nepal', label: 'Népal' },
-  { value: 'sri-lanka', label: 'Sri Lanka' },
-  { value: 'maldives', label: 'Maldives' },
-  { value: 'maroc', label: 'Maroc' },
-  { value: 'tunisie', label: 'Tunisie' },
-  { value: 'egypte', label: 'Égypte' },
-  { value: 'afrique-sud', label: 'Afrique du Sud' },
-  { value: 'kenya', label: 'Kenya' },
-  { value: 'tanzanie', label: 'Tanzanie' },
-  { value: 'madagascar', label: 'Madagascar' },
-  { value: 'maurice', label: 'Île Maurice' },
-  { value: 'seychelles', label: 'Seychelles' },
-  { value: 'costa-rica', label: 'Costa Rica' },
-  { value: 'mexique', label: 'Mexique' },
-  { value: 'perou', label: 'Pérou' },
-  { value: 'bresil', label: 'Brésil' },
-  { value: 'argentine', label: 'Argentine' },
-  { value: 'chili', label: 'Chili' },
-];
+// Type pour les destinations chargées depuis la DB
+interface DestinationOption {
+  slug: string;
+  name: string;
+}
 
 // Liste des spécialités
 const AVAILABLE_SPECIALTIES = [
@@ -159,6 +131,34 @@ function RegisterForm() {
     hasGir: false,
     subscribeNewsletter: true,
   });
+
+  // États pour le sélecteur de destinations
+  const [allDestinations, setAllDestinations] = useState<DestinationOption[]>([]);
+  const [destinationSearch, setDestinationSearch] = useState('');
+  const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
+
+  // Charger les destinations depuis la DB
+  useEffect(() => {
+    const loadDestinations = async () => {
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from('destinations')
+        .select('slug, name')
+        .eq('is_active', true)
+        .order('name');
+      if (data) {
+        setAllDestinations(data as DestinationOption[]);
+      }
+    };
+    loadDestinations();
+  }, []);
+
+  // Filtrer les destinations selon la recherche
+  const filteredDestinations = allDestinations.filter(d =>
+    d.name.toLowerCase().includes(destinationSearch.toLowerCase()) &&
+    !dmcForm.destinations.includes(d.slug)
+  );
 
   const handleAccountTypeSelect = (type: AccountType) => {
     setAccountType(type);
@@ -1112,22 +1112,93 @@ function RegisterForm() {
               <label className="block text-sm font-medium text-gray-700">
                 Destinations couvertes *
               </label>
-              <div className="flex flex-wrap gap-2">
-                {AVAILABLE_DESTINATIONS.map((dest) => (
-                  <button
-                    key={dest.value}
-                    type="button"
-                    onClick={() => toggleDestination(dest.value)}
-                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                      dmcForm.destinations.includes(dest.value)
-                        ? 'bg-terracotta-500 text-white border-terracotta-500'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-terracotta-300'
-                    }`}
-                  >
-                    {dest.label}
-                  </button>
-                ))}
+
+              {/* Tags des destinations sélectionnées */}
+              {dmcForm.destinations.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {dmcForm.destinations.map(slug => {
+                    const dest = allDestinations.find(d => d.slug === slug);
+                    return (
+                      <span
+                        key={slug}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-terracotta-100 text-terracotta-700 rounded-full text-sm"
+                      >
+                        {dest?.name || slug}
+                        <button
+                          type="button"
+                          onClick={() => toggleDestination(slug)}
+                          className="hover:text-terracotta-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Champ de recherche */}
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={destinationSearch}
+                    onChange={(e) => {
+                      setDestinationSearch(e.target.value);
+                      setShowDestinationDropdown(true);
+                    }}
+                    onFocus={() => setShowDestinationDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDestinationDropdown(false), 200)}
+                    placeholder="Tapez pour rechercher une destination..."
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-terracotta-500 focus:border-terracotta-500"
+                  />
+                </div>
+
+                {/* Dropdown des suggestions */}
+                {showDestinationDropdown && destinationSearch && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {filteredDestinations.length > 0 ? (
+                      filteredDestinations.map(dest => (
+                        <button
+                          key={dest.slug}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            toggleDestination(dest.slug);
+                            setDestinationSearch('');
+                            setShowDestinationDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-terracotta-50 text-sm"
+                        >
+                          {dest.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        <p>Aucune destination trouvée.</p>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            // Ajouter la destination personnalisée
+                            const customSlug = destinationSearch.toLowerCase().replace(/\s+/g, '-');
+                            if (!dmcForm.destinations.includes(customSlug)) {
+                              setDmcForm({ ...dmcForm, destinations: [...dmcForm.destinations, destinationSearch] });
+                            }
+                            setDestinationSearch('');
+                            setShowDestinationDropdown(false);
+                          }}
+                          className="mt-2 text-terracotta-600 hover:text-terracotta-700 font-medium"
+                        >
+                          + Ajouter &quot;{destinationSearch}&quot; comme destination
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+              <p className="text-xs text-gray-500">Commencez à taper pour rechercher, ou ajoutez une destination personnalisée</p>
             </div>
 
             {/* Spécialités */}
