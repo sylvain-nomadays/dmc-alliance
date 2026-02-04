@@ -153,9 +153,21 @@ export default function AboutPage() {
 
         if (partnersData) {
           // Transform the data to flatten the destinations
-          const transformedPartners = partnersData.map(p => ({
-            ...p,
-            destinations: p.destinations?.map((d: { destination: { name_fr: string; name_en: string } }) => ({
+          interface PartnerData {
+            id: string;
+            name: string;
+            slug: string;
+            logo_url: string | null;
+            tier: string;
+            destinations: Array<{ destination: { name_fr: string; name_en: string } }> | null;
+          }
+          const transformedPartners = (partnersData as PartnerData[]).map(p => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            logo_url: p.logo_url,
+            tier: p.tier,
+            destinations: p.destinations?.map((d) => ({
               name_fr: d.destination?.name_fr || '',
               name_en: d.destination?.name_en || ''
             })) || []
