@@ -118,13 +118,21 @@ export async function POST(request: Request) {
     });
 
     if (authError) {
-      console.error('[Register] Auth error:', authError);
+      // Log détaillé pour diagnostic (visible dans Vercel Runtime Logs)
+      console.error('[Register] Auth error details:', {
+        message: authError.message,
+        status: authError.status,
+        code: (authError as { code?: string }).code,
+        name: authError.name,
+        email: email,
+        type: type,
+      });
 
       // SÉCURITÉ: Ne JAMAIS exposer authError.message directement
       // car il peut contenir des tokens, clés API ou informations sensibles
-      if (authError.message.includes('already registered')) {
+      if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
         return NextResponse.json(
-          { error: 'Un compte existe déjà avec cet email' },
+          { error: 'Un compte existe déjà avec cet email', errorType: 'account_exists' },
           { status: 400 }
         );
       }
@@ -143,7 +151,25 @@ export async function POST(request: Request) {
         );
       }
 
+      // Vérifier si c'est un problème de rate limit
+      if (authError.message.includes('rate limit') || authError.status === 429) {
+        return NextResponse.json(
+          { error: 'Trop de tentatives. Veuillez réessayer dans quelques minutes.' },
+          { status: 429 }
+        );
+      }
+
+      // Vérifier si c'est un problème de service role key
+      if (authError.message.includes('service_role') || authError.message.includes('not authorized')) {
+        console.error('[Register] SERVICE ROLE KEY ISSUE - Check Vercel env vars');
+        return NextResponse.json(
+          { error: 'Erreur de configuration serveur. Contactez l\'administrateur.' },
+          { status: 500 }
+        );
+      }
+
       // Message générique pour toute autre erreur (sécurité)
+      console.error('[Register] Unhandled auth error type:', authError.message);
       return NextResponse.json(
         { error: 'Erreur lors de la création du compte. Veuillez réessayer.' },
         { status: 400 }
