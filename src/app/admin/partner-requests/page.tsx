@@ -32,7 +32,7 @@ export default function PartnerRequestsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [approvalMode, setApprovalMode] = useState<'new' | 'existing'>('new');
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
-  const [selectedTier, setSelectedTier] = useState<'premium' | 'classic' | 'standard'>('classic');
+  const [selectedTier, setSelectedTier] = useState<'premium' | 'standard' | 'basic'>('standard');
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -105,7 +105,7 @@ export default function PartnerRequestsPage() {
       setSelectedRequest(null);
       setApprovalMode('new');
       setSelectedPartnerId('');
-      setSelectedTier('classic');
+      setSelectedTier('standard');
     } catch (error) {
       console.error('Approval error:', error);
       alert(error instanceof Error ? error.message : 'Erreur');
@@ -498,12 +498,12 @@ export default function PartnerRequestsPage() {
                 <div className="relative">
                   <select
                     value={selectedTier}
-                    onChange={(e) => setSelectedTier(e.target.value as 'premium' | 'classic' | 'standard')}
+                    onChange={(e) => setSelectedTier(e.target.value as 'premium' | 'standard' | 'basic')}
                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-terracotta-500 appearance-none"
                   >
                     <option value="premium">Premium - Accès complet et prioritaire</option>
-                    <option value="classic">Classic - Accès standard (par défaut)</option>
-                    <option value="standard">Standard - Accès basique</option>
+                    <option value="standard">Standard - Accès standard (par défaut)</option>
+                    <option value="basic">Basic - Accès basique</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
@@ -575,7 +575,7 @@ export default function PartnerRequestsPage() {
                   setShowApprovalModal(false);
                   setApprovalMode('new');
                   setSelectedPartnerId('');
-                  setSelectedTier('classic');
+                  setSelectedTier('standard');
                 }}
               >
                 Annuler
