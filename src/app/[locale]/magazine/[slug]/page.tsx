@@ -134,6 +134,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       read_time: a.readTime,
       published_at: a.publishedAt,
       destination_id: null,
+      author_name: a.author?.name || 'The DMC Alliance',
+      author_role: a.author?.role || '',
+      author_avatar: a.author?.avatar || null,
     }));
   }
 
