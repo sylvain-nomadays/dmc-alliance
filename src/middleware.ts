@@ -16,13 +16,16 @@ export async function middleware(request: NextRequest) {
     pathname.includes('/agency') ||
     pathname.includes('/espace-pro');
 
+  // Créer les headers de requête modifiés
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+
   if (isProtectedRoute) {
-    const response = await updateSupabaseSession(request);
-    // Ajouter un header pour indiquer que c'est une route protégée
-    response.headers.set('x-protected-route', 'true');
-    return response;
+    // Pour les routes protégées, mettre à jour la session Supabase
+    return await updateSupabaseSession(request);
   }
 
+  // Pour les routes publiques, utiliser le middleware i18n
   return intlMiddleware(request);
 }
 

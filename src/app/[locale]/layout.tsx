@@ -1,12 +1,12 @@
 import { Metadata } from 'next';
 import { Inter, DM_Serif_Display, Montserrat } from 'next/font/google';
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { ConditionalLayout } from '@/components/layout/ConditionalLayout';
 import { locales, type Locale } from '@/i18n';
 import { getSiteSettings, getLogoUrl, getFooterLogoUrl, getContactEmail, getContactPhone, getContactAddress, getSocialLinks } from '@/lib/supabase/site-settings';
 
@@ -80,11 +80,6 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
   // Enable static rendering
   setRequestLocale(locale);
 
-  // Vérifier si c'est une route protégée (agency, admin, partner)
-  // Ces routes ont leur propre header/footer
-  const headersList = await headers();
-  const isProtectedRoute = headersList.get('x-protected-route') === 'true';
-
   // Get messages for client provider
   const messages = await getMessages();
 
@@ -108,61 +103,66 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
       className={`${inter.variable} ${dmSerif.variable} ${montserrat.variable} font-body antialiased bg-white text-gray-900`}
     >
       <NextIntlClientProvider locale={locale} messages={messages}>
-        {/* Header - masqué sur les routes protégées (agency, admin, partner) */}
-        {!isProtectedRoute && (
-          <Header
-            locale={locale}
-            logoUrl={logoUrl}
-            logoDarkUrl={logoDarkUrl}
-            translations={{
-              destinations: (messages.nav as Record<string, string>)?.destinations || 'Destinations',
-              services: (messages.nav as Record<string, string>)?.services || 'Services',
-              partners: (messages.nav as Record<string, string>)?.partners || 'Partners',
-              magazine: (messages.nav as Record<string, string>)?.magazine || 'Magazine',
-              about: (messages.nav as Record<string, string>)?.about || 'About',
-              contact: (messages.common as Record<string, string>)?.contactUs || 'Contact',
-              proSpace: (messages.common as Record<string, string>)?.proSpace || 'Pro Space',
-              tailorMade: (messages.nav as Record<string, string>)?.tailorMade || 'Tailor-made',
-              tailorMadeDesc: (messages.nav as Record<string, string>)?.tailorMadeDesc || '',
-              groups: (messages.nav as Record<string, string>)?.groups || 'Groups',
-              groupsDesc: (messages.nav as Record<string, string>)?.groupsDesc || '',
-              gir: (messages.nav as Record<string, string>)?.gir || 'GIR',
-              girDesc: (messages.nav as Record<string, string>)?.girDesc || '',
-            }}
-          />
-        )}
+        <ConditionalLayout
+          publicContent={
+            <>
+              {/* Header */}
+              <Header
+                locale={locale}
+                logoUrl={logoUrl}
+                logoDarkUrl={logoDarkUrl}
+                translations={{
+                  destinations: (messages.nav as Record<string, string>)?.destinations || 'Destinations',
+                  services: (messages.nav as Record<string, string>)?.services || 'Services',
+                  partners: (messages.nav as Record<string, string>)?.partners || 'Partners',
+                  magazine: (messages.nav as Record<string, string>)?.magazine || 'Magazine',
+                  about: (messages.nav as Record<string, string>)?.about || 'About',
+                  contact: (messages.common as Record<string, string>)?.contactUs || 'Contact',
+                  proSpace: (messages.common as Record<string, string>)?.proSpace || 'Pro Space',
+                  tailorMade: (messages.nav as Record<string, string>)?.tailorMade || 'Tailor-made',
+                  tailorMadeDesc: (messages.nav as Record<string, string>)?.tailorMadeDesc || '',
+                  groups: (messages.nav as Record<string, string>)?.groups || 'Groups',
+                  groupsDesc: (messages.nav as Record<string, string>)?.groupsDesc || '',
+                  gir: (messages.nav as Record<string, string>)?.gir || 'GIR',
+                  girDesc: (messages.nav as Record<string, string>)?.girDesc || '',
+                }}
+              />
 
-        {/* Main Content */}
-        <main>{children}</main>
+              {/* Main Content */}
+              <main>{children}</main>
 
-        {/* Footer - masqué sur les routes protégées (agency, admin, partner) */}
-        {!isProtectedRoute && (
-          <Footer
-            locale={locale}
-            footerLogoUrl={footerLogoUrl}
-            contactInfo={contactInfo}
-            socialLinks={socialLinks}
-            translations={{
-              description: (messages.footer as Record<string, string>)?.description || '',
-              quickLinks: (messages.footer as Record<string, string>)?.quickLinks || 'Quick Links',
-              destinations: (messages.common as Record<string, string>)?.destinations || 'Destinations',
-              services: (messages.common as Record<string, string>)?.services || 'Services',
-              partners: (messages.common as Record<string, string>)?.partners || 'Partners',
-              magazine: (messages.common as Record<string, string>)?.magazine || 'Magazine',
-              about: (messages.common as Record<string, string>)?.about || 'About',
-              contact: (messages.common as Record<string, string>)?.contact || 'Contact',
-              legal: (messages.footer as Record<string, string>)?.legal || 'Legal',
-              privacy: (messages.footer as Record<string, string>)?.privacy || 'Privacy',
-              terms: (messages.footer as Record<string, string>)?.terms || 'Terms',
-              copyright: (messages.footer as Record<string, string>)?.copyright || '© {year} The DMC Alliance',
-              socialTitle: (messages.footer as Record<string, string>)?.socialTitle || 'Follow us',
-              newsletterTitle: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.title || 'Newsletter',
-              newsletterSubtitle: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.subtitle || '',
-              newsletterPlaceholder: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.placeholder || 'Email',
-              newsletterCta: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.cta || 'Subscribe',
-            }}
-          />
-        )}
+              {/* Footer */}
+              <Footer
+                locale={locale}
+                footerLogoUrl={footerLogoUrl}
+                contactInfo={contactInfo}
+                socialLinks={socialLinks}
+                translations={{
+                  description: (messages.footer as Record<string, string>)?.description || '',
+                  quickLinks: (messages.footer as Record<string, string>)?.quickLinks || 'Quick Links',
+                  destinations: (messages.common as Record<string, string>)?.destinations || 'Destinations',
+                  services: (messages.common as Record<string, string>)?.services || 'Services',
+                  partners: (messages.common as Record<string, string>)?.partners || 'Partners',
+                  magazine: (messages.common as Record<string, string>)?.magazine || 'Magazine',
+                  about: (messages.common as Record<string, string>)?.about || 'About',
+                  contact: (messages.common as Record<string, string>)?.contact || 'Contact',
+                  legal: (messages.footer as Record<string, string>)?.legal || 'Legal',
+                  privacy: (messages.footer as Record<string, string>)?.privacy || 'Privacy',
+                  terms: (messages.footer as Record<string, string>)?.terms || 'Terms',
+                  copyright: (messages.footer as Record<string, string>)?.copyright || '© {year} The DMC Alliance',
+                  socialTitle: (messages.footer as Record<string, string>)?.socialTitle || 'Follow us',
+                  newsletterTitle: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.title || 'Newsletter',
+                  newsletterSubtitle: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.subtitle || '',
+                  newsletterPlaceholder: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.placeholder || 'Email',
+                  newsletterCta: ((messages.home as Record<string, Record<string, string>>)?.newsletter)?.cta || 'Subscribe',
+                }}
+              />
+            </>
+          }
+        >
+          {/* Contenu des pages - sera affiché seul sur les routes protégées */}
+          {children}
+        </ConditionalLayout>
       </NextIntlClientProvider>
     </div>
   );
