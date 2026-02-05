@@ -249,8 +249,8 @@ export default function AgencySettingsPage() {
         </h1>
         <p className="text-gray-600 mt-1">
           {isFr
-            ? 'Complétez votre profil pour améliorer votre visibilité'
-            : 'Complete your profile to improve your visibility'}
+            ? 'Faisons plus ample connaissance'
+            : 'Let\'s get to know each other'}
         </p>
       </div>
 
@@ -273,8 +273,8 @@ export default function AgencySettingsPage() {
         {profilePercentage < 100 && (
           <p className="text-sm text-gray-500 mt-2">
             {isFr
-              ? 'Un profil complet augmente vos chances d\'être contacté par nos partenaires DMC.'
-              : 'A complete profile increases your chances of being contacted by our DMC partners.'}
+              ? 'Complétez votre profil pour permettre aux DMC de vous faire des propositions adaptées.'
+              : 'Complete your profile so DMCs can offer proposals tailored to your needs.'}
           </p>
         )}
       </div>

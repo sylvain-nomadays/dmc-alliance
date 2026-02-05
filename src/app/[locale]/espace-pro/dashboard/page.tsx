@@ -265,12 +265,12 @@ export default async function AgencyDashboardPage({
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
               <h2 className="text-lg font-semibold mb-1">
-                {isFr ? 'Complétez votre profil' : 'Complete Your Profile'}
+                {isFr ? 'Faisons plus ample connaissance' : 'Let\'s Get to Know Each Other'}
               </h2>
               <p className="text-terracotta-100 text-sm mb-3">
                 {isFr
-                  ? 'Un profil complet augmente vos chances d\'être contacté par nos partenaires DMC et d\'accéder aux meilleures offres.'
-                  : 'A complete profile increases your chances of being contacted by our DMC partners and accessing the best offers.'}
+                  ? 'Complétez votre profil agence pour permettre aux DMC de comprendre vos attentes et vous faire des propositions adaptées à votre clientèle.'
+                  : 'Complete your agency profile so DMCs can understand your needs and offer proposals tailored to your clientele.'}
               </p>
               <div className="flex items-center gap-3">
                 <div className="flex-1 bg-white/20 rounded-full h-3 max-w-xs">
