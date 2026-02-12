@@ -46,104 +46,169 @@ export async function POST(
       return NextResponse.json({ error: 'Cette demande a déjà été traitée' }, { status: 400 });
     }
 
+    // Détecter si c'est une demande de rattachement (rejoindre un partenaire existant)
+    const isJoinRequest = !!requestData.join_partner_id;
     let finalPartnerId = partnerId;
 
-    // Mode: créer un nouveau partenaire
-    if (mode === 'new') {
-      // Déterminer le pays à partir des destinations (prendre la première ou "International")
-      const destinations = requestData.destinations || [];
-      const country = destinations.length > 0 ? destinations[0] : 'International';
+    if (isJoinRequest) {
+      // --- DEMANDE DE RATTACHEMENT ---
+      // L'utilisateur veut rejoindre un partenaire existant
+      finalPartnerId = requestData.join_partner_id;
 
-      const { data: newPartner, error: partnerError } = await supabaseAdmin
-        .from('partners')
-        .insert({
-          owner_id: requestData.user_id,  // Note: colonne owner_id, pas user_id
-          name: requestData.partner_name,
-          slug: requestData.partner_slug,
-          tier: tier,
-          country: country,  // Colonne obligatoire
-          email: requestData.contact_email,
-          phone: requestData.contact_phone,
-          website: requestData.website,
-          description_fr: requestData.description,
-          // Note: specialties stockées dans partner_registration_requests, pas dans partners
-          has_gir: requestData.has_gir,
-          is_active: true,
-        })
-        .select('id')
-        .single();
-
-      if (partnerError || !newPartner) {
-        console.error('[Approve] Create partner error:', partnerError);
-        console.error('[Approve] Request data:', {
-          partner_name: requestData.partner_name,
-          partner_slug: requestData.partner_slug,
-          destinations: requestData.destinations,
-          country: country,
-        });
-        return NextResponse.json(
-          { error: `Erreur lors de la création du partenaire: ${partnerError?.message || 'Erreur inconnue'}` },
-          { status: 500 }
-        );
-      }
-
-      finalPartnerId = newPartner.id;
-    }
-
-    // Mode: lier à un partenaire existant
-    if (mode === 'existing') {
-      if (!partnerId) {
-        return NextResponse.json({ error: 'Partenaire non spécifié' }, { status: 400 });
-      }
-
-      console.log('[Approve] Looking for partner with ID:', partnerId);
-
-      // D'abord, vérifier si le partenaire existe et a déjà un owner_id
-      // Note: La colonne s'appelle owner_id (pas user_id) dans la table partners
+      // Vérifier que le partenaire existe
       const { data: existingPartner, error: fetchError } = await supabaseAdmin
         .from('partners')
-        .select('id, name, owner_id')
-        .eq('id', partnerId)
+        .select('id, name')
+        .eq('id', finalPartnerId)
         .single();
 
-      console.log('[Approve] Partner lookup result:', { existingPartner, fetchError: fetchError?.message });
-
       if (fetchError || !existingPartner) {
-        console.error('[Approve] Fetch partner error:', fetchError);
         return NextResponse.json(
-          { error: `Partenaire non trouvé (ID: ${partnerId}). Erreur: ${fetchError?.message || 'Aucun résultat'}` },
+          { error: 'Le partenaire cible n\'existe plus' },
           { status: 404 }
         );
       }
 
-      // Si le partenaire a déjà un owner_id différent, on ne peut pas le lier directement
-      // On doit demander à l'admin de choisir un autre mode ou créer un nouveau partenaire
-      if (existingPartner.owner_id && existingPartner.owner_id !== requestData.user_id) {
-        console.log('[Approve] Partner already has an owner_id:', existingPartner.owner_id);
+      // Créer l'entrée partner_members avec rôle 'member'
+      const { error: memberError } = await supabaseAdmin
+        .from('partner_members')
+        .upsert({
+          partner_id: finalPartnerId,
+          user_id: requestData.user_id,
+          role: 'member',
+          status: 'active',
+          joined_at: new Date().toISOString(),
+          invited_by: user.id,
+        }, { onConflict: 'partner_id,user_id' });
+
+      if (memberError) {
+        console.error('[Approve] Create partner member error:', memberError);
         return NextResponse.json(
-          { error: `Ce partenaire (${existingPartner.name}) est déjà lié à un autre utilisateur. Veuillez créer un nouveau partenaire ou contacter l'utilisateur existant.` },
-          { status: 400 }
+          { error: `Erreur lors du rattachement: ${memberError.message}` },
+          { status: 500 }
         );
       }
 
-      // Le partenaire n'a pas de owner_id ou c'est le même utilisateur, on peut le lier
-      if (!existingPartner.owner_id) {
-        // Le partenaire n'a pas de owner_id, on peut le lier
-        const { error: updatePartnerError } = await supabaseAdmin
-          .from('partners')
-          .update({ owner_id: requestData.user_id })
-          .eq('id', partnerId);
+    } else {
+      // --- NOUVELLE INSCRIPTION DMC ---
 
-        if (updatePartnerError) {
-          console.error('[Approve] Update partner error:', updatePartnerError);
+      // Mode: créer un nouveau partenaire
+      if (mode === 'new') {
+        // Déterminer le pays à partir des destinations (prendre la première ou "International")
+        const destinations = requestData.destinations || [];
+        const country = destinations.length > 0 ? destinations[0] : 'International';
+
+        const { data: newPartner, error: partnerError } = await supabaseAdmin
+          .from('partners')
+          .insert({
+            owner_id: requestData.user_id,
+            name: requestData.partner_name,
+            slug: requestData.partner_slug,
+            tier: tier,
+            country: country,
+            email: requestData.contact_email,
+            phone: requestData.contact_phone,
+            website: requestData.website,
+            description_fr: requestData.description,
+            has_gir: requestData.has_gir,
+            is_active: true,
+          })
+          .select('id')
+          .single();
+
+        if (partnerError || !newPartner) {
+          console.error('[Approve] Create partner error:', partnerError);
           return NextResponse.json(
-            { error: `Erreur lors de la liaison au partenaire: ${updatePartnerError.message}` },
+            { error: `Erreur lors de la création du partenaire: ${partnerError?.message || 'Erreur inconnue'}` },
             { status: 500 }
           );
         }
+
+        finalPartnerId = newPartner.id;
+
+        // Créer l'entrée partner_members avec rôle 'owner'
+        await supabaseAdmin
+          .from('partner_members')
+          .upsert({
+            partner_id: finalPartnerId,
+            user_id: requestData.user_id,
+            role: 'owner',
+            status: 'active',
+            joined_at: new Date().toISOString(),
+          }, { onConflict: 'partner_id,user_id' });
       }
 
-      finalPartnerId = partnerId;
+      // Mode: lier à un partenaire existant (sans join_partner_id = admin fait le lien manuellement)
+      if (mode === 'existing') {
+        if (!partnerId) {
+          return NextResponse.json({ error: 'Partenaire non spécifié' }, { status: 400 });
+        }
+
+        const { data: existingPartner, error: fetchError } = await supabaseAdmin
+          .from('partners')
+          .select('id, name, owner_id')
+          .eq('id', partnerId)
+          .single();
+
+        if (fetchError || !existingPartner) {
+          return NextResponse.json(
+            { error: `Partenaire non trouvé (ID: ${partnerId})` },
+            { status: 404 }
+          );
+        }
+
+        // Si le partenaire n'a pas de owner_id, on le définit
+        if (!existingPartner.owner_id) {
+          const { error: updatePartnerError } = await supabaseAdmin
+            .from('partners')
+            .update({ owner_id: requestData.user_id })
+            .eq('id', partnerId);
+
+          if (updatePartnerError) {
+            console.error('[Approve] Update partner error:', updatePartnerError);
+            return NextResponse.json(
+              { error: `Erreur lors de la liaison au partenaire: ${updatePartnerError.message}` },
+              { status: 500 }
+            );
+          }
+
+          // owner_id assigné → rôle 'owner' dans partner_members
+          await supabaseAdmin
+            .from('partner_members')
+            .upsert({
+              partner_id: partnerId,
+              user_id: requestData.user_id,
+              role: 'owner',
+              status: 'active',
+              joined_at: new Date().toISOString(),
+            }, { onConflict: 'partner_id,user_id' });
+        } else if (existingPartner.owner_id === requestData.user_id) {
+          // Même utilisateur, juste s'assurer qu'il est dans partner_members
+          await supabaseAdmin
+            .from('partner_members')
+            .upsert({
+              partner_id: partnerId,
+              user_id: requestData.user_id,
+              role: 'owner',
+              status: 'active',
+              joined_at: new Date().toISOString(),
+            }, { onConflict: 'partner_id,user_id' });
+        } else {
+          // Le partenaire a déjà un owner différent → rattacher comme membre
+          await supabaseAdmin
+            .from('partner_members')
+            .upsert({
+              partner_id: partnerId,
+              user_id: requestData.user_id,
+              role: 'member',
+              status: 'active',
+              joined_at: new Date().toISOString(),
+              invited_by: user.id,
+            }, { onConflict: 'partner_id,user_id' });
+        }
+
+        finalPartnerId = partnerId;
+      }
     }
 
     // Mettre à jour le profil utilisateur
@@ -200,7 +265,9 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: 'Demande approuvée avec succès',
+      message: isJoinRequest
+        ? 'Demande de rattachement approuvée avec succès'
+        : 'Demande approuvée avec succès',
       partnerId: finalPartnerId,
     });
 

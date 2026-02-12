@@ -76,6 +76,42 @@ export async function getAuthContext(): Promise<AuthContext | null> {
         logo_url: partner.logo_url,
         destinations: (destinations || []) as DestinationInfo[],
       };
+    } else {
+      // Fallback: check partner_members table (multi-user support)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: membership } = await (supabase as any)
+        .from('partner_members')
+        .select('partner_id, role')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (membership) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: memberPartner } = await (supabase as any)
+          .from('partners')
+          .select('id, name, slug, tier, logo_url')
+          .eq('id', membership.partner_id)
+          .single();
+
+        if (memberPartner) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: destinations } = await (supabase as any)
+            .from('destinations')
+            .select('id, slug, name')
+            .eq('partner_id', memberPartner.id)
+            .eq('is_active', true);
+
+          partnerInfo = {
+            id: memberPartner.id,
+            name: memberPartner.name,
+            slug: memberPartner.slug,
+            tier: memberPartner.tier,
+            logo_url: memberPartner.logo_url,
+            destinations: (destinations || []) as DestinationInfo[],
+          };
+        }
+      }
     }
   }
 

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import {
   Check, X, Clock, Eye, Globe, Mail, Phone,
-  ExternalLink, Building2, ChevronDown
+  ExternalLink, Building2, ChevronDown, UserPlus
 } from 'lucide-react';
 import type { PartnerRegistrationRequest } from '@/types/database';
 
@@ -230,6 +230,12 @@ export default function PartnerRequestsPage() {
                         {request.partner_name}
                       </h3>
                       {getStatusBadge(request.status)}
+                      {request.join_partner_id && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <UserPlus className="w-3 h-3" />
+                          Rattachement
+                        </span>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600">
@@ -357,7 +363,15 @@ export default function PartnerRequestsPage() {
               {/* Statut */}
               <div>
                 <span className="text-sm text-gray-500">Statut</span>
-                <div className="mt-1">{getStatusBadge(selectedRequest.status)}</div>
+                <div className="mt-1 flex items-center gap-2">
+                  {getStatusBadge(selectedRequest.status)}
+                  {selectedRequest.join_partner_id && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <UserPlus className="w-3 h-3" />
+                      Rattachement
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Contact */}
@@ -482,90 +496,121 @@ export default function PartnerRequestsPage() {
           <div className="bg-white rounded-xl max-w-lg w-full">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-heading text-gray-900">
-                Approuver la demande
+                {selectedRequest.join_partner_id
+                  ? 'Approuver le rattachement'
+                  : 'Approuver la demande'
+                }
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Choisissez comment associer ce compte
+                {selectedRequest.join_partner_id
+                  ? `${selectedRequest.contact_name} souhaite rejoindre ${selectedRequest.partner_name}`
+                  : 'Choisissez comment associer ce compte'
+                }
               </p>
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Sélection du niveau de membre */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Niveau de membre
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedTier}
-                    onChange={(e) => setSelectedTier(e.target.value as 'premium' | 'standard' | 'basic')}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-terracotta-500 appearance-none"
-                  >
-                    <option value="premium">Premium - Accès complet et prioritaire</option>
-                    <option value="standard">Standard - Accès standard (par défaut)</option>
-                    <option value="basic">Basic - Accès basique</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              {selectedRequest.join_partner_id ? (
+                /* Demande de rattachement : confirmation simple */
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <UserPlus className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">
+                        Rattachement au partenaire existant
+                      </p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        <strong>{selectedRequest.contact_name}</strong> ({selectedRequest.contact_email}) sera ajouté comme membre de <strong>{selectedRequest.partner_name}</strong>.
+                      </p>
+                      {selectedRequest.description && (
+                        <p className="text-sm text-blue-600 mt-2 italic">
+                          Message : &quot;{selectedRequest.description}&quot;
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Option 1: Créer un nouveau partenaire */}
-              <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                approvalMode === 'new' ? 'border-terracotta-500 bg-terracotta-50' : 'border-gray-200 hover:border-gray-300'
-              }`}>
-                <input
-                  type="radio"
-                  name="approvalMode"
-                  value="new"
-                  checked={approvalMode === 'new'}
-                  onChange={() => setApprovalMode('new')}
-                  className="mt-1"
-                />
-                <div>
-                  <p className="font-medium text-gray-900">Créer un nouveau partenaire</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Un nouveau partenaire &quot;{selectedRequest.partner_name}&quot; sera créé automatiquement
-                  </p>
-                </div>
-              </label>
-
-              {/* Option 2: Lier à un partenaire existant */}
-              <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                approvalMode === 'existing' ? 'border-terracotta-500 bg-terracotta-50' : 'border-gray-200 hover:border-gray-300'
-              }`}>
-                <input
-                  type="radio"
-                  name="approvalMode"
-                  value="existing"
-                  checked={approvalMode === 'existing'}
-                  onChange={() => setApprovalMode('existing')}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Lier à un partenaire existant</p>
-                  <p className="text-sm text-gray-500 mt-1 mb-3">
-                    Associer ce compte à un partenaire déjà enregistré
-                  </p>
-
-                  {approvalMode === 'existing' && (
+              ) : (
+                /* Nouvelle inscription DMC : choix new/existing */
+                <>
+                  {/* Sélection du niveau de membre */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Niveau de membre
+                    </label>
                     <div className="relative">
                       <select
-                        value={selectedPartnerId}
-                        onChange={(e) => setSelectedPartnerId(e.target.value)}
+                        value={selectedTier}
+                        onChange={(e) => setSelectedTier(e.target.value as 'premium' | 'standard' | 'basic')}
                         className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-terracotta-500 appearance-none"
                       >
-                        <option value="">Sélectionner un partenaire...</option>
-                        {partners.map((partner) => (
-                          <option key={partner.id} value={partner.id}>
-                            {partner.name}
-                          </option>
-                        ))}
+                        <option value="premium">Premium - Accès complet et prioritaire</option>
+                        <option value="standard">Standard - Accès standard (par défaut)</option>
+                        <option value="basic">Basic - Accès basique</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                     </div>
-                  )}
-                </div>
-              </label>
+                  </div>
+
+                  {/* Option 1: Créer un nouveau partenaire */}
+                  <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                    approvalMode === 'new' ? 'border-terracotta-500 bg-terracotta-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="approvalMode"
+                      value="new"
+                      checked={approvalMode === 'new'}
+                      onChange={() => setApprovalMode('new')}
+                      className="mt-1"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">Créer un nouveau partenaire</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Un nouveau partenaire &quot;{selectedRequest.partner_name}&quot; sera créé automatiquement
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Option 2: Lier à un partenaire existant */}
+                  <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                    approvalMode === 'existing' ? 'border-terracotta-500 bg-terracotta-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="approvalMode"
+                      value="existing"
+                      checked={approvalMode === 'existing'}
+                      onChange={() => setApprovalMode('existing')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">Lier à un partenaire existant</p>
+                      <p className="text-sm text-gray-500 mt-1 mb-3">
+                        Associer ce compte à un partenaire déjà enregistré
+                      </p>
+
+                      {approvalMode === 'existing' && (
+                        <div className="relative">
+                          <select
+                            value={selectedPartnerId}
+                            onChange={(e) => setSelectedPartnerId(e.target.value)}
+                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-terracotta-500 appearance-none"
+                          >
+                            <option value="">Sélectionner un partenaire...</option>
+                            {partners.map((partner) => (
+                              <option key={partner.id} value={partner.id}>
+                                {partner.name}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </>
+              )}
             </div>
 
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
@@ -583,9 +628,9 @@ export default function PartnerRequestsPage() {
               <Button
                 onClick={handleApprove}
                 loading={actionLoading}
-                disabled={approvalMode === 'existing' && !selectedPartnerId}
+                disabled={!selectedRequest.join_partner_id && approvalMode === 'existing' && !selectedPartnerId}
               >
-                Approuver
+                {selectedRequest.join_partner_id ? 'Approuver le rattachement' : 'Approuver'}
               </Button>
             </div>
           </div>

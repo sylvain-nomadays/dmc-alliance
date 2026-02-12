@@ -478,6 +478,44 @@ export type Database = {
           updated_at?: string;
         };
       };
+      partner_members: {
+        Row: {
+          id: string;
+          partner_id: string;
+          user_id: string;
+          role: 'owner' | 'admin' | 'member';
+          invited_by: string | null;
+          invited_at: string;
+          joined_at: string | null;
+          status: 'pending' | 'active' | 'inactive';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          partner_id: string;
+          user_id: string;
+          role?: 'owner' | 'admin' | 'member';
+          invited_by?: string | null;
+          invited_at?: string;
+          joined_at?: string | null;
+          status?: 'pending' | 'active' | 'inactive';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          partner_id?: string;
+          user_id?: string;
+          role?: 'owner' | 'admin' | 'member';
+          invited_by?: string | null;
+          invited_at?: string;
+          joined_at?: string | null;
+          status?: 'pending' | 'active' | 'inactive';
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       quote_requests: {
         Row: {
           id: string;
@@ -686,6 +724,7 @@ export type Database = {
           destinations: string[];
           specialties: string[];
           has_gir: boolean;
+          join_partner_id: string | null;
           status: 'pending' | 'approved' | 'rejected';
           admin_notes: string | null;
           reviewed_by: string | null;
@@ -706,6 +745,7 @@ export type Database = {
           destinations?: string[];
           specialties?: string[];
           has_gir?: boolean;
+          join_partner_id?: string | null;
           status?: 'pending' | 'approved' | 'rejected';
           admin_notes?: string | null;
           reviewed_by?: string | null;
@@ -726,6 +766,7 @@ export type Database = {
           destinations?: string[];
           specialties?: string[];
           has_gir?: boolean;
+          join_partner_id?: string | null;
           status?: 'pending' | 'approved' | 'rejected';
           admin_notes?: string | null;
           reviewed_by?: string | null;
@@ -848,6 +889,7 @@ export type AgencyDestinationInterest = Tables<'agency_destination_interests'>;
 export type AgencyRequest = Tables<'agency_requests'>;
 export type AgencyMember = Tables<'agency_members'>;
 export type AgencyJoinRequest = Tables<'agency_join_requests'>;
+export type PartnerMember = Tables<'partner_members'>;
 
 export type UserRole = Enums<'user_role'>;
 export type CircuitStatus = Enums<'circuit_status'>;
@@ -862,3 +904,5 @@ export type AgencyRequestStatus = Enums<'agency_request_status'>;
 export type AgencyMemberRole = 'owner' | 'admin' | 'member';
 export type AgencyMemberStatus = 'pending' | 'active' | 'inactive';
 export type AgencyJoinRequestStatus = 'pending' | 'approved' | 'rejected';
+export type PartnerMemberRole = 'owner' | 'admin' | 'member';
+export type PartnerMemberStatus = 'pending' | 'active' | 'inactive';
