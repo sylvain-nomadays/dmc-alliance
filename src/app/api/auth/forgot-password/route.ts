@@ -13,40 +13,51 @@ export async function POST(request: Request) {
 
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || '';
     const isFr = locale === 'fr';
-
-    console.log('[Forgot Password] Request for:', email, '| Origin:', origin);
+    const callbackUrl = `${origin}/${locale}/auth/callback?redirect=/${locale}/auth/reset-password`;
 
     // Generate recovery link via Supabase admin API
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email,
+      options: {
+        redirectTo: callbackUrl,
+      },
     });
 
-    if (linkError) {
-      console.error('[Forgot Password] generateLink error:', linkError.message);
+    if (linkError || !linkData) {
       // Don't reveal whether the email exists or not
       return NextResponse.json({ success: true });
     }
 
-    if (!linkData) {
-      console.error('[Forgot Password] generateLink returned no data');
-      return NextResponse.json({ success: true });
-    }
-
-    // The response contains properties at the top level or nested under properties
     const tokenHash = linkData.properties?.hashed_token;
     if (!tokenHash) {
-      console.error('[Forgot Password] No hashed_token found. Full response keys:', JSON.stringify(Object.keys(linkData)));
-      console.error('[Forgot Password] linkData.properties:', JSON.stringify(linkData.properties));
       return NextResponse.json({ success: true });
     }
 
-    console.log('[Forgot Password] Token generated successfully');
-
-    // Build the reset URL that goes through our callback route
+    // Build the reset URL that goes directly to our callback (bypasses Supabase redirect allowlist)
     const resetUrl = `${origin}/${locale}/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&redirect=/${locale}/auth/reset-password`;
 
-    // Build beautiful email HTML
+    // Try sending a beautiful email via Resend
+    const sent = await trySendViaResend(email, resetUrl, isFr);
+
+    if (!sent) {
+      // Fallback: use Supabase's built-in email (less pretty, but arrives)
+      console.log('[Forgot Password] Resend failed, falling back to Supabase email');
+      await supabaseAdmin.auth.resetPasswordForEmail(email, {
+        redirectTo: callbackUrl,
+      });
+    }
+
+    // Always return success to avoid leaking email existence
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[Forgot Password] Unexpected error:', err);
+    return NextResponse.json({ success: true });
+  }
+}
+
+async function trySendViaResend(email: string, resetUrl: string, isFr: boolean): Promise<boolean> {
+  try {
     const emailContent = `
       <h2 style="color: #1e3a5f; margin-top: 0;">
         ${isFr ? 'Réinitialisation de votre mot de passe' : 'Reset your password'}
@@ -83,28 +94,26 @@ export async function POST(request: Request) {
         : 'Reset your DMC Alliance password',
     });
 
-    // Send via Resend
-    const emailResult = await sendEmail({
+    const result = await sendEmail({
       to: email,
       subject: isFr
         ? 'Réinitialisation de votre mot de passe - DMC Alliance'
         : 'Reset your password - DMC Alliance',
       html,
       text: isFr
-        ? `Réinitialisation de votre mot de passe\n\nCliquez sur ce lien pour réinitialiser votre mot de passe : ${resetUrl}\n\nCe lien est valable pendant 24 heures.`
-        : `Reset your password\n\nClick this link to reset your password: ${resetUrl}\n\nThis link is valid for 24 hours.`,
+        ? `Réinitialisation de votre mot de passe\n\nCliquez sur ce lien : ${resetUrl}\n\nCe lien est valable 24 heures.`
+        : `Reset your password\n\nClick this link: ${resetUrl}\n\nThis link is valid for 24 hours.`,
     });
 
-    if (!emailResult.success) {
-      console.error('[Forgot Password] Resend email failed:', emailResult.error);
-    } else {
-      console.log('[Forgot Password] Email sent successfully. ID:', emailResult.id);
+    if (result.success) {
+      console.log('[Forgot Password] Email sent via Resend. ID:', result.id);
+      return true;
     }
 
-    // Always return success to avoid leaking email existence
-    return NextResponse.json({ success: true });
+    console.warn('[Forgot Password] Resend failed:', result.error);
+    return false;
   } catch (err) {
-    console.error('[Forgot Password] Unexpected error:', err);
-    return NextResponse.json({ success: true });
+    console.warn('[Forgot Password] Resend exception:', err);
+    return false;
   }
 }
