@@ -14,22 +14,34 @@ export async function POST(request: Request) {
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || '';
     const isFr = locale === 'fr';
 
+    console.log('[Forgot Password] Request for:', email, '| Origin:', origin);
+
     // Generate recovery link via Supabase admin API
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email,
     });
 
-    if (error || !data) {
+    if (linkError) {
+      console.error('[Forgot Password] generateLink error:', linkError.message);
       // Don't reveal whether the email exists or not
       return NextResponse.json({ success: true });
     }
 
-    const tokenHash = data.properties?.hashed_token;
-    if (!tokenHash) {
-      console.error('[Forgot Password] No hashed_token in generateLink response');
+    if (!linkData) {
+      console.error('[Forgot Password] generateLink returned no data');
       return NextResponse.json({ success: true });
     }
+
+    // The response contains properties at the top level or nested under properties
+    const tokenHash = linkData.properties?.hashed_token;
+    if (!tokenHash) {
+      console.error('[Forgot Password] No hashed_token found. Full response keys:', JSON.stringify(Object.keys(linkData)));
+      console.error('[Forgot Password] linkData.properties:', JSON.stringify(linkData.properties));
+      return NextResponse.json({ success: true });
+    }
+
+    console.log('[Forgot Password] Token generated successfully');
 
     // Build the reset URL that goes through our callback route
     const resetUrl = `${origin}/${locale}/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&redirect=/${locale}/auth/reset-password`;
@@ -72,7 +84,7 @@ export async function POST(request: Request) {
     });
 
     // Send via Resend
-    await sendEmail({
+    const emailResult = await sendEmail({
       to: email,
       subject: isFr
         ? 'Réinitialisation de votre mot de passe - DMC Alliance'
@@ -83,10 +95,16 @@ export async function POST(request: Request) {
         : `Reset your password\n\nClick this link to reset your password: ${resetUrl}\n\nThis link is valid for 24 hours.`,
     });
 
+    if (!emailResult.success) {
+      console.error('[Forgot Password] Resend email failed:', emailResult.error);
+    } else {
+      console.log('[Forgot Password] Email sent successfully. ID:', emailResult.id);
+    }
+
     // Always return success to avoid leaking email existence
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('[Forgot Password] Error:', err);
+    console.error('[Forgot Password] Unexpected error:', err);
     return NextResponse.json({ success: true });
   }
 }
