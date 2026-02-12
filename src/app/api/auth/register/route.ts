@@ -711,7 +711,7 @@ async function handleDMCJoinRequest(userId: string, data: {
     // 1. Vérifier que le partenaire existe
     const { data: partner, error: partnerError } = await supabaseAdmin
       .from('partners')
-      .select('id, name, slug, user_id')
+      .select('id, name, slug, owner_id')
       .eq('id', data.partnerId)
       .single();
 
@@ -782,44 +782,79 @@ async function handleDMCJoinRequest(userId: string, data: {
       .update({ partner_request_id: requestData.id })
       .eq('id', userId);
 
-    // 5. Notifier les admins par email
+    // 5. Notifier l'owner du partenaire par email
     try {
-      const { data: admins } = await supabaseAdmin
-        .from('profiles')
-        .select('email')
-        .eq('role', 'admin')
-        .eq('is_active', true);
+      // Chercher l'email de l'owner du partenaire
+      const ownerEmails: string[] = [];
 
-      if (admins && admins.length > 0) {
-        const adminEmails = admins.map((a: { email: string }) => a.email).filter(Boolean);
+      if (partner.owner_id) {
+        const { data: ownerProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('email')
+          .eq('id', partner.owner_id)
+          .single();
 
-        for (const adminEmail of adminEmails) {
-          await sendEmail({
-            to: adminEmail,
-            subject: `DMC Alliance - Demande de rattachement à ${partner.name}`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #c75a3a;">Nouvelle demande de rattachement</h2>
-                <p><strong>${data.contactName}</strong> souhaite rejoindre le partenaire <strong>${partner.name}</strong>.</p>
-                <table style="margin: 20px 0; border-collapse: collapse;">
-                  <tr><td style="padding: 8px 0; color: #666;">Email :</td><td style="padding: 8px 0 8px 16px;">${data.contactEmail}</td></tr>
-                  <tr><td style="padding: 8px 0; color: #666;">Téléphone :</td><td style="padding: 8px 0 8px 16px;">${data.contactPhone || 'Non renseigné'}</td></tr>
-                  <tr><td style="padding: 8px 0; color: #666;">Message :</td><td style="padding: 8px 0 8px 16px;">${data.message || 'Aucun message'}</td></tr>
-                </table>
-                <p style="margin-top: 20px;">
-                  <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/admin/partner-requests"
-                     style="display: inline-block; background-color: #c75a3a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                    Voir les demandes
-                  </a>
-                </p>
-              </div>
-            `,
-            text: `Nouvelle demande de rattachement\n\n${data.contactName} souhaite rejoindre le partenaire ${partner.name}.\n\nEmail: ${data.contactEmail}\nTéléphone: ${data.contactPhone || 'Non renseigné'}\nMessage: ${data.message || 'Aucun message'}`,
-          });
+        if (ownerProfile?.email) {
+          ownerEmails.push(ownerProfile.email);
         }
       }
+
+      // Aussi notifier les admins du partenaire via partner_members
+      const { data: partnerAdmins } = await supabaseAdmin
+        .from('partner_members')
+        .select('user_id')
+        .eq('partner_id', partner.id)
+        .eq('status', 'active')
+        .in('role', ['owner', 'admin']);
+
+      if (partnerAdmins && partnerAdmins.length > 0) {
+        const memberUserIds = partnerAdmins
+          .map((m: { user_id: string }) => m.user_id)
+          .filter((uid: string) => uid !== partner.owner_id); // Eviter le doublon avec l'owner
+
+        if (memberUserIds.length > 0) {
+          const { data: memberProfiles } = await supabaseAdmin
+            .from('profiles')
+            .select('email')
+            .in('id', memberUserIds);
+
+          if (memberProfiles) {
+            for (const mp of memberProfiles) {
+              if (mp.email && !ownerEmails.includes(mp.email)) {
+                ownerEmails.push(mp.email);
+              }
+            }
+          }
+        }
+      }
+
+      for (const ownerEmail of ownerEmails) {
+        await sendEmail({
+          to: ownerEmail,
+          subject: `DMC Alliance - Demande de rattachement a ${partner.name}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #c75a3a;">Nouvelle demande de rattachement</h2>
+              <p><strong>${data.contactName}</strong> souhaite rejoindre votre DMC <strong>${partner.name}</strong> sur DMC Alliance.</p>
+              <table style="margin: 20px 0; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; color: #666;">Email :</td><td style="padding: 8px 0 8px 16px;">${data.contactEmail}</td></tr>
+                <tr><td style="padding: 8px 0; color: #666;">Telephone :</td><td style="padding: 8px 0 8px 16px;">${data.contactPhone || 'Non renseigne'}</td></tr>
+                <tr><td style="padding: 8px 0; color: #666;">Message :</td><td style="padding: 8px 0 8px 16px;">${data.message || 'Aucun message'}</td></tr>
+              </table>
+              <p>Vous pouvez accepter ou refuser cette demande depuis votre espace partenaire :</p>
+              <p style="margin-top: 20px;">
+                <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/admin/join-requests"
+                   style="display: inline-block; background-color: #c75a3a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                  Gerer les demandes
+                </a>
+              </p>
+            </div>
+          `,
+          text: `Nouvelle demande de rattachement\n\n${data.contactName} souhaite rejoindre votre DMC ${partner.name} sur DMC Alliance.\n\nEmail: ${data.contactEmail}\nTelephone: ${data.contactPhone || 'Non renseigne'}\nMessage: ${data.message || 'Aucun message'}\n\nGerez les demandes : ${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/admin/join-requests`,
+        });
+      }
     } catch (emailError) {
-      console.error('[Register] Admin notification error:', emailError);
+      console.error('[Register] Owner notification error:', emailError);
     }
 
     // 6. Envoyer email de confirmation au demandeur
@@ -831,12 +866,12 @@ async function handleDMCJoinRequest(userId: string, data: {
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #c75a3a;">Demande de rattachement reçue</h2>
             <p>Bonjour ${data.contactName},</p>
-            <p>Nous avons bien reçu votre demande pour rejoindre <strong>${partner.name}</strong> sur DMC Alliance.</p>
-            <p>Notre équipe va examiner votre demande et vous contactera sous 48h pour vous informer de la suite.</p>
+            <p>Nous avons bien recu votre demande pour rejoindre <strong>${partner.name}</strong> sur DMC Alliance.</p>
+            <p>Le responsable de ${partner.name} va examiner votre demande et vous serez notifie(e) par email de sa decision.</p>
             <p style="margin-top: 30px;">Cordialement,<br>L'équipe DMC Alliance</p>
           </div>
         `,
-        text: `Bonjour ${data.contactName},\n\nNous avons bien reçu votre demande pour rejoindre ${partner.name} sur DMC Alliance.\n\nNotre équipe va examiner votre demande et vous contactera sous 48h.\n\nCordialement,\nL'équipe DMC Alliance`,
+        text: `Bonjour ${data.contactName},\n\nNous avons bien recu votre demande pour rejoindre ${partner.name} sur DMC Alliance.\n\nLe responsable de ${partner.name} va examiner votre demande et vous serez notifie(e) par email de sa decision.\n\nCordialement,\nL'equipe DMC Alliance`,
       });
     } catch (emailError) {
       console.error('[Register] Confirmation email error:', emailError);
