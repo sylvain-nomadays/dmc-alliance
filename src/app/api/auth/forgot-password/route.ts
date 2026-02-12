@@ -3,25 +3,20 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(request: Request) {
   try {
-    const { email, locale = 'fr' } = await request.json();
+    const { email } = await request.json();
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || '';
-    const callbackUrl = `${origin}/${locale}/auth/callback?redirect=/${locale}/auth/reset-password`;
-
-    console.log('[Forgot Password] Sending reset email for:', email, '| redirectTo:', callbackUrl);
-
-    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: callbackUrl,
-    });
+    // Send password reset email via Supabase's built-in SMTP.
+    // No redirectTo: Supabase will redirect to the Site URL with ?code=xxx
+    // The middleware intercepts ?code= on public routes, exchanges the code,
+    // and redirects to /auth/reset-password automatically.
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email);
 
     if (error) {
       console.error('[Forgot Password] Supabase error:', error.message);
-    } else {
-      console.log('[Forgot Password] Reset email sent successfully');
     }
 
     // Always return success to avoid leaking email existence

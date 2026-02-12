@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from './navigation';
 import { updateSupabaseSession, protectRoute } from './lib/supabase/session';
@@ -18,6 +19,33 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute) {
     // Protected routes: full auth check + role validation
     return await protectRoute(request);
+  }
+
+  // Handle PKCE code from Supabase email redirects (password reset, email verification)
+  // When Supabase can't use our redirectTo (not in allowlist), it falls back to
+  // the Site URL with ?code=xxx. We intercept it here, exchange the code,
+  // and redirect to the appropriate page.
+  const code = request.nextUrl.searchParams.get('code');
+  if (code) {
+    const { supabase, response: supabaseResponse } = await updateSupabaseSession(request);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error) {
+      // Extract locale from pathname (e.g., /fr, /en) or default to 'fr'
+      const localeMatch = pathname.match(/^\/(fr|en|de|nl|es|it)/);
+      const locale = localeMatch ? localeMatch[1] : 'fr';
+
+      // Redirect to reset-password page (the main use case for email-based codes)
+      const resetUrl = new URL(`/${locale}/auth/reset-password`, request.url);
+      const redirectResponse = NextResponse.redirect(resetUrl);
+
+      // Copy session cookies so the browser keeps the authenticated session
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+
+      return redirectResponse;
+    }
   }
 
   // Public routes: refresh Supabase session (keeps cookies alive)
