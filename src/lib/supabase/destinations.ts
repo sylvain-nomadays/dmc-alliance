@@ -3,7 +3,7 @@
  * Falls back to static data if Supabase data is not available
  */
 
-import { createClient } from './server';
+import { createStaticClient } from './server';
 import { getStorageUrl } from './storage';
 import { getDestinationBySlug as getStaticDestination, destinationsData, type DestinationDetail } from '@/data/destinations';
 
@@ -40,7 +40,7 @@ export interface SupabaseDestination {
  * Falls back to static data image if no image_url in Supabase
  */
 export async function getDestinationWithImage(slug: string): Promise<DestinationDetail | null> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // Get static data first - we need it in either case
   const staticData = getStaticDestination(slug);
@@ -102,7 +102,7 @@ export async function getDestinationWithImage(slug: string): Promise<Destination
  * Get all destinations with Supabase images
  */
 export async function getAllDestinationsWithImages() {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // Get all destinations from Supabase
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
