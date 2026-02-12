@@ -9,6 +9,7 @@ import { InterestButton } from '@/components/ui/InterestButton';
 import { partners } from '@/data/partners';
 import { getCircuitBySlug, getAllCircuitSlugs, type CircuitDeparture, type CircuitDay, type Circuit } from '@/data/circuits';
 import { getCircuitBySlugFromDb, type DbCircuit } from '@/lib/supabase/circuits';
+import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 import {
   CalendarIcon,
@@ -209,6 +210,16 @@ export default async function CircuitPage({ params }: Props) {
     nameEn: dbDestination.name_en || dbDestination.name,
   } : partner?.destinations.find((d) => d.slug === circuit.destinationSlug);
   const isFr = locale === 'fr';
+
+  // Check if user is authenticated
+  let isAuthenticated = false;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isAuthenticated = !!user;
+  } catch {
+    // Not authenticated
+  }
 
   // Get upcoming departures
   const today = new Date().toISOString().split('T')[0];
@@ -491,13 +502,15 @@ export default async function CircuitPage({ params }: Props) {
             {/* Right Column - Sticky Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
-                {/* Departures Card - Public view (only next departure) */}
+                {/* Departures Card */}
                 <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
                   <div className="bg-terracotta-500 p-4 text-center">
                     <h3 className="text-lg font-heading text-white">
-                      {isFr ? 'Prochain départ' : 'Next departure'}
+                      {isAuthenticated && upcomingDepartures.length > 1
+                        ? (isFr ? 'Tous les départs' : 'All departures')
+                        : (isFr ? 'Prochain départ' : 'Next departure')}
                     </h3>
-                    {upcomingDepartures.length > 1 && (
+                    {!isAuthenticated && upcomingDepartures.length > 1 && (
                       <p className="text-white/80 text-sm">
                         +{upcomingDepartures.length - 1} {isFr ? 'autres dates disponibles' : 'more dates available'}
                       </p>
@@ -505,14 +518,14 @@ export default async function CircuitPage({ params }: Props) {
                   </div>
 
                   <div className="p-4 space-y-3">
-                    {/* Show only the next departure */}
+                    {/* Show departures: all when authenticated, only first when not */}
                     {upcomingDepartures.length > 0 ? (
                       <>
-                        {(() => {
-                          const departure = upcomingDepartures[0];
+                        {(isAuthenticated ? upcomingDepartures : upcomingDepartures.slice(0, 1)).map((departure) => {
                           const status = getStatusInfo(departure);
                           return (
                             <div
+                              key={departure.id}
                               className={cn(
                                 'p-4 rounded-xl border',
                                 departure.status === 'full'
@@ -554,10 +567,10 @@ export default async function CircuitPage({ params }: Props) {
                               </div>
                             </div>
                           );
-                        })()}
+                        })}
 
-                        {/* CTA to see all departures - requires agency account */}
-                        {upcomingDepartures.length > 1 && (
+                        {/* CTA to see all departures - only show when NOT authenticated */}
+                        {!isAuthenticated && upcomingDepartures.length > 1 && (
                           <div className="mt-4 p-4 bg-deep-blue-50 rounded-xl border border-deep-blue-100">
                             <div className="flex items-start gap-3">
                               <div className="w-10 h-10 bg-deep-blue-100 rounded-full flex items-center justify-center flex-shrink-0">

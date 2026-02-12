@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { getPublishedGirCircuits } from '@/lib/supabase/circuits';
+import { createClient } from '@/lib/supabase/server';
 import GirPageClient from './GirPageClient';
 
 // Loading skeleton
@@ -28,9 +29,19 @@ export default async function GirPage({
   // Fetch GIR circuits from Supabase (uses admin client for reliability)
   const circuits = await getPublishedGirCircuits();
 
+  // Check if user is authenticated
+  let isAuthenticated = false;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isAuthenticated = !!user;
+  } catch {
+    // Not authenticated
+  }
+
   return (
     <Suspense fallback={<GirPageSkeleton />}>
-      <GirPageClient circuits={circuits} locale={locale} />
+      <GirPageClient circuits={circuits} locale={locale} isAuthenticated={isAuthenticated} />
     </Suspense>
   );
 }

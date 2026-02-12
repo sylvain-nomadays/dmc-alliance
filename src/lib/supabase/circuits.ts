@@ -151,15 +151,13 @@ export async function getPublishedGirCircuits(): Promise<DbCircuit[]> {
 
 /**
  * Get a single circuit by slug from Supabase
+ * Uses admin client to bypass RLS (same as getPublishedGirCircuits)
  */
 export async function getCircuitBySlugFromDb(slug: string): Promise<DbCircuit | null> {
   // Disable Next.js cache to always get fresh data
   noStore();
 
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabaseAdmin
     .from('circuits')
     .select(`
       *,

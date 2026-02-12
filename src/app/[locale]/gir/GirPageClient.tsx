@@ -20,6 +20,7 @@ import {
 interface GirPageClientProps {
   circuits: DbCircuit[];
   locale: string;
+  isAuthenticated?: boolean;
 }
 
 // Departure interface for DB circuits (matches Supabase schema)
@@ -33,7 +34,7 @@ interface DbDeparture {
   price: number | null;
 }
 
-function GirContent({ circuits, locale }: GirPageClientProps) {
+function GirContent({ circuits, locale, isAuthenticated }: GirPageClientProps) {
   const searchParams = useSearchParams();
   const initialDestination = searchParams.get('destination') || '';
 
@@ -292,7 +293,7 @@ function GirContent({ circuits, locale }: GirPageClientProps) {
           ) : (
             <div className="space-y-8">
               {filteredCircuits.map((circuit) => (
-                <CircuitCard key={circuit.id} circuit={circuit} locale={locale} />
+                <CircuitCard key={circuit.id} circuit={circuit} locale={locale} isAuthenticated={isAuthenticated} />
               ))}
             </div>
           )}
@@ -321,7 +322,7 @@ function GirContent({ circuits, locale }: GirPageClientProps) {
   );
 }
 
-function CircuitCard({ circuit, locale }: { circuit: DbCircuit; locale: string }) {
+function CircuitCard({ circuit, locale, isAuthenticated }: { circuit: DbCircuit; locale: string; isAuthenticated?: boolean }) {
   const isFr = locale === 'fr';
 
   // Convert difficulty level to string
@@ -343,7 +344,7 @@ function CircuitCard({ circuit, locale }: { circuit: DbCircuit; locale: string }
   const allUpcomingDepartures = (circuit.departures || [])
     .filter((d: DbDeparture) => d.start_date >= today)
     .sort((a: DbDeparture, b: DbDeparture) => a.start_date.localeCompare(b.start_date));
-  const upcomingDepartures = allUpcomingDepartures.slice(0, 1);
+  const upcomingDepartures = isAuthenticated ? allUpcomingDepartures : allUpcomingDepartures.slice(0, 1);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -482,7 +483,9 @@ function CircuitCard({ circuit, locale }: { circuit: DbCircuit; locale: string }
           {upcomingDepartures.length > 0 && (
             <div className="border-t border-gray-100 pt-4">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                {isFr ? 'Prochain départ' : 'Next departure'}
+                {isAuthenticated && upcomingDepartures.length > 1
+                  ? (isFr ? 'Prochains départs' : 'Upcoming departures')
+                  : (isFr ? 'Prochain départ' : 'Next departure')}
               </h4>
               <div className="space-y-2">
                 {upcomingDepartures.map((departure: DbDeparture) => (
@@ -523,8 +526,8 @@ function CircuitCard({ circuit, locale }: { circuit: DbCircuit; locale: string }
                 ))}
               </div>
 
-              {/* CTA to create account for all dates */}
-              {allUpcomingDepartures.length > 1 && (
+              {/* CTA to create account for all dates - only show when not authenticated */}
+              {!isAuthenticated && allUpcomingDepartures.length > 1 && (
                 <div className="mt-3 p-4 bg-deep-blue-50 rounded-xl border border-deep-blue-100">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-deep-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -609,10 +612,10 @@ function GirPageSkeleton() {
   );
 }
 
-export default function GirPageClient({ circuits, locale }: GirPageClientProps) {
+export default function GirPageClient({ circuits, locale, isAuthenticated }: GirPageClientProps) {
   return (
     <Suspense fallback={<GirPageSkeleton />}>
-      <GirContent circuits={circuits} locale={locale} />
+      <GirContent circuits={circuits} locale={locale} isAuthenticated={isAuthenticated} />
     </Suspense>
   );
 }
