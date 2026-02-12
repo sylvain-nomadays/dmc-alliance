@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { getAuthContext } from '@/lib/auth/getAuthContext';
-import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 interface DashboardStats {
@@ -37,12 +36,11 @@ interface JoinRequest {
   };
 }
 
-interface RecentBooking {
+interface RecentRequest {
   id: string;
-  client_name: string;
-  places_booked: number;
-  total_price: number;
-  commission_amount: number;
+  request_type: 'info' | 'booking';
+  travelers_count: number | null;
+  contact_name: string;
   status: string;
   created_at: string;
   circuit: {
@@ -70,9 +68,7 @@ interface WatchedCircuit {
 }
 
 async function getAgencyProfile(userId: string): Promise<AgencyProfile | null> {
-  const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabaseAdmin
     .from('agencies')
     .select('id, name, logo_url, description, specialties, contact_name, email, phone, profile_completed')
     .eq('user_id', userId)
@@ -81,9 +77,7 @@ async function getAgencyProfile(userId: string): Promise<AgencyProfile | null> {
 }
 
 async function getJoinRequests(agencyId: string): Promise<JoinRequest[]> {
-  const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabaseAdmin
     .from('agency_join_requests')
     .select(`
       id, status, created_at, message,
@@ -98,37 +92,32 @@ async function getJoinRequests(agencyId: string): Promise<JoinRequest[]> {
 
 async function getDashboardData(agencyId: string): Promise<{
   stats: DashboardStats;
-  recentBookings: RecentBooking[];
+  recentRequests: RecentRequest[];
   watchedCircuits: WatchedCircuit[];
 }> {
-  const supabase = await createClient();
-
-  // Get stats
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: bookings } = await (supabase as any)
-    .from('bookings')
-    .select('id, status, commission_amount')
+  // Use admin client to bypass RLS on joined tables
+  const { data: requests } = await supabaseAdmin
+    .from('agency_requests')
+    .select('id, status, request_type')
     .eq('agency_id', agencyId);
 
-  const totalBookings = bookings?.length || 0;
-  const pendingBookings = bookings?.filter((b: { status: string }) => b.status === 'pending').length || 0;
-  const totalCommission = bookings?.reduce((sum: number, b: { commission_amount: number }) => sum + (b.commission_amount || 0), 0) || 0;
+  const totalBookings = requests?.length || 0;
+  const pendingBookings = requests?.filter((r: { status: string }) => ['pending', 'sent'].includes(r.status)).length || 0;
+  const totalCommission = 0; // Commission is tracked separately
 
   const { count: watchedCircuits } = await supabaseAdmin
     .from('gir_watchlist')
     .select('*', { count: 'exact', head: true })
     .eq('agency_id', agencyId);
 
-  // Get recent bookings
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recentBookings } = await (supabase as any)
-    .from('bookings')
+  // Get recent requests
+  const { data: recentRequests } = await supabaseAdmin
+    .from('agency_requests')
     .select(`
       id,
-      client_name,
-      places_booked,
-      total_price,
-      commission_amount,
+      request_type,
+      travelers_count,
+      contact_name,
       status,
       created_at,
       circuit:circuits(title)
@@ -137,7 +126,7 @@ async function getDashboardData(agencyId: string): Promise<{
     .order('created_at', { ascending: false })
     .limit(5);
 
-  // Get watched circuits (using admin client to bypass RLS on joined tables)
+  // Get watched circuits
   const { data: watched } = await supabaseAdmin
     .from('gir_watchlist')
     .select(`
@@ -154,13 +143,8 @@ async function getDashboardData(agencyId: string): Promise<{
     .eq('agency_id', agencyId)
     .limit(4);
 
-  // Count upcoming departures (bookings with confirmed status)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: upcomingDepartures } = await (supabase as any)
-    .from('bookings')
-    .select('*', { count: 'exact', head: true })
-    .eq('agency_id', agencyId)
-    .eq('status', 'confirmed');
+  // Count accepted requests as "upcoming"
+  const acceptedCount = requests?.filter((r: { status: string }) => r.status === 'accepted').length || 0;
 
   return {
     stats: {
@@ -168,17 +152,15 @@ async function getDashboardData(agencyId: string): Promise<{
       pendingBookings,
       totalCommission,
       watchedCircuits: watchedCircuits || 0,
-      upcomingDepartures: upcomingDepartures || 0,
+      upcomingDepartures: acceptedCount,
     },
-    recentBookings: recentBookings || [],
+    recentRequests: recentRequests || [],
     watchedCircuits: watched || [],
   };
 }
 
 async function getAgencyId(userId: string): Promise<string | null> {
-  const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabaseAdmin
     .from('agencies')
     .select('id')
     .eq('user_id', userId)
@@ -204,7 +186,7 @@ export default async function AgencyDashboardPage({
     redirect(`/${locale}`);
   }
 
-  const [{ stats, recentBookings, watchedCircuits }, agencyProfile, joinRequests] = await Promise.all([
+  const [{ stats, recentRequests, watchedCircuits }, agencyProfile, joinRequests] = await Promise.all([
     getDashboardData(agencyId),
     getAgencyProfile(authContext.user.id),
     getJoinRequests(agencyId),
@@ -227,9 +209,11 @@ export default async function AgencyDashboardPage({
 
   const statusLabels: Record<string, { label: string; color: string }> = {
     pending: { label: isFr ? 'En attente' : 'Pending', color: 'bg-yellow-100 text-yellow-700' },
-    confirmed: { label: isFr ? 'Confirmé' : 'Confirmed', color: 'bg-sage-100 text-sage-700' },
-    cancelled: { label: isFr ? 'Annulé' : 'Cancelled', color: 'bg-red-100 text-red-700' },
-    completed: { label: isFr ? 'Terminé' : 'Completed', color: 'bg-gray-100 text-gray-700' },
+    sent: { label: isFr ? 'Envoyée' : 'Sent', color: 'bg-blue-100 text-blue-700' },
+    accepted: { label: isFr ? 'Acceptée' : 'Accepted', color: 'bg-sage-100 text-sage-700' },
+    rejected: { label: isFr ? 'Refusée' : 'Rejected', color: 'bg-red-100 text-red-700' },
+    responded: { label: isFr ? 'Répondu' : 'Responded', color: 'bg-green-100 text-green-700' },
+    closed: { label: isFr ? 'Clôturée' : 'Closed', color: 'bg-gray-100 text-gray-700' },
   };
 
   return (
@@ -334,7 +318,7 @@ export default async function AgencyDashboardPage({
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 mb-1">
-            {isFr ? 'Réservations totales' : 'Total Bookings'}
+            {isFr ? 'Demandes totales' : 'Total Requests'}
           </p>
           <p className="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
         </div>
@@ -346,9 +330,9 @@ export default async function AgencyDashboardPage({
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 mb-1">
-            {isFr ? 'Commissions gagnées' : 'Commissions Earned'}
+            {isFr ? 'Acceptées' : 'Accepted'}
           </p>
-          <p className="text-2xl font-bold text-sage-600">{stats.totalCommission.toLocaleString('fr-FR')} €</p>
+          <p className="text-2xl font-bold text-sage-600">{stats.upcomingDepartures}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 mb-1">
@@ -365,25 +349,25 @@ export default async function AgencyDashboardPage({
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Recent Bookings */}
+        {/* Recent Requests */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
             <h2 className="font-heading text-lg text-gray-900">
-              {isFr ? 'Réservations récentes' : 'Recent Bookings'}
+              {isFr ? 'Demandes récentes' : 'Recent Requests'}
             </h2>
             <Link
-              href={`/${locale}/espace-pro/bookings`}
+              href={`/${locale}/espace-pro/requests`}
               className="text-sm text-terracotta-600 hover:text-terracotta-700"
             >
               {isFr ? 'Voir tout' : 'View all'}
             </Link>
           </div>
-          {recentBookings.length === 0 ? (
+          {recentRequests.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              <p>{isFr ? 'Aucune réservation pour le moment' : 'No bookings yet'}</p>
+              <p>{isFr ? 'Aucune demande pour le moment' : 'No requests yet'}</p>
               <Link
                 href={`/${locale}/espace-pro/circuits`}
                 className="inline-block mt-4 text-terracotta-600 hover:text-terracotta-700"
@@ -393,23 +377,28 @@ export default async function AgencyDashboardPage({
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {recentBookings.map((booking) => (
-                <div key={booking.id} className="px-6 py-4 hover:bg-gray-50">
+              {recentRequests.map((req) => (
+                <div key={req.id} className="px-6 py-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="font-medium text-gray-900">{booking.client_name}</p>
-                      <p className="text-sm text-gray-500">{booking.circuit?.title}</p>
+                      <p className="font-medium text-gray-900">{req.circuit?.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {req.request_type === 'booking'
+                          ? (isFr ? 'Réservation' : 'Booking')
+                          : (isFr ? 'Information' : 'Information')}
+                        {req.contact_name && ` • ${req.contact_name}`}
+                      </p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusLabels[booking.status]?.color}`}>
-                      {statusLabels[booking.status]?.label}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusLabels[req.status]?.color || 'bg-gray-100 text-gray-700'}`}>
+                      {statusLabels[req.status]?.label || req.status}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">
-                      {booking.places_booked} {isFr ? 'place(s)' : 'place(s)'}
+                      {req.travelers_count ? `${req.travelers_count} ${isFr ? 'voyageur(s)' : 'traveler(s)'}` : ''}
                     </span>
-                    <span className="text-sage-600 font-medium">
-                      +{booking.commission_amount?.toLocaleString('fr-FR')} € commission
+                    <span className="text-gray-400 text-xs">
+                      {new Date(req.created_at).toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
                 </div>
