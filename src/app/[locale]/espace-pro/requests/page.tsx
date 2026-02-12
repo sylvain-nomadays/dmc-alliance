@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import {
-  Calendar, Clock, Mail, Send, Info, CheckCircle, MessageCircle, Filter, XCircle
+  Clock, Mail, Send, Info, CheckCircle, MessageCircle, Filter, XCircle
 } from 'lucide-react';
 
 interface AgencyRequestItem {
@@ -48,55 +47,25 @@ export default function AgencyRequestsPage() {
 
   const isFr = locale === 'fr';
 
-  // Charger les demandes
+  // Charger les demandes via API (bypasse les restrictions RLS)
   useEffect(() => {
     const load = async () => {
-      const supabase = createClient();
+      try {
+        const url = filter !== 'all'
+          ? `/api/agency/requests?type=${filter}`
+          : '/api/agency/requests';
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error('Error loading requests:', response.statusText);
+          setLoading(false);
+          return;
+        }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: agency } = await (supabase as any)
-        .from('agencies')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!agency) {
-        setLoading(false);
-        return;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (supabase as any)
-        .from('agency_requests')
-        .select(`
-          id, circuit_id, request_type, travelers_count, message,
-          contact_name, contact_email, contact_phone, status,
-          partner_notified_at, partner_response_message, responded_at, created_at,
-          circuit:circuits(
-            id, title, slug,
-            partner:partners(name),
-            departures:circuit_departures(id, start_date, price, status)
-          )
-        `)
-        .eq('agency_id', agency.id)
-        .order('created_at', { ascending: false });
-
-      if (filter !== 'all') {
-        query = query.eq('request_type', filter);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
+        const data = await response.json();
+        setRequests((data.requests || []) as AgencyRequestItem[]);
+      } catch (error) {
         console.error('Error loading requests:', error);
-      } else {
-        setRequests((data || []) as AgencyRequestItem[]);
       }
 
       setLoading(false);

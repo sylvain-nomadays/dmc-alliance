@@ -218,7 +218,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const agencyId = searchParams.get('agencyId');
+    const filterType = searchParams.get('type'); // 'info' | 'booking' | null
 
     // Vérifier l'authentification
     const supabase = await createServerClient();
@@ -228,44 +228,54 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
 
-    // Si pas d'agencyId, récupérer celle de l'utilisateur
-    let agency: { id: string } | null = null;
-    if (agencyId) {
-      const { data } = await supabaseAdmin
-        .from('agencies')
-        .select('id')
-        .eq('id', agencyId)
-        .eq('user_id', user.id)
-        .single();
-      agency = data;
+    // Trouver l'agence de l'utilisateur (owner ou member)
+    let agencyId: string | null = null;
+
+    const { data: directAgency } = await supabaseAdmin
+      .from('agencies')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (directAgency) {
+      agencyId = directAgency.id;
     } else {
-      const { data } = await supabaseAdmin
-        .from('agencies')
-        .select('id')
+      const { data: membership } = await supabaseAdmin
+        .from('agency_members')
+        .select('agency_id')
         .eq('user_id', user.id)
+        .eq('status', 'active')
         .single();
-      agency = data;
+      if (membership) {
+        agencyId = membership.agency_id;
+      }
     }
 
-    if (!agency) {
+    if (!agencyId) {
       return NextResponse.json({ error: 'Agence non trouvée' }, { status: 403 });
     }
 
     // Récupérer les demandes
-    const { data: requests, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('agency_requests')
       .select(`
         id, circuit_id, request_type, travelers_count, message,
         contact_name, contact_email, contact_phone, status,
-        partner_notified_at, created_at,
+        partner_notified_at, partner_response_message, responded_at, created_at,
         circuit:circuits(
           id, title, slug,
           partner:partners(name),
           departures:circuit_departures(id, start_date, price, status)
         )
       `)
-      .eq('agency_id', agency.id)
+      .eq('agency_id', agencyId)
       .order('created_at', { ascending: false });
+
+    if (filterType && ['info', 'booking'].includes(filterType)) {
+      query = query.eq('request_type', filterType);
+    }
+
+    const { data: requests, error } = await query;
 
     if (error) {
       console.error('[Agency Request] Get error:', error);
