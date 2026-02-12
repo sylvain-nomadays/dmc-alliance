@@ -4,6 +4,7 @@
  */
 
 import { createClient } from './server';
+import { getStorageUrl } from './storage';
 import { getDestinationBySlug as getStaticDestination, destinationsData, type DestinationDetail } from '@/data/destinations';
 
 export interface SupabaseDestination {
@@ -72,7 +73,7 @@ export async function getDestinationWithImage(slug: string): Promise<Destination
     ...staticData,
     // Override image with Supabase URL if available
     images: {
-      hero: data.image_url || staticData.images.hero,
+      hero: data.image_url ? getStorageUrl(data.image_url) : staticData.images.hero,
       gallery: staticData.images.gallery,
     },
     // Use Supabase descriptions if available
@@ -138,7 +139,7 @@ export async function getAllDestinationsWithImages() {
     return {
       ...staticDest,
       images: {
-        hero: supabaseDest?.image_url || staticDest.images.hero,
+        hero: supabaseDest?.image_url ? getStorageUrl(supabaseDest.image_url) : staticDest.images.hero,
         gallery: staticDest.images.gallery,
       },
     };
