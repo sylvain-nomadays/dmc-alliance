@@ -1,32 +1,36 @@
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from './navigation';
-import { updateSupabaseSession } from './lib/supabase/session';
+import { updateSupabaseSession, protectRoute } from './lib/supabase/session';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Détection des routes protégées (sans header/footer public)
+  // Detect protected routes
   const isProtectedRoute =
     pathname.includes('/admin') ||
     pathname.includes('/partner') ||
     pathname.includes('/agency') ||
     pathname.includes('/espace-pro');
 
-  // Créer les headers de requête modifiés
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-pathname', pathname);
-
   if (isProtectedRoute) {
-    // Pour les routes protégées, mettre à jour la session Supabase
-    return await updateSupabaseSession(request);
+    // Protected routes: full auth check + role validation
+    return await protectRoute(request);
   }
 
-  // Pour les routes publiques, utiliser le middleware i18n
-  return intlMiddleware(request);
+  // Public routes: refresh Supabase session (keeps cookies alive)
+  // then apply i18n middleware, preserving the updated auth cookies
+  const { response: supabaseResponse } = await updateSupabaseSession(request);
+  const intlResponse = intlMiddleware(request);
+
+  // Copy Supabase auth cookies onto the intl response so the browser keeps them
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    intlResponse.cookies.set(cookie.name, cookie.value);
+  });
+
+  return intlResponse;
 }
 
 export const config = {

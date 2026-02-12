@@ -1,18 +1,30 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
-export async function updateSupabaseSession(request: NextRequest) {
-  const response = NextResponse.next({ request });
+interface SessionResult {
+  supabase: SupabaseClient<Database>;
+  user: User | null;
+  response: NextResponse;
+}
+
+export async function updateSupabaseSession(request: NextRequest): Promise<SessionResult> {
+  let supabaseResponse = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  console.log('🔍 [MIDDLEWARE] Path:', request.nextUrl.pathname);
-
   if (!url || !key) {
     console.error('❌ [MIDDLEWARE] Supabase env missing');
-    return response;
+    // Return a dummy client that won't be used — caller checks user === null
+    const supabase = createServerClient<Database>(url || '', key || '', {
+      cookies: {
+        getAll() { return []; },
+        setAll() {},
+      },
+    });
+    return { supabase, user: null, response: supabaseResponse };
   }
 
   const supabase = createServerClient<Database>(url, key, {
@@ -20,31 +32,43 @@ export async function updateSupabaseSession(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookies) {
-        cookies.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
+      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
+        supabaseResponse = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        );
       },
     },
   });
 
   const {
     data: { user },
-    error: userError,
   } = await supabase.auth.getUser();
 
-  console.log('🔍 [MIDDLEWARE] User:', user?.email || 'NOT LOGGED IN', 'Error:', userError?.message || 'none');
+  return { supabase, user, response: supabaseResponse };
+}
 
-  // 🔴 Pas connecté → login (avec locale)
+/**
+ * Full auth check for protected routes (admin, espace-pro, etc.)
+ * Verifies user is logged in and has the appropriate role.
+ */
+export async function protectRoute(request: NextRequest) {
+  const { supabase, user, response } = await updateSupabaseSession(request);
+
+  const pathname = request.nextUrl.pathname;
+
+  // Not logged in → redirect to login
   if (!user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/fr/auth/login';
-    loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
-    console.log('🔴 [MIDDLEWARE] Redirecting to login:', loginUrl.toString());
+    loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 🔍 Récupération DU RÔLE
+  // Fetch profile for role check
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profile, error } = await (supabase as any)
     .from('profiles')
@@ -52,15 +76,10 @@ export async function updateSupabaseSession(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  console.log('🔍 [MIDDLEWARE] Profile:', profile, 'Error:', error?.message || 'none');
-
-  // Si pas de profil, on le crée avec le rôle par défaut
+  // No profile → auto-create and allow non-admin routes
   if (error || !profile) {
-    console.warn('⚠️ [MIDDLEWARE] Profile not found for:', user.email, '- Error:', error?.message);
-
-    // Créer le profil automatiquement
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase as any)
+    await (supabase as any)
       .from('profiles')
       .insert({
         id: user.id,
@@ -69,27 +88,18 @@ export async function updateSupabaseSession(request: NextRequest) {
         role: 'user',
       });
 
-    if (insertError) {
-      console.error('❌ [MIDDLEWARE] Failed to create profile:', insertError.message);
-    }
-
-    if (request.nextUrl.pathname.startsWith('/admin')) {
-      console.warn('⛔ [MIDDLEWARE] New user trying to access admin -> redirect to /fr');
+    if (pathname.startsWith('/admin')) {
       return NextResponse.redirect(new URL('/fr', request.url));
     }
 
     return response;
   }
 
-  // 🔐 Protection admin - Allow admin AND partner roles
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    console.log('🔐 [MIDDLEWARE] Checking admin access. Role:', profile.role);
-
-    // Allow admin and partner roles to access admin area
+  // Admin route protection
+  if (pathname.startsWith('/admin')) {
     const allowedRoles = ['admin', 'partner'];
 
     if (!allowedRoles.includes(profile.role)) {
-      console.warn('⛔ [MIDDLEWARE] Not allowed! Role is:', profile.role, '-> redirect to /fr');
       return NextResponse.redirect(new URL('/fr', request.url));
     }
 
@@ -103,18 +113,14 @@ export async function updateSupabaseSession(request: NextRequest) {
         '/admin/media',
       ];
 
-      const currentPath = request.nextUrl.pathname;
       const isAllowed = allowedPartnerPaths.some(
-        (path) => currentPath === path || currentPath.startsWith(path + '/')
+        (path) => pathname === path || pathname.startsWith(path + '/')
       );
 
       if (!isAllowed) {
-        console.warn('⛔ [MIDDLEWARE] Partner cannot access:', currentPath, '-> redirect to /admin');
         return NextResponse.redirect(new URL('/admin', request.url));
       }
     }
-
-    console.log('✅ [MIDDLEWARE] Admin access granted for role:', profile.role);
   }
 
   return response;

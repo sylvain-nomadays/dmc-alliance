@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams, useParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 
@@ -12,7 +12,6 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams();
   const locale = (params.locale as string) || 'fr';
@@ -81,7 +80,7 @@ function LoginForm() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback${
+        redirectTo: `${window.location.origin}/${locale}/auth/callback${
           redirect ? `?redirect=${redirect}` : ''
         }`,
       },
@@ -97,7 +96,7 @@ function LoginForm() {
     <div className="max-w-md w-full">
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" className="inline-block">
+        <Link href={`/${locale}`} className="inline-block">
           <h1 className="text-2xl font-heading text-terracotta-600">
             The DMC Alliance
           </h1>
@@ -147,7 +146,7 @@ function LoginForm() {
 
           <div className="flex justify-end">
             <Link
-              href="/auth/forgot-password"
+              href={`/${locale}/auth/forgot-password`}
               className="text-sm text-terracotta-600"
             >
               Mot de passe oublié ?
@@ -181,13 +180,13 @@ function LoginForm() {
 
       <p className="mt-6 text-center text-gray-600">
         Pas encore de compte ?{' '}
-        <Link href="/auth/register" className="text-terracotta-600 font-medium">
+        <Link href={`/${locale}/auth/register`} className="text-terracotta-600 font-medium">
           Créer un compte
         </Link>
       </p>
 
       <p className="mt-4 text-center">
-        <Link href="/" className="text-sm text-gray-500">
+        <Link href={`/${locale}`} className="text-sm text-gray-500">
           ← Retour au site
         </Link>
       </p>
