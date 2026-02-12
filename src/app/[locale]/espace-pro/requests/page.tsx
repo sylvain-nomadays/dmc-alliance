@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
-  Calendar, Clock, Mail, Send, Info, CheckCircle, MessageCircle, Filter
+  Calendar, Clock, Mail, Send, Info, CheckCircle, MessageCircle, Filter, XCircle
 } from 'lucide-react';
 
 interface AgencyRequestItem {
@@ -17,8 +17,10 @@ interface AgencyRequestItem {
   contact_name: string;
   contact_email: string;
   contact_phone: string | null;
-  status: 'pending' | 'sent' | 'responded' | 'closed';
+  status: 'pending' | 'sent' | 'responded' | 'accepted' | 'rejected' | 'closed';
   partner_notified_at: string | null;
+  partner_response_message: string | null;
+  responded_at: string | null;
   created_at: string;
   circuit: {
     id: string;
@@ -75,7 +77,7 @@ export default function AgencyRequestsPage() {
         .select(`
           id, circuit_id, request_type, travelers_count, message,
           contact_name, contact_email, contact_phone, status,
-          partner_notified_at, created_at,
+          partner_notified_at, partner_response_message, responded_at, created_at,
           circuit:circuits(
             id, title, slug,
             partner:partners(name),
@@ -117,6 +119,20 @@ export default function AgencyRequestsPage() {
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             <Send className="w-3 h-3" />
             {isFr ? 'Envoyée' : 'Sent'}
+          </span>
+        );
+      case 'accepted':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3" />
+            {isFr ? 'Acceptée' : 'Accepted'}
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <XCircle className="w-3 h-3" />
+            {isFr ? 'Refusée' : 'Rejected'}
           </span>
         );
       case 'responded':
@@ -259,6 +275,28 @@ export default function AgencyRequestsPage() {
                     {req.message && (
                       <div className="bg-gray-50 rounded-lg p-3 mb-3">
                         <p className="text-sm text-gray-700">{req.message}</p>
+                      </div>
+                    )}
+
+                    {/* Partner response */}
+                    {(req.status === 'accepted' || req.status === 'rejected') && req.partner_response_message && (
+                      <div className={`rounded-lg p-3 mb-3 ${
+                        req.status === 'accepted'
+                          ? 'bg-green-50 border border-green-200'
+                          : 'bg-red-50 border border-red-200'
+                      }`}>
+                        <p className="text-xs font-medium text-gray-500 mb-1">
+                          {isFr ? 'Réponse du partenaire' : 'Partner response'}
+                        </p>
+                        <p className="text-sm text-gray-700">{req.partner_response_message}</p>
+                        {req.responded_at && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(req.responded_at).toLocaleDateString(
+                              locale === 'fr' ? 'fr-FR' : 'en-US',
+                              { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+                            )}
+                          </p>
+                        )}
                       </div>
                     )}
 

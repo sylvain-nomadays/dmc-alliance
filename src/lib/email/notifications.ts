@@ -3,6 +3,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendEmail } from './resend';
 import { buildEmailFromTemplate } from './templates';
 import type { NotificationType, EmailTemplateSlug, EmailTemplateVariables } from './types';
@@ -122,6 +123,113 @@ async function sendNotificationEmail(
   // Log email
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any).from('email_logs').insert({
+    recipient_email: profile.email,
+    subject: email.subject,
+    body: email.text,
+    status: result.success ? 'sent' : 'failed',
+    error_message: result.error,
+    metadata: { template: templateSlug, variables },
+    sent_at: result.success ? new Date().toISOString() : null,
+  });
+
+  return result.success;
+}
+
+/**
+ * Create an in-app notification using admin client (bypasses RLS)
+ * Use this when creating notifications for users other than the currently authenticated user
+ */
+export async function createNotificationAdmin(options: CreateNotificationOptions): Promise<string | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin as any)
+    .from('notifications')
+    .insert({
+      user_id: options.userId,
+      type: options.type,
+      title: options.title,
+      message: options.message,
+      link: options.link,
+      metadata: options.metadata || {},
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[Notification Admin] Failed to create:', error);
+    return null;
+  }
+
+  // Send email if requested
+  if (options.sendEmail && options.emailTemplate) {
+    await sendNotificationEmailAdmin(options.userId, options.emailTemplate, options.emailVariables || {});
+  }
+
+  return data?.id || null;
+}
+
+/**
+ * Send notification email using admin client (for cross-user operations)
+ */
+async function sendNotificationEmailAdmin(
+  userId: string,
+  templateSlug: EmailTemplateSlug,
+  variables: EmailTemplateVariables
+): Promise<boolean> {
+  // Get user email using admin client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (supabaseAdmin as any)
+    .from('profiles')
+    .select('email, locale')
+    .eq('id', userId)
+    .single();
+
+  if (!profile?.email) {
+    console.error('[Notification Admin] User email not found:', userId);
+    return false;
+  }
+
+  // Check notification preferences
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: prefs } = await (supabaseAdmin as any)
+    .from('notification_preferences')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  const templateToPreference: Partial<Record<EmailTemplateSlug, string>> = {
+    booking_confirmation: 'email_booking_confirmation',
+    new_booking_alert: 'email_availability_alerts',
+    commission_update: 'email_commission_updates',
+    availability_alert: 'email_availability_alerts',
+    welcome_agency: 'email_new_gir',
+    newsletter: 'email_newsletter',
+  };
+
+  const prefKey = templateToPreference[templateSlug];
+  if (prefs && prefKey && prefs[prefKey] === false) {
+    console.log('[Notification Admin] Email disabled by user preference:', templateSlug);
+    return false;
+  }
+
+  // Build and send email
+  const locale = (profile.locale === 'en' ? 'en' : 'fr') as 'fr' | 'en';
+  const email = await buildEmailFromTemplate(templateSlug, variables, locale);
+
+  if (!email) {
+    console.error('[Notification Admin] Failed to build email template:', templateSlug);
+    return false;
+  }
+
+  const result = await sendEmail({
+    to: profile.email,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+  });
+
+  // Log email
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabaseAdmin as any).from('email_logs').insert({
     recipient_email: profile.email,
     subject: email.subject,
     body: email.text,

@@ -3,6 +3,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email/resend';
 import { buildEmailFromTemplate } from '@/lib/email/templates';
+import { createNotificationAdmin } from '@/lib/email/notifications';
 
 export async function POST(request: Request) {
   try {
@@ -132,6 +133,50 @@ export async function POST(request: Request) {
       } catch (emailError) {
         console.error('[Agency Request] Email error:', emailError);
         // La demande est créée, l'email a échoué mais on continue
+      }
+    }
+
+    // Notify all partner members via in-app notification
+    if (partner) {
+      try {
+        const partnerId = (partner as { id: string }).id;
+
+        // Get all active partner members
+        const { data: partnerMembers } = await supabaseAdmin
+          .from('partner_members')
+          .select('user_id')
+          .eq('partner_id', partnerId)
+          .eq('status', 'active');
+
+        const memberUserIds = (partnerMembers || []).map((m: { user_id: string }) => m.user_id);
+
+        // Also include the partner owner
+        const { data: partnerData } = await supabaseAdmin
+          .from('partners')
+          .select('owner_id')
+          .eq('id', partnerId)
+          .single();
+
+        if (partnerData?.owner_id && !memberUserIds.includes(partnerData.owner_id)) {
+          memberUserIds.push(partnerData.owner_id);
+        }
+
+        const notifTitle = requestType === 'booking'
+          ? 'Nouvelle demande de réservation'
+          : 'Nouvelle demande d\'information';
+
+        for (const memberId of memberUserIds) {
+          await createNotificationAdmin({
+            userId: memberId,
+            type: 'booking',
+            title: notifTitle,
+            message: `${agencyData.name} a envoyé une demande pour "${circuit.title}".`,
+            link: '/admin/agency-requests',
+            metadata: { request_id: requestData.id, circuit_id: circuitId },
+          });
+        }
+      } catch (notifError) {
+        console.error('[Agency Request] Notification error:', notifError);
       }
     }
 

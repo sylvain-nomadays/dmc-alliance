@@ -111,6 +111,7 @@ export async function protectRoute(request: NextRequest) {
         '/admin/circuits',
         '/admin/articles',
         '/admin/media',
+        '/admin/agency-requests',
       ];
 
       const isAllowed = allowedPartnerPaths.some(

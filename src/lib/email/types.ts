@@ -135,4 +135,6 @@ export type EmailTemplateSlug =
   | 'agency_booking_request'
   | 'agency_join_approved'
   | 'agency_join_rejected'
-  | 'agency_join_request';
+  | 'agency_join_request'
+  | 'agency_request_accepted'
+  | 'agency_request_rejected';

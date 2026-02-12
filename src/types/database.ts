@@ -807,8 +807,11 @@ export type Database = {
           contact_name: string;
           contact_email: string;
           contact_phone: string | null;
-          status: 'pending' | 'sent' | 'responded' | 'closed';
+          status: 'pending' | 'sent' | 'responded' | 'accepted' | 'rejected' | 'closed';
           partner_notified_at: string | null;
+          partner_response_message: string | null;
+          responded_by: string | null;
+          responded_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -823,8 +826,11 @@ export type Database = {
           contact_name: string;
           contact_email: string;
           contact_phone?: string | null;
-          status?: 'pending' | 'sent' | 'responded' | 'closed';
+          status?: 'pending' | 'sent' | 'responded' | 'accepted' | 'rejected' | 'closed';
           partner_notified_at?: string | null;
+          partner_response_message?: string | null;
+          responded_by?: string | null;
+          responded_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -839,8 +845,11 @@ export type Database = {
           contact_name?: string;
           contact_email?: string;
           contact_phone?: string | null;
-          status?: 'pending' | 'sent' | 'responded' | 'closed';
+          status?: 'pending' | 'sent' | 'responded' | 'accepted' | 'rejected' | 'closed';
           partner_notified_at?: string | null;
+          partner_response_message?: string | null;
+          responded_by?: string | null;
+          responded_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -858,7 +867,7 @@ export type Database = {
       region: 'asia' | 'africa' | 'europe' | 'americas' | 'middle_east' | 'oceania';
       partner_request_status: 'pending' | 'approved' | 'rejected';
       agency_request_type: 'info' | 'booking';
-      agency_request_status: 'pending' | 'sent' | 'responded' | 'closed';
+      agency_request_status: 'pending' | 'sent' | 'responded' | 'accepted' | 'rejected' | 'closed';
     };
   };
 };

@@ -5,6 +5,7 @@ import { useSearchParams, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { createClient } from '@/lib/supabase/client';
 
 interface SiteSettings {
   contact: {
@@ -24,6 +25,7 @@ function ContactForm({ locale }: { locale: string }) {
   const partnerParam = searchParams.get('partner');
   const destinationParam = searchParams.get('destination');
   const circuitParam = searchParams.get('circuit');
+  const departureParam = searchParams.get('departure');
   const typeParam = searchParams.get('type');
   const subjectParam = searchParams.get('subject');
 
@@ -35,10 +37,89 @@ function ContactForm({ locale }: { locale: string }) {
     subject: 'quote',
     destination: '',
     message: '',
+    travelersCount: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // Agency detection state
+  const [isAgency, setIsAgency] = useState(false);
+  const [agencyId, setAgencyId] = useState<string | null>(null);
+  const [agencyLoading, setAgencyLoading] = useState(true);
+
+  // Check if current user is an agency
+  useEffect(() => {
+    async function checkAgencyStatus() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setAgencyLoading(false);
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('role, full_name, email, phone')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.role === 'agency') {
+        // Get agency info
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let agency: { id: string; name: string } | null = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: directAgency } = await (supabase as any)
+          .from('agencies')
+          .select('id, name')
+          .eq('user_id', user.id)
+          .single();
+
+        if (directAgency) {
+          agency = directAgency;
+        } else {
+          // Fallback: check agency_members
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: membership } = await (supabase as any)
+            .from('agency_members')
+            .select('agency_id')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .single();
+
+          if (membership) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: memberAgency } = await (supabase as any)
+              .from('agencies')
+              .select('id, name')
+              .eq('id', membership.agency_id)
+              .single();
+            if (memberAgency) agency = memberAgency;
+          }
+        }
+
+        if (agency) {
+          setIsAgency(true);
+          setAgencyId(agency.id);
+
+          // Auto-fill form with agency info
+          setFormData(prev => ({
+            ...prev,
+            company: agency!.name || '',
+            name: profile.full_name || '',
+            email: profile.email || user.email || '',
+            phone: profile.phone || '',
+          }));
+        }
+      }
+
+      setAgencyLoading(false);
+    }
+
+    checkAgencyStatus();
+  }, []);
 
   // Set initial subject based on URL params
   useEffect(() => {
@@ -101,6 +182,7 @@ function ContactForm({ locale }: { locale: string }) {
     },
     destination: isFr ? 'Destination souhaitée' : 'Desired destination',
     destinationPlaceholder: isFr ? 'Ex: Mongolie, Kenya...' : 'Ex: Mongolia, Kenya...',
+    travelersCount: isFr ? 'Nombre de voyageurs' : 'Number of travelers',
     message: isFr ? 'Votre message' : 'Your message',
     messagePlaceholder: isFr
       ? 'Décrivez votre projet ou votre demande...'
@@ -108,33 +190,78 @@ function ContactForm({ locale }: { locale: string }) {
     required: isFr ? 'Requis' : 'Required',
     optional: isFr ? 'Optionnel' : 'Optional',
     submit: isFr ? 'Envoyer le message' : 'Send message',
+    submitBooking: isFr ? 'Envoyer la demande de réservation' : 'Send booking request',
     sending: isFr ? 'Envoi en cours...' : 'Sending...',
     success: isFr
       ? 'Message envoyé ! Nous vous répondons sous 24h.'
       : 'Message sent! We will respond within 24 hours.',
+    successBooking: isFr
+      ? 'Votre demande de réservation a été envoyée au partenaire. Suivez son statut dans votre espace agence.'
+      : 'Your booking request has been sent to the partner. Track its status in your agency portal.',
     error: isFr
       ? 'Erreur lors de l\'envoi. Veuillez réessayer.'
       : 'Error sending. Please try again.',
   };
+
+  const isBookingRequest = isAgency && circuitParam;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
-    // Simulate API call
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setSubmitStatus('success');
-      setFormData({
-        company: '',
-        name: '',
-        email: '',
-        phone: '',
-        subject: 'quote',
-        destination: '',
-        message: '',
-      });
+      if (isBookingRequest && agencyId) {
+        // Agency booking: use the agency requests API
+        const supabase = createClient();
+
+        // Resolve circuit slug to UUID
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: circuit } = await (supabase as any)
+          .from('circuits')
+          .select('id')
+          .eq('slug', circuitParam)
+          .single();
+
+        if (!circuit) {
+          setSubmitStatus('error');
+          return;
+        }
+
+        const response = await fetch('/api/agency/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agencyId,
+            circuitId: circuit.id,
+            departureId: departureParam || null,
+            requestType: 'booking',
+            travelersCount: formData.travelersCount ? parseInt(formData.travelersCount) : null,
+            message: formData.message,
+            contactName: formData.name,
+            contactEmail: formData.email,
+            contactPhone: formData.phone,
+          }),
+        });
+
+        if (!response.ok) throw new Error('Request failed');
+
+        setSubmitStatus('success');
+      } else {
+        // Non-agency: simulated submission
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        setSubmitStatus('success');
+        setFormData({
+          company: '',
+          name: '',
+          email: '',
+          phone: '',
+          subject: 'quote',
+          destination: '',
+          message: '',
+          travelersCount: '',
+        });
+      }
     } catch {
       setSubmitStatus('error');
     } finally {
@@ -151,6 +278,17 @@ function ContactForm({ locale }: { locale: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Agency booking banner */}
+      {isBookingRequest && (
+        <div className="bg-terracotta-50 border border-terracotta-200 rounded-lg p-4">
+          <p className="text-sm text-terracotta-800 font-medium">
+            {isFr
+              ? `Demande de réservation pour le circuit : ${circuitParam}`
+              : `Booking request for tour: ${circuitParam}`}
+          </p>
+        </div>
+      )}
+
       {/* Company & Name Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -164,7 +302,8 @@ function ContactForm({ locale }: { locale: string }) {
             value={formData.company}
             onChange={handleChange}
             placeholder={translations.companyPlaceholder}
-            className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all"
+            readOnly={isAgency}
+            className={`w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all ${isAgency ? 'bg-gray-100' : ''}`}
           />
         </div>
         <div>
@@ -249,10 +388,33 @@ function ContactForm({ locale }: { locale: string }) {
             value={formData.destination}
             onChange={handleChange}
             placeholder={translations.destinationPlaceholder}
-            className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all"
+            readOnly={!!destinationParam}
+            className={`w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all ${destinationParam ? 'bg-gray-100' : ''}`}
           />
         </div>
       </div>
+
+      {/* Travelers count - only for agency booking requests */}
+      {isBookingRequest && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="travelersCount" className="block text-sm font-medium text-gray-700 mb-2">
+              {translations.travelersCount} <span className="text-terracotta-500">*</span>
+            </label>
+            <input
+              type="number"
+              id="travelersCount"
+              name="travelersCount"
+              value={formData.travelersCount}
+              onChange={handleChange}
+              min={1}
+              required
+              placeholder="1"
+              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-transparent transition-all"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Message */}
       <div>
@@ -277,19 +439,33 @@ function ContactForm({ locale }: { locale: string }) {
           type="submit"
           variant="primary"
           size="lg"
-          disabled={isSubmitting}
+          disabled={isSubmitting || agencyLoading}
           className="w-full sm:w-auto"
         >
-          {isSubmitting ? translations.sending : translations.submit}
+          {isSubmitting
+            ? translations.sending
+            : isBookingRequest
+              ? translations.submitBooking
+              : translations.submit}
         </Button>
 
         {submitStatus === 'success' && (
-          <p className="text-sage-600 font-medium flex items-center gap-2">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            {translations.success}
-          </p>
+          <div className="space-y-2">
+            <p className="text-sage-600 font-medium flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              {isBookingRequest ? translations.successBooking : translations.success}
+            </p>
+            {isBookingRequest && (
+              <Link
+                href={`/${locale}/espace-pro/requests`}
+                className="inline-flex items-center gap-1 text-sm text-terracotta-600 hover:text-terracotta-700 font-medium"
+              >
+                {isFr ? 'Voir mes demandes' : 'View my requests'} &rarr;
+              </Link>
+            )}
+          </div>
         )}
 
         {submitStatus === 'error' && (
@@ -313,6 +489,9 @@ export default function ContactPage() {
   // Fetch site settings for contact info
   const [settings, setSettings] = useState<SiteSettings | null>(null);
 
+  // Agency detection for sidebar CTA
+  const [isAgency, setIsAgency] = useState(false);
+
   useEffect(() => {
     async function fetchSettings() {
       try {
@@ -327,6 +506,27 @@ export default function ContactPage() {
     }
     fetchSettings();
   }, [locale]);
+
+  // Check if user is an agency for sidebar CTA visibility
+  useEffect(() => {
+    async function checkAgency() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.role === 'agency') {
+        setIsAgency(true);
+      }
+    }
+    checkAgency();
+  }, []);
 
   // Default values with fallback to settings
   const contactInfo = {
@@ -412,38 +612,40 @@ export default function ContactPage() {
 
             {/* Sidebar */}
             <div className="space-y-8">
-              {/* Agency CTA Card - Moved to top */}
-              <div className="bg-gradient-to-br from-terracotta-500 to-terracotta-600 rounded-2xl p-8 text-white">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+              {/* Agency CTA Card - Hidden for agency users */}
+              {!isAgency && (
+                <div className="bg-gradient-to-br from-terracotta-500 to-terracotta-600 rounded-2xl p-8 text-white">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-heading">
+                      {isFr ? 'Vous êtes une agence ?' : 'Are you a travel agency?'}
+                    </h2>
                   </div>
-                  <h2 className="text-xl font-heading">
-                    {isFr ? 'Vous êtes une agence ?' : 'Are you a travel agency?'}
-                  </h2>
+                  <p className="text-white/90 text-sm mb-6">
+                    {isFr
+                      ? 'Créez votre espace gratuit pour accéder aux circuits GIR en temps réel, suivre les disponibilités et bénéficier de commissions exclusives.'
+                      : 'Create your free account to access GIR tours in real-time, track availability, and benefit from exclusive commissions.'}
+                  </p>
+                  <div className="space-y-3">
+                    <Link
+                      href={`/${locale}/auth/register`}
+                      className="block w-full text-center bg-white text-terracotta-600 font-medium py-3 px-4 rounded-lg hover:bg-terracotta-50 transition-colors"
+                    >
+                      {isFr ? 'Créer mon espace gratuit' : 'Create my free account'}
+                    </Link>
+                    <Link
+                      href={`/${locale}/auth/login`}
+                      className="block w-full text-center text-white/90 text-sm hover:text-white transition-colors"
+                    >
+                      {isFr ? 'Déjà inscrit ? Se connecter' : 'Already registered? Log in'}
+                    </Link>
+                  </div>
                 </div>
-                <p className="text-white/90 text-sm mb-6">
-                  {isFr
-                    ? 'Créez votre espace gratuit pour accéder aux circuits GIR en temps réel, suivre les disponibilités et bénéficier de commissions exclusives.'
-                    : 'Create your free account to access GIR tours in real-time, track availability, and benefit from exclusive commissions.'}
-                </p>
-                <div className="space-y-3">
-                  <Link
-                    href={`/${locale}/auth/register`}
-                    className="block w-full text-center bg-white text-terracotta-600 font-medium py-3 px-4 rounded-lg hover:bg-terracotta-50 transition-colors"
-                  >
-                    {isFr ? 'Créer mon espace gratuit' : 'Create my free account'}
-                  </Link>
-                  <Link
-                    href={`/${locale}/auth/login`}
-                    className="block w-full text-center text-white/90 text-sm hover:text-white transition-colors"
-                  >
-                    {isFr ? 'Déjà inscrit ? Se connecter' : 'Already registered? Log in'}
-                  </Link>
-                </div>
-              </div>
+              )}
 
               {/* Contact Info */}
               <div className="bg-sand-50 rounded-2xl p-8">

@@ -557,7 +557,7 @@ export default async function CircuitPage({ params }: Props) {
                                 </div>
                                 {departure.status !== 'full' && (
                                   <Link
-                                    href={`/${locale}/contact?circuit=${circuit.slug}&departure=${departure.id}`}
+                                    href={`/${locale}/contact?circuit=${circuit.slug}&departure=${departure.id}&destination=${encodeURIComponent(isFr ? (destination?.name || '') : (destination?.nameEn || destination?.name || ''))}`}
                                   >
                                     <Button variant="primary" size="sm">
                                       {isFr ? 'Réserver' : 'Book'}
