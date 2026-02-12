@@ -340,10 +340,10 @@ function CircuitCard({ circuit, locale }: { circuit: DbCircuit; locale: string }
 
   // Get upcoming departures
   const today = new Date().toISOString().split('T')[0];
-  const upcomingDepartures = (circuit.departures || [])
+  const allUpcomingDepartures = (circuit.departures || [])
     .filter((d: DbDeparture) => d.start_date >= today)
-    .sort((a: DbDeparture, b: DbDeparture) => a.start_date.localeCompare(b.start_date))
-    .slice(0, 3);
+    .sort((a: DbDeparture, b: DbDeparture) => a.start_date.localeCompare(b.start_date));
+  const upcomingDepartures = allUpcomingDepartures.slice(0, 1);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -482,7 +482,7 @@ function CircuitCard({ circuit, locale }: { circuit: DbCircuit; locale: string }
           {upcomingDepartures.length > 0 && (
             <div className="border-t border-gray-100 pt-4">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                {isFr ? 'Prochains départs' : 'Upcoming departures'}
+                {isFr ? 'Prochain départ' : 'Next departure'}
               </h4>
               <div className="space-y-2">
                 {upcomingDepartures.map((departure: DbDeparture) => (
@@ -522,6 +522,42 @@ function CircuitCard({ circuit, locale }: { circuit: DbCircuit; locale: string }
                   </div>
                 ))}
               </div>
+
+              {/* CTA to create account for all dates */}
+              {allUpcomingDepartures.length > 1 && (
+                <div className="mt-3 p-4 bg-deep-blue-50 rounded-xl border border-deep-blue-100">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-deep-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CalendarIcon className="w-5 h-5 text-deep-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-deep-blue-900">
+                        {isFr
+                          ? `+${allUpcomingDepartures.length - 1} autres dates disponibles`
+                          : `+${allUpcomingDepartures.length - 1} more dates available`
+                        }
+                      </p>
+                      <p className="text-xs text-deep-blue-600 mt-1">
+                        {isFr
+                          ? 'Créez votre espace agence pour voir toutes les dates, les places disponibles et vos commissions.'
+                          : 'Create your agency account to see all dates, available spots and your commissions.'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  <Link href={`/${locale}/auth/register?redirect=/espace-pro/circuits/${circuit.slug}`} className="block mt-3">
+                    <Button variant="primary" fullWidth size="sm">
+                      {isFr ? 'Créer mon espace agence' : 'Create my agency account'}
+                    </Button>
+                  </Link>
+                  <p className="text-xs text-center text-deep-blue-500 mt-2">
+                    {isFr ? 'Déjà inscrit ?' : 'Already registered?'}{' '}
+                    <Link href={`/${locale}/auth/login?redirect=/espace-pro/circuits/${circuit.slug}`} className="underline hover:text-deep-blue-700">
+                      {isFr ? 'Se connecter' : 'Sign in'}
+                    </Link>
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
