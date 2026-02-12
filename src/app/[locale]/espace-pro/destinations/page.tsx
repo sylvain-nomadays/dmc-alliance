@@ -7,8 +7,10 @@ import { MapPin, Check, Globe } from 'lucide-react';
 
 interface Destination {
   id: string;
-  name_fr: string;
-  country_code: string;
+  name: string;
+  name_en: string | null;
+  slug: string;
+  country: string | null;
   region: string;
   image_url: string | null;
 }
@@ -41,11 +43,12 @@ export default function AgencyDestinationsPage() {
       const supabase = createClient();
 
       // Charger toutes les destinations
-      const { data: allDestinations } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: allDestinations } = await (supabase as any)
         .from('destinations')
-        .select('id, name_fr, country_code, region, image_url')
+        .select('id, name, name_en, slug, country, region, image_url')
         .eq('is_active', true)
-        .order('name_fr');
+        .order('name');
 
       setDestinations(allDestinations || []);
 
@@ -66,16 +69,24 @@ export default function AgencyDestinationsPage() {
       if (agency) {
         setAgencyId(agency.id);
 
-        // Charger les intérêts existants
+        // Charger les intérêts existants depuis agency_interests
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: interests } = await (supabase as any)
-          .from('agency_destination_interests')
-          .select('destination_id')
-          .eq('agency_id', agency.id);
+          .from('agency_interests')
+          .select('entity_slug')
+          .eq('agency_id', agency.id)
+          .eq('entity_type', 'destination');
 
         if (interests) {
+          // Map slugs to destination IDs
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setSelectedDestinations(new Set(interests.map((i: any) => i.destination_id)));
+          const selectedSlugs = new Set(interests.map((i: any) => i.entity_slug));
+          const selectedIds = new Set<string>(
+            (allDestinations || [])
+              .filter((d: Destination) => selectedSlugs.has(d.slug))
+              .map((d: Destination) => d.id)
+          );
+          setSelectedDestinations(selectedIds);
         }
       }
 
@@ -88,6 +99,9 @@ export default function AgencyDestinationsPage() {
   // Toggle une destination
   const toggleDestination = async (destId: string) => {
     if (!agencyId) return;
+
+    const dest = destinations.find(d => d.id === destId);
+    if (!dest) return;
 
     const supabase = createClient();
     const isSelected = selectedDestinations.has(destId);
@@ -103,21 +117,24 @@ export default function AgencyDestinationsPage() {
       return next;
     });
 
-    // Mise à jour en base
+    // Mise à jour en base via agency_interests
     if (isSelected) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
-        .from('agency_destination_interests')
+        .from('agency_interests')
         .delete()
         .eq('agency_id', agencyId)
-        .eq('destination_id', destId);
+        .eq('entity_type', 'destination')
+        .eq('entity_slug', dest.slug);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
-        .from('agency_destination_interests')
+        .from('agency_interests')
         .insert({
           agency_id: agencyId,
-          destination_id: destId,
+          entity_type: 'destination',
+          entity_slug: dest.slug,
+          entity_name: dest.name,
         });
     }
   };
@@ -217,7 +234,7 @@ export default function AgencyDestinationsPage() {
                           {dest.image_url ? (
                             <img
                               src={dest.image_url}
-                              alt={dest.name_fr}
+                              alt={isFr ? dest.name : (dest.name_en || dest.name)}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -239,10 +256,10 @@ export default function AgencyDestinationsPage() {
                         {/* Nom */}
                         <div className={`p-3 text-left ${isSelected ? 'bg-terracotta-50' : 'bg-white'}`}>
                           <p className={`font-medium ${isSelected ? 'text-terracotta-800' : 'text-gray-900'}`}>
-                            {dest.name_fr}
+                            {isFr ? dest.name : (dest.name_en || dest.name)}
                           </p>
                           <p className="text-xs text-gray-500 uppercase">
-                            {dest.country_code}
+                            {dest.country}
                           </p>
                         </div>
                       </button>

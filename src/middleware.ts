@@ -18,7 +18,22 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedRoute) {
     // Protected routes: full auth check + role validation
-    return await protectRoute(request);
+    const protectedResponse = await protectRoute(request);
+
+    // If protectRoute returned a redirect, pass it through directly
+    if (protectedResponse.status >= 300 && protectedResponse.status < 400) {
+      return protectedResponse;
+    }
+
+    // For non-redirect responses, also run intl middleware and merge cookies
+    const intlResponse = intlMiddleware(request);
+
+    // Copy all Supabase auth cookies (with full options) onto intl response
+    protectedResponse.cookies.getAll().forEach((cookie) => {
+      intlResponse.cookies.set(cookie);
+    });
+
+    return intlResponse;
   }
 
   // Handle auth code from Supabase email redirects (password reset, email verification)
@@ -39,9 +54,9 @@ export async function middleware(request: NextRequest) {
   const { response: supabaseResponse } = await updateSupabaseSession(request);
   const intlResponse = intlMiddleware(request);
 
-  // Copy Supabase auth cookies onto the intl response so the browser keeps them
+  // Copy Supabase auth cookies (with full options) onto the intl response
   supabaseResponse.cookies.getAll().forEach((cookie) => {
-    intlResponse.cookies.set(cookie.name, cookie.value);
+    intlResponse.cookies.set(cookie);
   });
 
   return intlResponse;

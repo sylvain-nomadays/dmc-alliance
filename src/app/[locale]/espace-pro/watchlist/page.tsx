@@ -176,8 +176,9 @@ export default function AgencyWatchlistPage() {
 
   const getNextDeparture = (departures: Departure[]) => {
     const today = new Date().toISOString().split('T')[0];
+    const closedStatuses = ['cancelled', 'closed'];
     return departures
-      .filter(d => d.start_date >= today && d.status === 'open')
+      .filter(d => d.start_date >= today && !closedStatuses.includes(d.status))
       .sort((a, b) => a.start_date.localeCompare(b.start_date))[0] || null;
   };
 
@@ -256,8 +257,9 @@ export default function AgencyWatchlistPage() {
                 if (!circuit) return null;
 
                 const nextDep = getNextDeparture(circuit.departures || []);
+                const closedStatuses = ['cancelled', 'closed'];
                 const totalDepartures = (circuit.departures || []).filter(
-                  d => d.start_date >= new Date().toISOString().split('T')[0] && d.status === 'open'
+                  d => d.start_date >= new Date().toISOString().split('T')[0] && !closedStatuses.includes(d.status)
                 ).length;
                 const available = nextDep ? nextDep.total_seats - nextDep.booked_seats : 0;
                 const fillPercent = nextDep ? Math.round((nextDep.booked_seats / nextDep.total_seats) * 100) : 0;

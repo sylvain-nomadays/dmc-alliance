@@ -86,19 +86,19 @@ export default function AgencyCircuitsPage() {
         return;
       }
 
-    // Filtrer les circuits qui ont au moins un départ futur ouvert
+    // Filtrer les circuits qui ont au moins un départ futur disponible
+    // Accept any status except explicitly closed/cancelled
     const today = new Date().toISOString().split('T')[0];
+    const closedStatuses = ['cancelled', 'closed'];
     let filtered: Circuit[] = (data || []).filter((circuit: Circuit) => {
-      // Garder uniquement les départs futurs et ouverts
       const futureDepartures = (circuit.departures || []).filter(
-        (dep: Departure) => dep.start_date >= today && dep.status === 'open'
+        (dep: Departure) => dep.start_date >= today && !closedStatuses.includes(dep.status)
       );
       return futureDepartures.length > 0;
     }).map((circuit: Circuit) => ({
       ...circuit,
-      // Garder uniquement les départs futurs et ouverts, triés par date
       departures: (circuit.departures || [])
-        .filter((dep: Departure) => dep.start_date >= today && dep.status === 'open')
+        .filter((dep: Departure) => dep.start_date >= today && !closedStatuses.includes(dep.status))
         .sort((a: Departure, b: Departure) => a.start_date.localeCompare(b.start_date))
     }));
 

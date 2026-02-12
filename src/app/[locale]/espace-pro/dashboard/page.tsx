@@ -453,7 +453,7 @@ export default async function AgencyDashboardPage({
                 >
                   {(() => {
                     const nextDep = (item.circuit?.departures || [])
-                      .filter((d: { start_date: string; status: string }) => d.start_date >= new Date().toISOString().split('T')[0] && d.status === 'open')
+                      .filter((d: { start_date: string; status: string }) => d.start_date >= new Date().toISOString().split('T')[0] && !['cancelled', 'closed'].includes(d.status))
                       .sort((a: { start_date: string }, b: { start_date: string }) => a.start_date.localeCompare(b.start_date))[0];
                     const available = nextDep ? nextDep.total_seats - nextDep.booked_seats : 0;
                     const total = nextDep?.total_seats || 1;
