@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { getAuthContext } from '@/lib/auth/getAuthContext';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 interface DashboardStats {
   totalBookings: number;
@@ -113,8 +114,7 @@ async function getDashboardData(agencyId: string): Promise<{
   const pendingBookings = bookings?.filter((b: { status: string }) => b.status === 'pending').length || 0;
   const totalCommission = bookings?.reduce((sum: number, b: { commission_amount: number }) => sum + (b.commission_amount || 0), 0) || 0;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count: watchedCircuits } = await (supabase as any)
+  const { count: watchedCircuits } = await supabaseAdmin
     .from('gir_watchlist')
     .select('*', { count: 'exact', head: true })
     .eq('agency_id', agencyId);
@@ -137,9 +137,8 @@ async function getDashboardData(agencyId: string): Promise<{
     .order('created_at', { ascending: false })
     .limit(5);
 
-  // Get watched circuits
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: watched } = await (supabase as any)
+  // Get watched circuits (using admin client to bypass RLS on joined tables)
+  const { data: watched } = await supabaseAdmin
     .from('gir_watchlist')
     .select(`
       id,
