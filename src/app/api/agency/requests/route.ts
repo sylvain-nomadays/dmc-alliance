@@ -28,20 +28,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
 
-    // Vérifier que l'utilisateur appartient à cette agence
-    const { data: agency } = await supabaseAdmin
+    // Vérifier que l'utilisateur appartient à cette agence (owner ou member)
+    let agency: { id: string; name: string } | null = null;
+
+    const { data: directAgency } = await supabaseAdmin
       .from('agencies')
       .select('id, name')
       .eq('id', agencyId)
       .eq('user_id', user.id)
       .single();
 
+    if (directAgency) {
+      agency = directAgency;
+    } else {
+      // Fallback: check agency_members
+      const { data: membership } = await supabaseAdmin
+        .from('agency_members')
+        .select('agency_id')
+        .eq('agency_id', agencyId)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (membership) {
+        const { data: memberAgency } = await supabaseAdmin
+          .from('agencies')
+          .select('id, name')
+          .eq('id', agencyId)
+          .single();
+        agency = memberAgency;
+      }
+    }
+
     if (!agency) {
       return NextResponse.json({ error: 'Agence non trouvée' }, { status: 403 });
     }
 
-    // Cast agency pour le typage
-    const agencyData = agency as { id: string; name: string };
+    const agencyData = agency;
 
     // Récupérer les infos du circuit et du partenaire
     const { data: circuit, error: circuitError } = await supabaseAdmin

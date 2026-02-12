@@ -25,6 +25,7 @@ function ContactForm({ locale }: { locale: string }) {
   const partnerParam = searchParams.get('partner');
   const destinationParam = searchParams.get('destination');
   const circuitParam = searchParams.get('circuit');
+  const circuitIdParam = searchParams.get('circuitId');
   const departureParam = searchParams.get('departure');
   const typeParam = searchParams.get('type');
   const subjectParam = searchParams.get('subject');
@@ -211,29 +212,14 @@ function ContactForm({ locale }: { locale: string }) {
     setSubmitStatus('idle');
 
     try {
-      if (isBookingRequest && agencyId) {
+      if (isBookingRequest && agencyId && circuitIdParam) {
         // Agency booking: use the agency requests API
-        const supabase = createClient();
-
-        // Resolve circuit slug to UUID
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: circuit } = await (supabase as any)
-          .from('circuits')
-          .select('id')
-          .eq('slug', circuitParam)
-          .single();
-
-        if (!circuit) {
-          setSubmitStatus('error');
-          return;
-        }
-
         const response = await fetch('/api/agency/requests', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             agencyId,
-            circuitId: circuit.id,
+            circuitId: circuitIdParam,
             departureId: departureParam || null,
             requestType: 'booking',
             travelersCount: formData.travelersCount ? parseInt(formData.travelersCount) : null,
