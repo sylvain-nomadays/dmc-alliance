@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import NextLink from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { Link, usePathname, useRouter, type Locale } from '@/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { createClient } from '@/lib/supabase/client';
 
 // Type for navigation links (without dynamic segments)
 type NavHref = '/' | '/partners' | '/destinations' | '/magazine' | '/about' | '/contact' | '/gir';
@@ -154,10 +155,84 @@ export function Header({ locale, logoUrl, logoDarkUrl, translations }: HeaderPro
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [authInfo, setAuthInfo] = useState<{
+    name: string;
+    href: string;
+    role: string;
+  } | null>(null);
   const pathname = usePathname();
 
   // Check if we're on the homepage (with hero) for transparent header
   const isHomepage = pathname === '/';
+
+  // Check auth state
+  const checkAuth = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        setAuthInfo(null);
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) {
+        setAuthInfo(null);
+        return;
+      }
+
+      if (profile.role === 'agency') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: agency } = await (supabase as any)
+          .from('agencies')
+          .select('name')
+          .eq('user_id', user.id)
+          .single();
+
+        setAuthInfo({
+          name: agency?.name || profile.full_name || 'Mon espace',
+          href: `/${locale}/espace-pro/dashboard`,
+          role: 'agency',
+        });
+      } else if (profile.role === 'admin' || profile.role === 'partner') {
+        setAuthInfo({
+          name: profile.full_name || 'Admin',
+          href: '/admin',
+          role: profile.role,
+        });
+      } else {
+        setAuthInfo({
+          name: profile.full_name || 'Mon compte',
+          href: `/${locale}/espace-pro/dashboard`,
+          role: profile.role,
+        });
+      }
+    } catch {
+      setAuthInfo(null);
+    }
+  }, [locale]);
+
+  useEffect(() => {
+    checkAuth();
+
+    // Listen for auth state changes
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setAuthInfo(null);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        checkAuth();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [checkAuth]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -346,20 +421,22 @@ export function Header({ locale, logoUrl, logoDarkUrl, translations }: HeaderPro
               isHomepage={isHomepage}
             />
 
-            {/* Pro Space Link */}
+            {/* Pro Space / Auth Link */}
             <NextLink
-              href={`/${locale}/auth/login`}
+              href={authInfo ? authInfo.href : `/${locale}/auth/login`}
               className={cn(
                 'flex items-center gap-1.5 text-sm font-medium transition-colors',
                 isScrolled || !isHomepage
-                  ? 'text-gray-600 hover:text-terracotta-500'
+                  ? authInfo
+                    ? 'text-terracotta-600 hover:text-terracotta-700'
+                    : 'text-gray-600 hover:text-terracotta-500'
                   : 'text-white/80 hover:text-white'
               )}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              {translations.proSpace}
+              {authInfo ? authInfo.name : translations.proSpace}
             </NextLink>
 
             {/* Contact CTA */}
@@ -449,12 +526,12 @@ export function Header({ locale, logoUrl, logoDarkUrl, translations }: HeaderPro
 
               {/* Mobile Pro Space + Contact CTAs */}
               <div className="px-4 pt-2 space-y-2">
-                <NextLink href={`/${locale}/auth/login`}>
-                  <Button variant="outline" fullWidth>
+                <NextLink href={authInfo ? authInfo.href : `/${locale}/auth/login`}>
+                  <Button variant={authInfo ? 'primary' : 'outline'} fullWidth>
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    {translations.proSpace}
+                    {authInfo ? authInfo.name : translations.proSpace}
                   </Button>
                 </NextLink>
                 <Link href="/contact">

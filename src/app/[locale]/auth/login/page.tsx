@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -11,6 +11,7 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const searchParams = useSearchParams();
   const params = useParams();
@@ -18,6 +19,44 @@ function LoginForm() {
 
   // ✅ redirect fiable (ex: /admin)
   const redirect = searchParams.get('redirect');
+
+  // Check if already logged in → redirect to dashboard
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setCheckingAuth(false);
+          return;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (redirect) {
+          window.location.href = redirect;
+          return;
+        }
+
+        if (profile?.role === 'agency') {
+          window.location.href = `/${locale}/espace-pro/dashboard`;
+        } else if (profile?.role === 'admin' || profile?.role === 'partner') {
+          window.location.href = '/admin';
+        } else {
+          setCheckingAuth(false);
+        }
+      } catch {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [locale, redirect]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +130,14 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="max-w-md w-full text-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-terracotta-500 mx-auto" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md w-full">
