@@ -223,7 +223,7 @@ export default function AgencyCircuitDetailPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/espace-pro/requests', {
+      const response = await fetch('/api/agency/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
