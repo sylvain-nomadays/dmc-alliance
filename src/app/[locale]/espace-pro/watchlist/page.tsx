@@ -282,7 +282,7 @@ export default function AgencyWatchlistPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <Link
-                                href={`/${locale}/espace-pro/circuits/${circuit.id}`}
+                                href={`/${locale}/gir/${circuit.slug}`}
                                 className="font-semibold text-gray-900 hover:text-terracotta-600"
                               >
                                 {circuit.title}
@@ -371,7 +371,7 @@ export default function AgencyWatchlistPage() {
 
                       <div className="flex gap-2">
                         <Link
-                          href={`/${locale}/espace-pro/circuits/${circuit.id}`}
+                          href={`/${locale}/gir/${circuit.slug}`}
                           className="px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors text-sm"
                         >
                           {isFr ? 'Voir le circuit' : 'View circuit'}

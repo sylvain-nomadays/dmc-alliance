@@ -161,14 +161,6 @@ export default async function AgencyLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Commission badge */}
-              <div className="hidden sm:flex items-center gap-2 bg-deep-blue-800/50 rounded-lg px-3 py-2">
-                <span className="text-xs text-deep-blue-300">
-                  {isFr ? 'Votre commission' : 'Your commission'}
-                </span>
-                <span className="text-lg font-bold text-terracotta-400">{agency.commission_rate}%</span>
-              </div>
-
               {/* Agency name */}
               <div className="text-right">
                 <p className="font-medium">{agency.name}</p>

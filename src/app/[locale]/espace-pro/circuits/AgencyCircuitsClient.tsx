@@ -448,7 +448,7 @@ export default function AgencyCircuitsClient({ locale, serverCircuits }: AgencyC
                       </p>
                     </div>
                     <Link
-                      href={`/${locale}/espace-pro/circuits/${circuit.id}`}
+                      href={`/${locale}/gir/${circuit.slug}`}
                       className="px-4 py-2 bg-terracotta-500 text-white rounded-lg hover:bg-terracotta-600 transition-colors text-sm font-medium"
                     >
                       {isFr ? 'Voir détails' : 'View details'}

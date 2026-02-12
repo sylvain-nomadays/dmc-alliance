@@ -54,6 +54,7 @@ interface WatchedCircuit {
   circuit: {
     id: string;
     title: string;
+    slug: string;
     price_from: number;
     destination: {
       name: string;
@@ -145,6 +146,7 @@ async function getDashboardData(agencyId: string): Promise<{
       circuit:circuits(
         id,
         title,
+        slug,
         price_from,
         destination:destinations(name),
         departures:circuit_departures(start_date, total_seats, booked_seats, status)
@@ -448,7 +450,7 @@ export default async function AgencyDashboardPage({
               {watchedCircuits.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/${locale}/espace-pro/circuits/${item.circuit?.id}`}
+                  href={`/${locale}/gir/${item.circuit?.slug}`}
                   className="block px-6 py-4 hover:bg-gray-50"
                 >
                   {(() => {
