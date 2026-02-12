@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 
@@ -12,10 +12,52 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = (params.locale as string) || 'fr';
   const isFr = locale === 'fr';
+
+  // Exchange the auth code for a session when arriving from the email link
+  useEffect(() => {
+    const exchangeCode = async () => {
+      const code = searchParams.get('code');
+      const supabase = createClient();
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error('[Reset Password] Code exchange error:', error.message);
+          setError(
+            isFr
+              ? 'Le lien a expiré ou est invalide. Veuillez refaire une demande.'
+              : 'The link has expired or is invalid. Please request a new one.'
+          );
+        } else {
+          setSessionReady(true);
+        }
+        // Remove code from URL without reload
+        window.history.replaceState({}, '', window.location.pathname);
+      } else {
+        // No code — check if user already has an active session
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setSessionReady(true);
+        } else {
+          setError(
+            isFr
+              ? 'Aucune session active. Veuillez utiliser le lien reçu par email.'
+              : 'No active session. Please use the link from your email.'
+          );
+        }
+      }
+      setInitializing(false);
+    };
+
+    exchangeCode();
+  }, [searchParams, isFr]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +100,19 @@ export default function ResetPasswordPage() {
     setSuccess(true);
     setLoading(false);
   };
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-sand-50 px-4">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-terracotta-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">
+            {isFr ? 'Vérification en cours...' : 'Verifying...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-sand-50 px-4">

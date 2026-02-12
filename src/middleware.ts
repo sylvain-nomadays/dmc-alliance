@@ -21,31 +21,17 @@ export async function middleware(request: NextRequest) {
     return await protectRoute(request);
   }
 
-  // Handle PKCE code from Supabase email redirects (password reset, email verification)
-  // When Supabase can't use our redirectTo (not in allowlist), it falls back to
-  // the Site URL with ?code=xxx. We intercept it here, exchange the code,
-  // and redirect to the appropriate page.
+  // Handle auth code from Supabase email redirects (password reset, email verification)
+  // When the code arrives at the homepage (Supabase fallback), redirect to the
+  // reset-password page and let it handle the code exchange client-side.
   const code = request.nextUrl.searchParams.get('code');
-  if (code) {
-    const { supabase, response: supabaseResponse } = await updateSupabaseSession(request);
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (code && !pathname.includes('/auth/reset-password')) {
+    const localeMatch = pathname.match(/^\/(fr|en|de|nl|es|it)/);
+    const locale = localeMatch ? localeMatch[1] : 'fr';
 
-    if (!error) {
-      // Extract locale from pathname (e.g., /fr, /en) or default to 'fr'
-      const localeMatch = pathname.match(/^\/(fr|en|de|nl|es|it)/);
-      const locale = localeMatch ? localeMatch[1] : 'fr';
-
-      // Redirect to reset-password page (the main use case for email-based codes)
-      const resetUrl = new URL(`/${locale}/auth/reset-password`, request.url);
-      const redirectResponse = NextResponse.redirect(resetUrl);
-
-      // Copy session cookies so the browser keeps the authenticated session
-      supabaseResponse.cookies.getAll().forEach((cookie) => {
-        redirectResponse.cookies.set(cookie.name, cookie.value);
-      });
-
-      return redirectResponse;
-    }
+    const resetUrl = new URL(`/${locale}/auth/reset-password`, request.url);
+    resetUrl.searchParams.set('code', code);
+    return NextResponse.redirect(resetUrl);
   }
 
   // Public routes: refresh Supabase session (keeps cookies alive)

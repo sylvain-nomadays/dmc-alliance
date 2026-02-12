@@ -9,11 +9,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Send password reset email via Supabase's built-in SMTP.
-    // No redirectTo: Supabase will redirect to the Site URL with ?code=xxx
-    // The middleware intercepts ?code= on public routes, exchanges the code,
-    // and redirects to /auth/reset-password automatically.
-    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email);
+    // Build the redirect URL to the reset-password page.
+    // If this URL is in Supabase's redirect allowlist, the code arrives directly
+    // on the reset-password page. Otherwise, Supabase falls back to the Site URL
+    // and the middleware redirects to reset-password with the code.
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org';
+    const redirectTo = `${baseUrl}/fr/auth/reset-password`;
+
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
 
     if (error) {
       console.error('[Forgot Password] Supabase error:', error.message);
