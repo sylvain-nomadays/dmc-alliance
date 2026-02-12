@@ -5,6 +5,7 @@
 
 import { unstable_noStore as noStore } from 'next/cache';
 import { createClient } from './server';
+import { supabaseAdmin } from './admin';
 import { getCircuitBySlug as getStaticCircuit, circuits as staticCircuits, type Circuit } from '@/data/circuits';
 
 export interface SupabaseCircuit {
@@ -120,15 +121,13 @@ export interface DbCircuit {
 
 /**
  * Get all published GIR circuits from Supabase
+ * Uses admin client to bypass RLS and avoid cookie dependency
  */
 export async function getPublishedGirCircuits(): Promise<DbCircuit[]> {
   // Disable Next.js cache to always get fresh data
   noStore();
 
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabaseAdmin
     .from('circuits')
     .select(`
       *,
@@ -141,11 +140,11 @@ export async function getPublishedGirCircuits(): Promise<DbCircuit[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching GIR circuits from Supabase:', error);
+    console.error('[GIR] Error fetching circuits:', error.message);
     return [];
   }
 
-  console.log(`[GIR] Fetched ${data?.length || 0} circuits from Supabase:`, data?.map((c: DbCircuit) => c.slug));
+  console.log(`[GIR] Fetched ${data?.length || 0} circuits from Supabase`);
 
   return data || [];
 }
