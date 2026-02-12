@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { CircuitPDFExport } from '@/components/espace-pro/CircuitPDFExport';
 
+// NOTE: createClient is still needed for watchlist toggle operations
+
 interface Departure {
   id: string;
   start_date: string;
@@ -95,90 +97,49 @@ export default function AgencyCircuitDetailPage() {
 
   const isFr = locale === 'fr';
 
-  // Charger le circuit avec les départs
+  // Charger le circuit, l'agence, la watchlist et le profil via API (bypasse les RLS)
   useEffect(() => {
-    const loadCircuit = async () => {
-      const supabase = createClient();
+    const loadAll = async () => {
+      try {
+        const response = await fetch(`/api/agency/circuits/${circuitId}`);
+        if (!response.ok) {
+          console.error('Error loading circuit:', response.statusText);
+          setLoading(false);
+          return;
+        }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from('circuits')
-        .select(`
-          id, title, slug, description_fr, description_en, itinerary,
-          included_fr, included_en, not_included_fr, not_included_en,
-          highlights_fr, highlights_en, duration_days, price_from,
-          group_size_min, group_size_max, image_url, gallery_urls,
-          difficulty_level, use_tiered_commission, base_commission_rate, commission_tiers,
-          destination:destinations(id, name, name_en),
-          partner:partners(id, name, slug, email, phone, logo_url),
-          departures:circuit_departures(id, start_date, end_date, total_seats, booked_seats, price, status)
-        `)
-        .eq('id', circuitId)
-        .single();
+        const data = await response.json();
 
-      if (error) {
+        if (data.circuit) {
+          // Trier les départs par date
+          const sortedDepartures = (data.circuit.departures || []).sort(
+            (a: Departure, b: Departure) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+          );
+          setCircuit({ ...data.circuit, departures: sortedDepartures } as CircuitDetails);
+        }
+
+        if (data.agencyId) {
+          setAgencyId(data.agencyId);
+        }
+
+        setIsWatched(!!data.isWatched);
+
+        if (data.profile) {
+          setRequestForm((prev) => ({
+            ...prev,
+            contactName: data.profile.full_name || '',
+            contactEmail: data.profile.email || '',
+            contactPhone: data.profile.phone || '',
+          }));
+        }
+      } catch (error) {
         console.error('Error loading circuit:', error);
-      } else if (data) {
-        // Trier les départs par date
-        const sortedDepartures = (data.departures || []).sort(
-          (a: Departure, b: Departure) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
-        );
-        setCircuit({ ...data, departures: sortedDepartures } as CircuitDetails);
       }
+
       setLoading(false);
     };
 
-    loadCircuit();
-  }, [circuitId]);
-
-  // Charger l'agence et vérifier la watchlist
-  useEffect(() => {
-    const loadAgencyAndWatchlist = async () => {
-      const supabase = createClient();
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: agency } = await (supabase as any)
-        .from('agencies')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!agency) return;
-      setAgencyId(agency.id as string);
-
-      // Vérifier si le circuit est dans la watchlist
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: watchItem } = await (supabase as any)
-        .from('gir_watchlist')
-        .select('id')
-        .eq('agency_id', agency.id)
-        .eq('circuit_id', circuitId)
-        .single();
-
-      setIsWatched(!!watchItem);
-
-      // Pré-remplir le formulaire
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profile } = await (supabase as any)
-        .from('profiles')
-        .select('full_name, email, phone')
-        .eq('id', user.id)
-        .single();
-
-      if (profile) {
-        setRequestForm((prev) => ({
-          ...prev,
-          contactName: profile.full_name || '',
-          contactEmail: profile.email || '',
-          contactPhone: profile.phone || '',
-        }));
-      }
-    };
-
-    loadAgencyAndWatchlist();
+    loadAll();
   }, [circuitId]);
 
   // Toggle watchlist
