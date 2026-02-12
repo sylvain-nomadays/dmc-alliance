@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Camera, Save,
   Linkedin, Instagram, Facebook, CheckCircle, AlertCircle, Loader2
@@ -132,29 +131,21 @@ export default function AgencySettingsPage() {
     setMessage(null);
 
     try {
-      const supabase = createClient();
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Générer un nom de fichier unique
-      const ext = file.name.split('.').pop();
-      const fileName = `agency-${profile.id}-${Date.now()}.${ext}`;
-      const filePath = `agencies/${fileName}`;
+      const response = await fetch('/api/agency/upload-logo', {
+        method: 'POST',
+        body: formData,
+      });
 
-      // Upload vers Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('logos')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        throw uploadError;
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Upload failed');
       }
 
-      // Obtenir l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from('logos')
-        .getPublicUrl(filePath);
-
-      // Mettre à jour le profil
-      updateField('logo_url', publicUrl);
+      const { url } = await response.json();
+      updateField('logo_url', url);
       setMessage({ type: 'success', text: isFr ? 'Logo mis à jour' : 'Logo updated' });
     } catch (error) {
       console.error('Upload error:', error);
