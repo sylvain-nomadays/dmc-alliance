@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     const {
       agencyId,
       circuitId,
+      departureId,
       requestType,
       travelersCount,
       message,
@@ -45,8 +46,9 @@ export async function POST(request: Request) {
     const { data: circuit, error: circuitError } = await supabaseAdmin
       .from('circuits')
       .select(`
-        id, title_fr, departure_date,
-        partner:partners(id, name, email, phone)
+        id, title, slug,
+        partner:partners(id, name, email, phone),
+        departures:circuit_departures(id, start_date, end_date, price, status)
       `)
       .eq('id', circuitId)
       .single();
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
       .insert({
         agency_id: agencyId,
         circuit_id: circuitId,
+        departure_id: departureId || null,
         request_type: requestType,
         travelers_count: travelersCount || null,
         message: message || null,
@@ -87,10 +90,16 @@ export async function POST(request: Request) {
       try {
         const templateSlug = requestType === 'booking' ? 'agency_booking_request' : 'agency_info_request';
 
+        // Find the relevant departure date if a departure_id was provided
+        const departures = circuit.departures || [];
+        const selectedDep = body.departureId
+          ? departures.find((d: { id: string }) => d.id === body.departureId)
+          : departures[0];
+
         const emailContent = await buildEmailFromTemplate(templateSlug, {
-          circuit_title: circuit.title_fr,
-          departure_date: circuit.departure_date
-            ? new Date(circuit.departure_date).toLocaleDateString('fr-FR')
+          circuit_title: circuit.title,
+          departure_date: selectedDep?.start_date
+            ? new Date(selectedDep.start_date).toLocaleDateString('fr-FR')
             : '',
           travelers_count: travelersCount || '',
           agency_name: agencyData.name,
@@ -182,8 +191,9 @@ export async function GET(request: Request) {
         contact_name, contact_email, contact_phone, status,
         partner_notified_at, created_at,
         circuit:circuits(
-          id, title_fr, slug, departure_date,
-          partner:partners(name)
+          id, title, slug,
+          partner:partners(name),
+          departures:circuit_departures(id, start_date, price, status)
         )
       `)
       .eq('agency_id', agency.id)

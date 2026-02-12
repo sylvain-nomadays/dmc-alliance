@@ -22,12 +22,17 @@ interface AgencyRequestItem {
   created_at: string;
   circuit: {
     id: string;
-    title_fr: string;
+    title: string;
     slug: string;
-    departure_date: string;
     partner: {
       name: string;
     };
+    departures: Array<{
+      id: string;
+      start_date: string;
+      price: number | null;
+      status: string;
+    }>;
   };
 }
 
@@ -72,8 +77,9 @@ export default function AgencyRequestsPage() {
           contact_name, contact_email, contact_phone, status,
           partner_notified_at, created_at,
           circuit:circuits(
-            id, title_fr, slug, departure_date,
-            partner:partners(name)
+            id, title, slug,
+            partner:partners(name),
+            departures:circuit_departures(id, start_date, price, status)
           )
         `)
         .eq('agency_id', agency.id)
@@ -233,15 +239,15 @@ export default function AgencyRequestsPage() {
                       href={`/${locale}/espace-pro/circuits/${req.circuit_id}`}
                       className="font-semibold text-gray-900 hover:text-terracotta-600 block mb-1"
                     >
-                      {req.circuit?.title_fr}
+                      {req.circuit?.title}
                     </Link>
 
                     <p className="text-sm text-gray-600 mb-3">
                       {req.circuit?.partner?.name}
-                      {req.circuit?.departure_date && (
+                      {req.circuit?.departures?.[0]?.start_date && (
                         <>
                           {' '}• {isFr ? 'Départ' : 'Departure'}:{' '}
-                          {new Date(req.circuit.departure_date).toLocaleDateString(
+                          {new Date(req.circuit.departures[0].start_date).toLocaleDateString(
                             locale === 'fr' ? 'fr-FR' : 'en-US',
                             { day: 'numeric', month: 'short', year: 'numeric' }
                           )}

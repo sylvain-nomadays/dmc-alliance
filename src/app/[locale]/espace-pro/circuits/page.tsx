@@ -13,7 +13,7 @@ interface Departure {
   total_seats: number;
   booked_seats: number;
   status: string;
-  price_override: number | null;
+  price: number | null;
 }
 
 interface Circuit {
@@ -21,9 +21,9 @@ interface Circuit {
   title: string;
   slug: string;
   destination: {
-    name_fr: string;
-    name_en: string;
-    country_code: string;
+    name: string;
+    name_en: string | null;
+    slug: string;
   } | null;
   partner: {
     name: string;
@@ -48,7 +48,7 @@ export default function AgencyCircuitsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [destinationFilter, setDestinationFilter] = useState('');
-  const [destinations, setDestinations] = useState<{ id: string; name_fr: string }[]>([]);
+  const [destinations, setDestinations] = useState<{ id: string; name: string }[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'limited'>('all');
 
   const isFr = locale === 'fr';
@@ -63,9 +63,9 @@ export default function AgencyCircuitsPage() {
         .from('circuits')
         .select(`
           id, title, slug, duration_days, price_from, image_url,
-          destination:destinations(name_fr, name_en, country_code),
+          destination:destinations(name, name_en, slug),
           partner:partners(name, slug),
-          departures:circuit_departures(id, start_date, end_date, total_seats, booked_seats, status, price_override)
+          departures:circuit_departures(id, start_date, end_date, total_seats, booked_seats, status, price)
         `)
         .eq('status', 'published')
         .eq('is_gir', true);
@@ -108,7 +108,7 @@ export default function AgencyCircuitsPage() {
       filtered = filtered.filter(
         (c: Circuit) =>
           c.title?.toLowerCase().includes(q) ||
-          c.destination?.name_fr?.toLowerCase().includes(q) ||
+          c.destination?.name?.toLowerCase().includes(q) ||
           c.partner?.name?.toLowerCase().includes(q)
       );
     }
@@ -188,9 +188,9 @@ export default function AgencyCircuitsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from('destinations')
-      .select('id, name_fr')
+      .select('id, name')
       .eq('is_active', true)
-      .order('name_fr');
+      .order('name');
 
     setDestinations(data || []);
   };
@@ -322,7 +322,7 @@ export default function AgencyCircuitsPage() {
             >
               <option value="">{isFr ? 'Toutes destinations' : 'All destinations'}</option>
               {destinations.map((d) => (
-                <option key={d.id} value={d.id}>{d.name_fr}</option>
+                <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </div>
@@ -439,7 +439,7 @@ export default function AgencyCircuitsPage() {
 
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
                     <MapPin className="w-4 h-4" />
-                    <span>{isFr ? circuit.destination?.name_fr : (circuit.destination?.name_en || circuit.destination?.name_fr)}</span>
+                    <span>{isFr ? circuit.destination?.name : (circuit.destination?.name_en || circuit.destination?.name)}</span>
                   </div>
 
                   {/* Infos */}
@@ -482,7 +482,7 @@ export default function AgencyCircuitsPage() {
                     <div>
                       <span className="text-xs text-gray-500">{isFr ? 'À partir de' : 'From'}</span>
                       <p className="text-lg font-bold text-terracotta-600">
-                        {(nextDeparture?.price_override || circuit.price_from)?.toLocaleString()} €
+                        {(nextDeparture?.price || circuit.price_from)?.toLocaleString()} €
                       </p>
                     </div>
                     <Link

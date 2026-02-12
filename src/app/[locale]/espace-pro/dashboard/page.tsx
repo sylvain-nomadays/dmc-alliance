@@ -45,8 +45,7 @@ interface RecentBooking {
   status: string;
   created_at: string;
   circuit: {
-    title_fr: string;
-    departure_date: string;
+    title: string;
   };
 }
 
@@ -54,14 +53,17 @@ interface WatchedCircuit {
   id: string;
   circuit: {
     id: string;
-    title_fr: string;
-    departure_date: string;
-    places_available: number;
-    places_total: number;
+    title: string;
     price_from: number;
     destination: {
       name: string;
     };
+    departures: Array<{
+      start_date: string;
+      total_seats: number;
+      booked_seats: number;
+      status: string;
+    }>;
   };
 }
 
@@ -128,7 +130,7 @@ async function getDashboardData(agencyId: string): Promise<{
       commission_amount,
       status,
       created_at,
-      circuit:circuits(title_fr, departure_date)
+      circuit:circuits(title)
     `)
     .eq('agency_id', agencyId)
     .order('created_at', { ascending: false })
@@ -142,29 +144,22 @@ async function getDashboardData(agencyId: string): Promise<{
       id,
       circuit:circuits(
         id,
-        title_fr,
-        departure_date,
-        places_available,
-        places_total,
+        title,
         price_from,
-        destination:destinations(name)
+        destination:destinations(name),
+        departures:circuit_departures(start_date, total_seats, booked_seats, status)
       )
     `)
     .eq('agency_id', agencyId)
     .limit(4);
 
-  // Count upcoming departures in next 30 days
-  const thirtyDaysFromNow = new Date();
-  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-
+  // Count upcoming departures (bookings with confirmed status)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { count: upcomingDepartures } = await (supabase as any)
     .from('bookings')
-    .select('*, circuit:circuits!inner(departure_date)', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('agency_id', agencyId)
-    .eq('status', 'confirmed')
-    .lte('circuit.departure_date', thirtyDaysFromNow.toISOString())
-    .gte('circuit.departure_date', new Date().toISOString());
+    .eq('status', 'confirmed');
 
   return {
     stats: {
@@ -402,7 +397,7 @@ export default async function AgencyDashboardPage({
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <p className="font-medium text-gray-900">{booking.client_name}</p>
-                      <p className="text-sm text-gray-500">{booking.circuit?.title_fr}</p>
+                      <p className="text-sm text-gray-500">{booking.circuit?.title}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusLabels[booking.status]?.color}`}>
                       {statusLabels[booking.status]?.label}
@@ -456,33 +451,48 @@ export default async function AgencyDashboardPage({
                   href={`/${locale}/espace-pro/circuits/${item.circuit?.id}`}
                   className="block px-6 py-4 hover:bg-gray-50"
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-medium text-gray-900">{item.circuit?.title_fr}</p>
-                      <p className="text-sm text-gray-500">{item.circuit?.destination?.name}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">
-                        {item.circuit?.price_from?.toLocaleString('fr-FR')} €
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(item.circuit?.departure_date || '').toLocaleDateString('fr-FR')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-100 rounded-full h-2">
-                      <div
-                        className="bg-terracotta-500 rounded-full h-2"
-                        style={{
-                          width: `${((item.circuit?.places_total || 0) - (item.circuit?.places_available || 0)) / (item.circuit?.places_total || 1) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {item.circuit?.places_available}/{item.circuit?.places_total} {isFr ? 'places' : 'places'}
-                    </span>
-                  </div>
+                  {(() => {
+                    const nextDep = (item.circuit?.departures || [])
+                      .filter((d: { start_date: string; status: string }) => d.start_date >= new Date().toISOString().split('T')[0] && d.status === 'open')
+                      .sort((a: { start_date: string }, b: { start_date: string }) => a.start_date.localeCompare(b.start_date))[0];
+                    const available = nextDep ? nextDep.total_seats - nextDep.booked_seats : 0;
+                    const total = nextDep?.total_seats || 1;
+                    const fillPercent = nextDep ? Math.round((nextDep.booked_seats / total) * 100) : 0;
+
+                    return (
+                      <>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium text-gray-900">{item.circuit?.title}</p>
+                            <p className="text-sm text-gray-500">{item.circuit?.destination?.name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-900">
+                              {item.circuit?.price_from?.toLocaleString('fr-FR')} €
+                            </p>
+                            {nextDep && (
+                              <p className="text-xs text-gray-500">
+                                {new Date(nextDep.start_date).toLocaleDateString('fr-FR')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {nextDep && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-100 rounded-full h-2">
+                              <div
+                                className="bg-terracotta-500 rounded-full h-2"
+                                style={{ width: `${fillPercent}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {available}/{total} {isFr ? 'places' : 'places'}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </Link>
               ))}
             </div>
