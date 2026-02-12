@@ -221,7 +221,7 @@ export default function AgencyRequestsPage() {
 
                     {/* Circuit */}
                     <Link
-                      href={`/${locale}/espace-pro/circuits/${req.circuit_id}`}
+                      href={`/${locale}/gir/${req.circuit?.slug || req.circuit_id}`}
                       className="font-semibold text-gray-900 hover:text-terracotta-600 block mb-1"
                     >
                       {req.circuit?.title}
