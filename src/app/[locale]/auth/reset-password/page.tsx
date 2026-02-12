@@ -1,18 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 
-export default function ResetPasswordPage() {
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-sand-50 px-4">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-terracotta-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-600">Chargement...</p>
+      </div>
+    </div>
+  );
+}
+
+function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sessionReady, setSessionReady] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
   const params = useParams();
@@ -35,17 +45,13 @@ export default function ResetPasswordPage() {
               ? 'Le lien a expiré ou est invalide. Veuillez refaire une demande.'
               : 'The link has expired or is invalid. Please request a new one.'
           );
-        } else {
-          setSessionReady(true);
         }
         // Remove code from URL without reload
         window.history.replaceState({}, '', window.location.pathname);
       } else {
         // No code — check if user already has an active session
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setSessionReady(true);
-        } else {
+        if (!user) {
           setError(
             isFr
               ? 'Aucune session active. Veuillez utiliser le lien reçu par email.'
@@ -222,5 +228,13 @@ export default function ResetPasswordPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
