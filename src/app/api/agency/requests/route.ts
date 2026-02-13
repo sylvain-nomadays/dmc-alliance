@@ -109,8 +109,16 @@ export async function POST(request: Request) {
 
     // Envoyer email au partenaire
     const partner = circuit.partner as { id: string; name: string; email: string | null; phone: string | null } | null;
+    let emailSent = false;
+    let emailError: string | null = null;
 
-    if (partner?.email) {
+    if (!partner) {
+      emailError = 'Partenaire non trouvé pour ce circuit';
+      console.warn('[Agency Request] No partner found for circuit:', circuitId);
+    } else if (!partner.email) {
+      emailError = `Le partenaire "${partner.name}" n'a pas d'adresse email configurée`;
+      console.warn('[Agency Request] Partner has no email:', partner.id, partner.name);
+    } else {
       try {
         const templateSlug = requestType === 'booking' ? 'agency_booking_request' : 'agency_info_request';
 
@@ -135,7 +143,12 @@ export async function POST(request: Request) {
           notes: message || 'Aucun message',
         }, 'fr');
 
-        if (emailContent) {
+        if (!emailContent) {
+          emailError = `Template email "${templateSlug}" introuvable en base de données`;
+          console.error('[Agency Request] Email template not found:', templateSlug);
+        } else {
+          console.log('[Agency Request] Sending email to:', partner.email, 'template:', templateSlug);
+
           const emailResult = await sendEmail({
             to: partner.email,
             subject: emailContent.subject,
@@ -144,8 +157,8 @@ export async function POST(request: Request) {
             replyTo: contactEmail,
           });
 
-          // Mettre à jour le statut
           if (emailResult.success) {
+            emailSent = true;
             await supabaseAdmin
               .from('agency_requests')
               .update({
@@ -153,11 +166,14 @@ export async function POST(request: Request) {
                 partner_notified_at: new Date().toISOString(),
               })
               .eq('id', requestData.id);
+          } else {
+            emailError = `Erreur Resend: ${emailResult.error}`;
+            console.error('[Agency Request] Resend error:', emailResult.error);
           }
         }
-      } catch (emailError) {
-        console.error('[Agency Request] Email error:', emailError);
-        // La demande est créée, l'email a échoué mais on continue
+      } catch (err) {
+        emailError = err instanceof Error ? err.message : 'Erreur inconnue';
+        console.error('[Agency Request] Email exception:', err);
       }
     }
 
@@ -209,6 +225,8 @@ export async function POST(request: Request) {
       success: true,
       requestId: requestData.id,
       message: 'Demande créée avec succès',
+      emailSent,
+      emailError,
     });
 
   } catch (error) {
