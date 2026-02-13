@@ -25,7 +25,12 @@ export async function middleware(request: NextRequest) {
       return protectedResponse;
     }
 
-    // For non-redirect responses, also run intl middleware and merge cookies
+    // Admin routes are NOT under [locale], so skip intl middleware for them
+    if (pathname.startsWith('/admin')) {
+      return protectedResponse;
+    }
+
+    // For non-admin protected routes (e.g. espace-pro), run intl middleware and merge cookies
     const intlResponse = intlMiddleware(request);
 
     // Copy all Supabase auth cookies (with full options) onto intl response
