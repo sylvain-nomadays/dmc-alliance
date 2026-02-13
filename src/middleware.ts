@@ -10,9 +10,10 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Detect protected routes
+  // Note: '/partner' was removed because it matched public pages like /partners/[slug]
+  // Partner portal routes are under /espace-pro which is already checked
   const isProtectedRoute =
     pathname.includes('/admin') ||
-    pathname.includes('/partner') ||
     pathname.includes('/agency') ||
     pathname.includes('/espace-pro');
 
