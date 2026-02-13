@@ -2,17 +2,14 @@
  * Email template rendering and management
  */
 
-import { createStaticClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { EmailTemplate, EmailTemplateVariables, EmailTemplateSlug } from './types';
 
 /**
  * Get an email template by slug
  */
 export async function getEmailTemplate(slug: EmailTemplateSlug): Promise<EmailTemplate | null> {
-  const supabase = createStaticClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabaseAdmin
     .from('email_templates')
     .select('*')
     .eq('slug', slug)

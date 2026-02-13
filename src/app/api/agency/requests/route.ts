@@ -126,11 +126,13 @@ export async function POST(request: Request) {
             ? new Date(selectedDep.start_date).toLocaleDateString('fr-FR')
             : '',
           travelers_count: travelersCount || '',
+          places_requested: travelersCount || '',
           agency_name: agencyData.name,
           contact_name: contactName,
           contact_email: contactEmail,
           contact_phone: contactPhone || 'Non renseigné',
           message: message || 'Aucun message',
+          notes: message || 'Aucun message',
         }, 'fr');
 
         if (emailContent) {
