@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import {
   Calendar, Clock, Mail, Send, Info, CheckCircle, MessageCircle,
@@ -55,33 +54,21 @@ export default function AdminAgencyRequestsPage() {
 
   const loadRequests = async () => {
     setLoading(true);
-    const supabase = createClient();
+    try {
+      const url = filter !== 'all'
+        ? `/api/partner/requests?status=${filter}`
+        : '/api/partner/requests';
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
-      .from('agency_requests')
-      .select(`
-        id, request_type, travelers_count, message,
-        contact_name, contact_email, contact_phone, status,
-        partner_notified_at, partner_response_message, responded_at,
-        created_at, departure_id,
-        circuit:circuits(id, title, slug),
-        agency:agencies(id, name)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (filter !== 'all') {
-      query = query.eq('status', filter);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setRequests((data.requests || []) as AgencyRequestRow[]);
+      } else {
+        console.error('Error loading requests:', response.statusText);
+      }
+    } catch (error) {
       console.error('Error loading requests:', error);
-    } else {
-      setRequests((data || []) as AgencyRequestRow[]);
     }
-
     setLoading(false);
   };
 
