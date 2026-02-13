@@ -3,7 +3,7 @@
  * Falls back to static data if Supabase data is not available
  */
 
-import { createClient } from './server';
+import { createStaticClient } from './server';
 import { partners as staticPartners, type Partner } from '@/data/partners';
 import { getPartnerProfile } from '@/data/partners-profiles';
 
@@ -90,7 +90,7 @@ export interface PartnerWithProfile extends Partner {
  * Falls back to static data if not in Supabase
  */
 export async function getPartnerWithImage(slug: string): Promise<Partner | null> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // Get static data first
   const staticData = staticPartners.find(p => p.slug === slug);
@@ -128,7 +128,7 @@ export async function getPartnerWithImage(slug: string): Promise<Partner | null>
  * This is used on the partner detail page
  */
 export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWithProfile | null> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // Get static data first
   const staticData = staticPartners.find(p => p.slug === slug);
@@ -248,7 +248,7 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
  * Get team members for a partner by partner ID (Supabase UUID)
  */
 export async function getPartnerTeamMembers(partnerId: string): Promise<TeamMember[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -270,7 +270,7 @@ export async function getPartnerTeamMembers(partnerId: string): Promise<TeamMemb
  * Get testimonials for a partner by partner ID (Supabase UUID)
  */
 export async function getPartnerTestimonials(partnerId: string): Promise<Testimonial[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -291,7 +291,7 @@ export async function getPartnerTestimonials(partnerId: string): Promise<Testimo
  * Get all partners with Supabase images
  */
 export async function getAllPartnersWithImages(): Promise<Partner[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // Get all partners from Supabase
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
