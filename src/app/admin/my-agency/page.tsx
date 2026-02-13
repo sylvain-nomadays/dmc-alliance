@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { VideoManager, PartnerVideo } from '@/components/admin/VideoManager';
@@ -88,53 +87,59 @@ export default function MyAgencyPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'content' | 'videos' | 'contact' | 'business'>('general');
   const [newCertification, setNewCertification] = useState('');
+  const [resolvedPartnerId, setResolvedPartnerId] = useState<string | null>(null);
+  const [partnerSlug, setPartnerSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    if (auth.partnerId) {
-      fetchPartner();
-    } else if (!auth.isLoading && !auth.isPartner) {
-      // Not a partner, redirect
-      window.location.href = '/admin';
+    if (!auth.isLoading) {
+      if (auth.isPartner) {
+        fetchPartner();
+      } else {
+        // Not a partner, redirect
+        window.location.href = '/admin';
+      }
     }
-  }, [auth.partnerId, auth.isLoading, auth.isPartner]);
+  }, [auth.isLoading, auth.isPartner]);
 
   async function fetchPartner() {
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('partners')
-      .select('*')
-      .eq('id', auth.partnerId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching partner:', error);
-    } else if (data) {
-      setForm({
-        name: data.name || '',
-        country: data.country || '',
-        city: data.city || '',
-        region: data.region || 'asia',
-        logo_url: data.logo_url || '',
-        cover_image_url: data.cover_image_url || '',
-        description_fr: data.description_fr || '',
-        description_en: data.description_en || '',
-        story_fr: data.story_fr || '',
-        story_en: data.story_en || '',
-        mission_fr: data.mission_fr || '',
-        mission_en: data.mission_en || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        website: data.website || '',
-        facebook_url: data.facebook_url || '',
-        instagram_url: data.instagram_url || '',
-        linkedin_url: data.linkedin_url || '',
-        founded_year: data.founded_year,
-        team_size: data.team_size,
-        languages: data.languages || [],
-        certifications: data.certifications || [],
-        videos: data.videos || [],
-      });
+    try {
+      const res = await fetch('/api/partner/profile');
+      if (res.ok) {
+        const data = await res.json();
+        setResolvedPartnerId(data.partnerId);
+        setPartnerSlug(data.partner?.slug || null);
+        if (data.partner) {
+          setForm({
+            name: data.partner.name || '',
+            country: data.partner.country || '',
+            city: data.partner.city || '',
+            region: data.partner.region || 'asia',
+            logo_url: data.partner.logo_url || '',
+            cover_image_url: data.partner.cover_image_url || '',
+            description_fr: data.partner.description_fr || '',
+            description_en: data.partner.description_en || '',
+            story_fr: data.partner.story_fr || '',
+            story_en: data.partner.story_en || '',
+            mission_fr: data.partner.mission_fr || '',
+            mission_en: data.partner.mission_en || '',
+            email: data.partner.email || '',
+            phone: data.partner.phone || '',
+            website: data.partner.website || '',
+            facebook_url: data.partner.facebook_url || '',
+            instagram_url: data.partner.instagram_url || '',
+            linkedin_url: data.partner.linkedin_url || '',
+            founded_year: data.partner.founded_year,
+            team_size: data.partner.team_size,
+            languages: data.partner.languages || [],
+            certifications: data.partner.certifications || [],
+            videos: data.partner.videos || [],
+          });
+        }
+      } else {
+        console.error('Error fetching partner profile:', res.status);
+      }
+    } catch (err) {
+      console.error('Error fetching partner profile:', err);
     }
     setIsLoading(false);
   }
@@ -170,7 +175,6 @@ export default function MyAgencyPage() {
     setIsSaving(true);
     setSaveSuccess(false);
 
-    const supabase = createClient();
     const payload = {
       name: form.name,
       country: form.country,
@@ -197,18 +201,23 @@ export default function MyAgencyPage() {
       videos: form.videos,
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from('partners')
-      .update(payload)
-      .eq('id', auth.partnerId);
+    try {
+      const res = await fetch('/api/partner/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    if (error) {
-      console.error('Error saving partner:', error);
+      if (!res.ok) {
+        console.error('Error saving partner:', res.status);
+        alert('Erreur lors de la sauvegarde');
+      } else {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Error saving partner:', err);
       alert('Erreur lors de la sauvegarde');
-    } else {
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
     }
 
     setIsSaving(false);
@@ -223,7 +232,7 @@ export default function MyAgencyPage() {
     );
   }
 
-  if (!auth.isPartner || !auth.partnerId) {
+  if (!auth.isPartner || !resolvedPartnerId) {
     return (
       <div className="p-12 text-center">
         <p className="text-gray-500">Accès non autorisé</p>
@@ -684,7 +693,7 @@ export default function MyAgencyPage() {
       </div>
 
       {/* Preview Link */}
-      {auth.partner?.slug && (
+      {partnerSlug && (
         <div className="bg-gradient-to-r from-sand-50 to-terracotta-50 rounded-xl p-6 border border-sand-200">
           <div className="flex items-center justify-between">
             <div>
@@ -694,7 +703,7 @@ export default function MyAgencyPage() {
               </p>
             </div>
             <a
-              href={`/fr/partners/${auth.partner.slug}`}
+              href={`/fr/partners/${partnerSlug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"

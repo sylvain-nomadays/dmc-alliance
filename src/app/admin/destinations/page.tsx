@@ -46,11 +46,27 @@ export default function DestinationsListPage() {
   }, [auth.isLoading, auth.partnerId]);
 
   async function fetchDestinations() {
-    const supabase = createClient();
+    // Partners: use API route to bypass RLS restrictions
+    if (auth.isPartner) {
+      try {
+        const res = await fetch('/api/partner/destinations');
+        if (res.ok) {
+          const data = await res.json();
+          setDestinations(data.destinations || []);
+        } else {
+          console.error('Error fetching partner destinations:', res.status);
+        }
+      } catch (err) {
+        console.error('Error fetching partner destinations:', err);
+      }
+      setIsLoading(false);
+      return;
+    }
 
-    // Build query
+    // Admin: direct Supabase query (admin has full access via RLS)
+    const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    const query = (supabase as any)
       .from('destinations')
       .select(`
         id,
@@ -65,11 +81,6 @@ export default function DestinationsListPage() {
         partner:partners(name)
       `)
       .order('name');
-
-    // If user is a partner, only show their destinations
-    if (auth.isPartner && auth.partnerId) {
-      query = query.eq('partner_id', auth.partnerId);
-    }
 
     const { data, error } = await query;
 
