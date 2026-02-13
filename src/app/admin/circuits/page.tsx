@@ -45,9 +45,27 @@ export default function CircuitsListPage() {
   }, [auth.isLoading, auth.partnerId]);
 
   async function fetchCircuits() {
+    // Partners: use API route to bypass RLS restrictions
+    if (auth.isPartner) {
+      try {
+        const res = await fetch('/api/partner/circuits');
+        if (res.ok) {
+          const data = await res.json();
+          setCircuits(data.circuits || []);
+        } else {
+          console.error('Error fetching partner circuits:', res.status);
+        }
+      } catch (err) {
+        console.error('Error fetching partner circuits:', err);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // Admin: direct Supabase query (admin has full access via RLS)
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    const query = (supabase as any)
       .from('circuits')
       .select(`
         id,
@@ -62,11 +80,6 @@ export default function CircuitsListPage() {
         partner:partners(name)
       `)
       .order('created_at', { ascending: false });
-
-    // If user is a partner (not admin), only show their circuits
-    if (auth.isPartner && auth.partnerId) {
-      query = query.eq('partner_id', auth.partnerId);
-    }
 
     const { data, error } = await query;
 
