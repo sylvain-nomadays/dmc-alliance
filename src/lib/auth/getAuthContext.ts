@@ -39,7 +39,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   const userProfile = profile as UserProfile;
   const isAdmin = userProfile.role === 'admin';
   const isPartner = userProfile.role === 'partner';
-  const permissions = rolePermissions[userProfile.role];
+  const permissions = rolePermissions[userProfile.role] || rolePermissions.member;
 
   // If user is a partner, get their partner info and destinations
   let partnerInfo: PartnerInfo | null = null;
