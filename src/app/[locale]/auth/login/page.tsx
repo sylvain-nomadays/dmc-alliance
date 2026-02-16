@@ -12,6 +12,7 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authenticatedUser, setAuthenticatedUser] = useState<{ email: string; name: string } | null>(null);
 
   const searchParams = useSearchParams();
   const params = useParams();
@@ -34,7 +35,7 @@ function LoginForm() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase as any)
           .from('profiles')
-          .select('role')
+          .select('role, full_name')
           .eq('id', user.id)
           .single();
 
@@ -48,6 +49,11 @@ function LoginForm() {
         } else if (profile?.role === 'admin' || profile?.role === 'partner') {
           window.location.href = '/admin';
         } else {
+          // User is authenticated but has no dedicated portal
+          setAuthenticatedUser({
+            email: user.email || '',
+            name: profile?.full_name || user.email?.split('@')[0] || '',
+          });
           setCheckingAuth(false);
         }
       } catch {
@@ -131,10 +137,55 @@ function LoginForm() {
     }
   };
 
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = `/${locale}`;
+  };
+
   if (checkingAuth) {
     return (
       <div className="max-w-md w-full text-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-terracotta-500 mx-auto" />
+      </div>
+    );
+  }
+
+  // Authenticated user without a dedicated portal
+  if (authenticatedUser) {
+    return (
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <Link href={`/${locale}`} className="inline-block">
+            <h1 className="text-2xl font-heading text-terracotta-600">
+              The DMC Alliance
+            </h1>
+          </Link>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-card p-8 text-center">
+          <div className="w-16 h-16 bg-terracotta-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-terracotta-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-heading text-gray-900 mb-1">
+            {authenticatedUser.name}
+          </h2>
+          <p className="text-gray-500 text-sm mb-6">
+            {authenticatedUser.email}
+          </p>
+
+          <Button onClick={handleLogout} variant="outline" fullWidth>
+            Se déconnecter
+          </Button>
+        </div>
+
+        <p className="mt-6 text-center">
+          <Link href={`/${locale}`} className="text-sm text-gray-500">
+            ← Retour au site
+          </Link>
+        </p>
       </div>
     );
   }

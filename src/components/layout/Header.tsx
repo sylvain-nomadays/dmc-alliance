@@ -208,10 +208,10 @@ export function Header({ locale, logoUrl, logoDarkUrl, translations }: HeaderPro
         });
       } else {
         // Users with 'user' or 'member' role don't have a dedicated portal
-        // Show their name but link to the homepage
+        // Link to login page which shows their connected state with logout
         setAuthInfo({
           name: profile.full_name || 'Mon compte',
-          href: `/${locale}`,
+          href: `/${locale}/auth/login`,
           role: profile.role,
         });
       }
