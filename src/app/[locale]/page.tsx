@@ -13,7 +13,7 @@ import { AgencyCtaSection } from '@/components/home/AgencyCtaSection';
 import { CtaSection } from '@/components/home/CtaSection';
 
 // Data fetchers
-import { getFeaturedDestinations, getFeaturedPartners, getFeaturedCircuits, getHeroImages, getHomepageSettings } from '@/lib/supabase/homepage';
+import { getFeaturedDestinations, getFeaturedPartners, getFeaturedCircuits, getHeroImages, getHomepageSettings, getCircuitCount } from '@/lib/supabase/homepage';
 
 // Types
 type Props = {
@@ -49,12 +49,13 @@ export default async function HomePage({ params }: Props) {
   setRequestLocale(locale);
 
   // Fetch data from Supabase in parallel
-  const [destinations, partners, circuits, heroImages, homepageSettings] = await Promise.all([
+  const [destinations, partners, circuits, heroImages, homepageSettings, circuitCount] = await Promise.all([
     getFeaturedDestinations(),
     getFeaturedPartners(),
     getFeaturedCircuits(),
     getHeroImages(),
     getHomepageSettings(),
+    getCircuitCount(),
   ]);
 
   // Get translations for each section
@@ -161,7 +162,7 @@ export default async function HomePage({ params }: Props) {
       />
 
       {/* Agency CTA Section */}
-      <AgencyCtaSection locale={locale} />
+      <AgencyCtaSection locale={locale} circuitCount={circuitCount} />
 
       {/* CTA Section */}
       <CtaSection

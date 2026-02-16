@@ -345,6 +345,31 @@ export async function getHomepageSettings(): Promise<HomepageSettingsData> {
 }
 
 /**
+ * Get total count of published circuits
+ */
+export async function getCircuitCount(): Promise<number> {
+  try {
+    const supabase = createStaticClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count, error } = await (supabase as any)
+      .from('circuits')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'published');
+
+    if (error) {
+      console.log('Error fetching circuit count:', error.message);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error fetching circuit count:', error);
+    return 0;
+  }
+}
+
+/**
  * Get hero images from homepage settings or destination images as fallback
  */
 export async function getHeroImages(): Promise<string[]> {

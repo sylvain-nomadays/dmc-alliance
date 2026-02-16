@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/Button';
 
 interface AgencyCtaSectionProps {
   locale: string;
+  circuitCount: number;
 }
 
-export function AgencyCtaSection({ locale }: AgencyCtaSectionProps) {
+export function AgencyCtaSection({ locale, circuitCount }: AgencyCtaSectionProps) {
   const isFr = locale === 'fr';
 
   const translations = {
@@ -168,16 +169,14 @@ export function AgencyCtaSection({ locale }: AgencyCtaSectionProps) {
                     {/* Stats row */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="bg-sand-50 rounded-lg p-2 text-center">
-                        <p className="text-lg font-bold text-terracotta-600">24</p>
+                        <p className="text-lg font-bold text-terracotta-600">{circuitCount}</p>
                         <p className="text-xs text-gray-500">
                           {isFr ? 'Circuits' : 'Tours'}
                         </p>
                       </div>
                       <div className="bg-sand-50 rounded-lg p-2 text-center">
-                        <p className="text-lg font-bold text-sage-600">8%</p>
-                        <p className="text-xs text-gray-500">
-                          {isFr ? 'Commission' : 'Commission'}
-                        </p>
+                        <p className="text-sm font-bold text-sage-600">Variable</p>
+                        <p className="text-xs text-gray-500">Commission</p>
                       </div>
                       <div className="bg-sand-50 rounded-lg p-2 text-center">
                         <p className="text-lg font-bold text-deep-blue-600">5</p>
