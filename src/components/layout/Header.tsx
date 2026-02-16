@@ -207,9 +207,11 @@ export function Header({ locale, logoUrl, logoDarkUrl, translations }: HeaderPro
           role: profile.role,
         });
       } else {
+        // Users with 'user' or 'member' role don't have a dedicated portal
+        // Show their name but link to the homepage
         setAuthInfo({
           name: profile.full_name || 'Mon compte',
-          href: `/${locale}/espace-pro/dashboard`,
+          href: `/${locale}`,
           role: profile.role,
         });
       }
