@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { CommissionTiersEditor } from '@/components/admin/CommissionTiersEditor';
 import { ExternalSourceEditor } from '@/components/admin/ExternalSourceEditor';
@@ -117,6 +118,7 @@ const difficultyLevels = [
 export default function CircuitEditPage() {
   const router = useRouter();
   const params = useParams();
+  const auth = useAuthContext();
   const isNew = params.id === 'new';
 
   const [form, setForm] = useState<CircuitForm>(defaultForm);
@@ -135,10 +137,19 @@ export default function CircuitEditPage() {
   const [newNotIncludedEn, setNewNotIncludedEn] = useState('');
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!auth.isLoading) {
+      fetchData();
+    }
+  }, [auth.isLoading]);
 
   async function fetchData() {
+    // Partners: use API route to bypass RLS restrictions
+    if (auth.isPartner) {
+      await fetchDataAsPartner();
+      return;
+    }
+
+    // Admin: direct Supabase query
     const supabase = createClient();
 
     // Fetch partners
@@ -174,35 +185,78 @@ export default function CircuitEditPage() {
         console.error('Error fetching circuit:', error);
         router.push('/admin/circuits');
       } else if (data) {
-        // Normaliser l'itinéraire pour s'assurer que chaque jour a la structure complète
-        const normalizedItinerary = (data.itinerary || []).map((day: Partial<ItineraryDay>, index: number) => ({
-          day: day.day || index + 1,
-          title_fr: day.title_fr || '',
-          title_en: day.title_en || '',
-          description_fr: day.description_fr || '',
-          description_en: day.description_en || '',
-          meals: day.meals || { breakfast: false, lunch: false, dinner: false },
-          accommodation: day.accommodation || '',
-        }));
-
-        setForm({
-          ...defaultForm,
-          ...data,
-          highlights_fr: data.highlights_fr || [],
-          highlights_en: data.highlights_en || [],
-          itinerary: normalizedItinerary,
-          included_fr: data.included_fr || [],
-          included_en: data.included_en || [],
-          not_included_fr: data.not_included_fr || [],
-          not_included_en: data.not_included_en || [],
-          gallery_urls: data.gallery_urls || [],
-          base_commission_rate: data.base_commission_rate || 10,
-          use_tiered_commission: data.use_tiered_commission || false,
-        });
+        applyCircuitData(data);
       }
     }
 
     setIsLoading(false);
+  }
+
+  async function fetchDataAsPartner() {
+    try {
+      if (!isNew) {
+        // Fetch circuit + destinations + partner info in one call
+        const res = await fetch(`/api/partner/circuits/${params.id}`);
+        if (!res.ok) {
+          console.error('Error fetching partner circuit:', res.status);
+          router.push('/admin/circuits');
+          return;
+        }
+        const data = await res.json();
+
+        setDestinations(data.destinations || []);
+        setPartners(data.partners || []);
+        applyCircuitData(data.circuit);
+      } else {
+        // New circuit: fetch destinations from partner API
+        const res = await fetch('/api/partner/destinations');
+        if (res.ok) {
+          const data = await res.json();
+          setDestinations((data.destinations || []).map((d: { id: string; name: string }) => ({
+            id: d.id,
+            name: d.name,
+            partner_id: data.partnerId,
+          })));
+          setPartners(auth.partner ? [{ id: auth.partner.id, name: auth.partner.name }] : []);
+          // Pre-fill partner_id for new circuits
+          if (data.partnerId) {
+            setForm(prev => ({ ...prev, partner_id: data.partnerId }));
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching partner circuit data:', err);
+      router.push('/admin/circuits');
+    }
+    setIsLoading(false);
+  }
+
+  function applyCircuitData(data: Record<string, unknown>) {
+    // Normaliser l'itinéraire pour s'assurer que chaque jour a la structure complète
+    const normalizedItinerary = ((data.itinerary as Partial<ItineraryDay>[]) || []).map((day: Partial<ItineraryDay>, index: number) => ({
+      day: day.day || index + 1,
+      title_fr: day.title_fr || '',
+      title_en: day.title_en || '',
+      description_fr: day.description_fr || '',
+      description_en: day.description_en || '',
+      meals: day.meals || { breakfast: false, lunch: false, dinner: false },
+      accommodation: day.accommodation || '',
+    }));
+
+    setForm({
+      ...defaultForm,
+      ...(data as unknown as CircuitForm),
+      highlights_fr: (data.highlights_fr as string[]) || [],
+      highlights_en: (data.highlights_en as string[]) || [],
+      itinerary: normalizedItinerary,
+      included_fr: (data.included_fr as string[]) || [],
+      included_en: (data.included_en as string[]) || [],
+      not_included_fr: (data.not_included_fr as string[]) || [],
+      not_included_en: (data.not_included_en as string[]) || [],
+      gallery_urls: (data.gallery_urls as string[]) || [],
+      base_commission_rate: (data.base_commission_rate as number) || 10,
+      use_tiered_commission: (data.use_tiered_commission as boolean) || false,
+    });
   }
 
   function generateSlug(title: string) {
@@ -286,7 +340,6 @@ export default function CircuitEditPage() {
     e.preventDefault();
     setIsSaving(true);
 
-    const supabase = createClient();
     const publishedAt = form.status === 'published' ? new Date().toISOString() : null;
 
     const payload = {
@@ -295,23 +348,49 @@ export default function CircuitEditPage() {
       published_at: publishedAt,
     };
 
-    let error;
+    let saveError = false;
 
-    if (isNew) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (supabase as any).from('circuits').insert([payload]);
-      error = result.error;
+    if (auth.isPartner && !isNew) {
+      // Partner: use API route to bypass RLS
+      try {
+        const res = await fetch(`/api/partner/circuits/${params.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          saveError = true;
+          console.error('Error saving circuit via API:', res.status);
+        }
+      } catch (err) {
+        saveError = true;
+        console.error('Error saving circuit via API:', err);
+      }
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await (supabase as any)
-        .from('circuits')
-        .update(payload)
-        .eq('id', params.id);
-      error = result.error;
+      // Admin: direct Supabase query
+      const supabase = createClient();
+
+      let error;
+      if (isNew) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await (supabase as any).from('circuits').insert([payload]);
+        error = result.error;
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await (supabase as any)
+          .from('circuits')
+          .update(payload)
+          .eq('id', params.id);
+        error = result.error;
+      }
+
+      if (error) {
+        saveError = true;
+        console.error('Error saving circuit:', error);
+      }
     }
 
-    if (error) {
-      console.error('Error saving circuit:', error);
+    if (saveError) {
       alert('Erreur lors de la sauvegarde');
     } else {
       router.push('/admin/circuits');
@@ -320,7 +399,7 @@ export default function CircuitEditPage() {
     setIsSaving(false);
   }
 
-  if (isLoading) {
+  if (isLoading || auth.isLoading) {
     return (
       <div className="p-12 text-center">
         <div className="w-10 h-10 border-4 border-terracotta-500 border-t-transparent rounded-full animate-spin mx-auto" />
