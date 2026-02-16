@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
@@ -12,15 +12,17 @@ export async function POST(request: Request) {
 
     // Build the redirect URL to the reset-password page.
     // Derive from the request origin so it works on any deployment domain.
-    // If this URL is in Supabase's redirect allowlist, the code arrives directly
-    // on the reset-password page. Otherwise, Supabase falls back to the Site URL
-    // and the middleware redirects to reset-password with the code.
     const requestOrigin = new URL(request.url).origin;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || requestOrigin;
     const locale = requestLocale || 'fr';
     const redirectTo = `${baseUrl}/${locale}/auth/reset-password`;
 
-    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+    // Use the cookie-based server client (not supabaseAdmin) so that the
+    // PKCE code_verifier is stored in a cookie and sent back to the browser.
+    // When the user clicks the email link, exchangeCodeForSession can find it.
+    const supabase = await createClient();
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
     });
 
