@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 
 export default function ForgotPasswordPage() {
@@ -22,21 +21,20 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      // Call resetPasswordForEmail from the browser client so the PKCE
-      // code_verifier is stored in a cookie. When the user clicks the
-      // email link, exchangeCodeForSession can retrieve it.
-      const supabase = createClient();
-      const redirectTo = `${window.location.origin}/${locale}/auth/reset-password`;
-
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
+      // Call the API route which uses the cookie-based server client.
+      // The server client stores the PKCE code_verifier in a cookie
+      // that gets sent back to the browser, so exchangeCodeForSession
+      // can find it when the user clicks the email link.
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, locale }),
       });
 
-      if (resetError) {
-        console.error('[Forgot Password] Error:', resetError.message);
+      if (!res.ok) {
+        throw new Error('Request failed');
       }
 
-      // Always show success to avoid leaking email existence
       setSuccess(true);
     } catch {
       setError(
