@@ -28,6 +28,7 @@ export async function PUT(
       .from('agency_requests')
       .select(`
         id, agency_id, circuit_id, contact_name, contact_email, status,
+        request_type, departure_id, travelers_count,
         circuit:circuits(id, title, partner_id)
       `)
       .eq('id', id)
@@ -100,6 +101,43 @@ export async function PUT(
     if (updateError) {
       console.error('[Agency Request Respond] Update error:', updateError);
       return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 });
+    }
+
+    // If booking acceptance, update booked_seats on the departure
+    if (
+      newStatus === 'accepted' &&
+      agencyRequest.request_type === 'booking' &&
+      agencyRequest.departure_id &&
+      agencyRequest.travelers_count
+    ) {
+      const { data: departure } = await supabaseAdmin
+        .from('circuit_departures')
+        .select('id, booked_seats, total_seats')
+        .eq('id', agencyRequest.departure_id)
+        .single();
+
+      if (departure) {
+        const newBookedSeats = (departure.booked_seats || 0) + agencyRequest.travelers_count;
+
+        let departureStatus = 'available';
+        if (newBookedSeats >= departure.total_seats) {
+          departureStatus = 'full';
+        } else if (newBookedSeats >= departure.total_seats * 0.8) {
+          departureStatus = 'almost_full';
+        }
+
+        const { error: departureError } = await supabaseAdmin
+          .from('circuit_departures')
+          .update({
+            booked_seats: newBookedSeats,
+            status: departureStatus,
+          })
+          .eq('id', agencyRequest.departure_id);
+
+        if (departureError) {
+          console.error('[Agency Request Respond] Error updating departure booked_seats:', departureError);
+        }
+      }
     }
 
     // Notify the agency user

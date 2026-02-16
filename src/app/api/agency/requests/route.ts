@@ -279,13 +279,14 @@ export async function GET(request: Request) {
     let query = supabaseAdmin
       .from('agency_requests')
       .select(`
-        id, circuit_id, request_type, travelers_count, message,
+        id, circuit_id, departure_id, request_type, travelers_count, message,
         contact_name, contact_email, contact_phone, status,
         partner_notified_at, partner_response_message, responded_at, created_at,
         circuit:circuits(
-          id, title, slug,
+          id, title, slug, price_from,
+          base_commission_rate, use_tiered_commission,
           partner:partners(name),
-          departures:circuit_departures(id, start_date, price, status)
+          departures:circuit_departures(id, start_date, price, status, booked_seats, total_seats)
         )
       `)
       .eq('agency_id', agencyId)
@@ -302,7 +303,85 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
     }
 
-    return NextResponse.json({ requests });
+    // Enrich accepted booking requests with commission data
+    const enrichedRequests = requests || [];
+
+    // Collect circuit IDs that use tiered commission among accepted bookings
+    const circuitIdsWithTiers = new Set<string>();
+    for (const req of enrichedRequests) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const circuit = (req as any).circuit;
+      if (circuit?.use_tiered_commission && req.request_type === 'booking' && req.status === 'accepted') {
+        circuitIdsWithTiers.add(circuit.id);
+      }
+    }
+
+    // Batch-fetch commission tiers
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tiersMap: Record<string, Array<{ min_participants: number; max_participants: number | null; commission_rate: number }>> = {};
+    if (circuitIdsWithTiers.size > 0) {
+      const { data: tiers } = await supabaseAdmin
+        .from('commission_tiers')
+        .select('circuit_id, min_participants, max_participants, commission_rate')
+        .in('circuit_id', Array.from(circuitIdsWithTiers))
+        .order('min_participants', { ascending: true });
+
+      if (tiers) {
+        for (const tier of tiers) {
+          if (!tiersMap[tier.circuit_id]) tiersMap[tier.circuit_id] = [];
+          tiersMap[tier.circuit_id].push(tier);
+        }
+      }
+    }
+
+    // Calculate commission info for each accepted booking
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const requestsWithCommission = enrichedRequests.map((req: any) => {
+      if (req.status !== 'accepted' || req.request_type !== 'booking') return req;
+
+      const circuit = req.circuit;
+      if (!circuit) return req;
+
+      // Find the departure for this request
+      const departure = req.departure_id
+        ? (circuit.departures || []).find((d: { id: string }) => d.id === req.departure_id)
+        : (circuit.departures || [])[0];
+
+      if (!departure) return req;
+
+      const bookedSeats = departure.booked_seats || 0;
+      const price = departure.price || circuit.price_from || 0;
+
+      // Calculate commission rate (same logic as /api/gir/commission)
+      let commissionRate = circuit.base_commission_rate || 10;
+      if (circuit.use_tiered_commission && tiersMap[circuit.id]) {
+        for (const tier of tiersMap[circuit.id]) {
+          if (
+            bookedSeats >= tier.min_participants &&
+            (tier.max_participants === null || bookedSeats <= tier.max_participants)
+          ) {
+            commissionRate = tier.commission_rate;
+          }
+        }
+      }
+
+      const travelersCount = req.travelers_count || 0;
+      const estimatedCommission = (price * commissionRate / 100) * travelersCount;
+
+      return {
+        ...req,
+        commission_info: {
+          commission_rate: Number(commissionRate),
+          price_per_person: Number(price),
+          travelers_count: travelersCount,
+          total_booked_seats: bookedSeats,
+          estimated_commission: Math.round(estimatedCommission * 100) / 100,
+          use_tiered_commission: circuit.use_tiered_commission || false,
+        },
+      };
+    });
+
+    return NextResponse.json({ requests: requestsWithCommission });
 
   } catch (error) {
     console.error('[Agency Request] Error:', error);

@@ -4,12 +4,22 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
-  Clock, Mail, Send, Info, CheckCircle, MessageCircle, Filter, XCircle
+  Clock, Mail, Send, Info, CheckCircle, MessageCircle, Filter, XCircle, Users, TrendingUp
 } from 'lucide-react';
+
+interface CommissionInfo {
+  commission_rate: number;
+  price_per_person: number;
+  travelers_count: number;
+  total_booked_seats: number;
+  estimated_commission: number;
+  use_tiered_commission: boolean;
+}
 
 interface AgencyRequestItem {
   id: string;
   circuit_id: string;
+  departure_id: string | null;
   request_type: 'info' | 'booking';
   travelers_count: number | null;
   message: string | null;
@@ -21,6 +31,7 @@ interface AgencyRequestItem {
   partner_response_message: string | null;
   responded_at: string | null;
   created_at: string;
+  commission_info?: CommissionInfo;
   circuit: {
     id: string;
     title: string;
@@ -33,6 +44,8 @@ interface AgencyRequestItem {
       start_date: string;
       price: number | null;
       status: string;
+      booked_seats: number;
+      total_seats: number;
     }>;
   };
 }
@@ -266,6 +279,63 @@ export default function AgencyRequestsPage() {
                             )}
                           </p>
                         )}
+                      </div>
+                    )}
+
+                    {/* Commission info for accepted bookings */}
+                    {req.status === 'accepted' && req.request_type === 'booking' && req.commission_info && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-3">
+                        <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-1.5">
+                          <TrendingUp className="w-4 h-4" />
+                          {isFr ? 'Estimation de commission' : 'Commission Estimate'}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <p className="text-xs text-amber-700">
+                              {isFr ? 'Participants' : 'Participants'}
+                            </p>
+                            <p className="text-lg font-bold text-amber-900 flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {req.commission_info.travelers_count}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-amber-700">
+                              {isFr ? 'Prix/personne' : 'Price/person'}
+                            </p>
+                            <p className="text-lg font-bold text-amber-900">
+                              {req.commission_info.price_per_person.toLocaleString(
+                                locale === 'fr' ? 'fr-FR' : 'en-US'
+                              )} €
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-amber-700">
+                              {isFr ? 'Taux de commission' : 'Commission Rate'}
+                            </p>
+                            <p className="text-lg font-bold text-amber-900">
+                              {req.commission_info.commission_rate}%
+                            </p>
+                            {req.commission_info.use_tiered_commission && (
+                              <p className="text-xs text-amber-600">
+                                {isFr
+                                  ? `(${req.commission_info.total_booked_seats} places réservées)`
+                                  : `(${req.commission_info.total_booked_seats} booked seats)`}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-amber-700">
+                              {isFr ? 'Commission estimée' : 'Estimated Commission'}
+                            </p>
+                            <p className="text-lg font-bold text-green-700">
+                              {req.commission_info.estimated_commission.toLocaleString(
+                                locale === 'fr' ? 'fr-FR' : 'en-US',
+                                { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                              )} €
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )}
 
