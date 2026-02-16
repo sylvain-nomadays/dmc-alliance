@@ -24,6 +24,7 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [sessionReady, setSessionReady] = useState(false);
 
   const params = useParams();
   const searchParams = useSearchParams();
@@ -45,13 +46,17 @@ function ResetPasswordForm() {
               ? 'Le lien a expiré ou est invalide. Veuillez refaire une demande.'
               : 'The link has expired or is invalid. Please request a new one.'
           );
+        } else {
+          setSessionReady(true);
         }
         // Remove code from URL without reload
         window.history.replaceState({}, '', window.location.pathname);
       } else {
         // No code — check if user already has an active session
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (user) {
+          setSessionReady(true);
+        } else {
           setError(
             isFr
               ? 'Aucune session active. Veuillez utiliser le lien reçu par email.'
@@ -171,6 +176,28 @@ function ResetPasswordForm() {
                 className="inline-block bg-terracotta-500 text-white px-6 py-3 rounded-lg hover:bg-terracotta-600 transition-colors font-medium"
               >
                 {isFr ? 'Se connecter' : 'Log in'}
+              </Link>
+            </div>
+          ) : error && !sessionReady ? (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {isFr ? 'Lien invalide ou expiré' : 'Invalid or expired link'}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {isFr
+                  ? 'Ce lien de réinitialisation n\u2019est plus valide. Veuillez en demander un nouveau.'
+                  : 'This reset link is no longer valid. Please request a new one.'}
+              </p>
+              <Link
+                href={`/${locale}/auth/forgot-password`}
+                className="inline-block bg-terracotta-500 text-white px-6 py-3 rounded-lg hover:bg-terracotta-600 transition-colors font-medium"
+              >
+                {isFr ? 'Demander un nouveau lien' : 'Request a new link'}
               </Link>
             </div>
           ) : (
