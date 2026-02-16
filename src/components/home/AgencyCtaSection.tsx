@@ -175,8 +175,7 @@ export function AgencyCtaSection({ locale, circuitCount }: AgencyCtaSectionProps
                         </p>
                       </div>
                       <div className="bg-sand-50 rounded-lg p-2 text-center">
-                        <p className="text-sm font-bold text-sage-600">Variable</p>
-                        <p className="text-xs text-gray-500">Commission</p>
+                        <p className="text-xs font-bold text-sage-600 leading-tight">Commission<br />variable</p>
                       </div>
                       <div className="bg-sand-50 rounded-lg p-2 text-center">
                         <p className="text-lg font-bold text-deep-blue-600">5</p>
