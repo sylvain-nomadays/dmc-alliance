@@ -3,18 +3,22 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const body = await request.json();
+    const { email, locale: requestLocale } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
     // Build the redirect URL to the reset-password page.
+    // Derive from the request origin so it works on any deployment domain.
     // If this URL is in Supabase's redirect allowlist, the code arrives directly
     // on the reset-password page. Otherwise, Supabase falls back to the Site URL
     // and the middleware redirects to reset-password with the code.
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org';
-    const redirectTo = `${baseUrl}/fr/auth/reset-password`;
+    const requestOrigin = new URL(request.url).origin;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || requestOrigin;
+    const locale = requestLocale || 'fr';
+    const redirectTo = `${baseUrl}/${locale}/auth/reset-password`;
 
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
       redirectTo,
