@@ -136,6 +136,75 @@ export async function POST(
             status: 'active',
             joined_at: new Date().toISOString(),
           }, { onConflict: 'partner_id,user_id' });
+
+        // Lier les destinations du formulaire au nouveau partenaire
+        const requestDestinations = requestData.destinations || [];
+        for (const destEntry of requestDestinations) {
+          try {
+            const destSlug = destEntry
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)+/g, '');
+
+            // Chercher par slug exact (les destinations existantes sont stockées comme slugs)
+            let destination = null;
+            const { data: bySlug } = await supabaseAdmin
+              .from('destinations')
+              .select('id, partner_id')
+              .eq('slug', destEntry)
+              .maybeSingle();
+
+            destination = bySlug;
+
+            // Essayer avec le slug normalisé
+            if (!destination && destSlug !== destEntry) {
+              const { data: byNormalizedSlug } = await supabaseAdmin
+                .from('destinations')
+                .select('id, partner_id')
+                .eq('slug', destSlug)
+                .maybeSingle();
+              destination = byNormalizedSlug;
+            }
+
+            // Chercher par nom (entrées en texte libre)
+            if (!destination) {
+              const { data: byName } = await supabaseAdmin
+                .from('destinations')
+                .select('id, partner_id')
+                .ilike('name', destEntry)
+                .maybeSingle();
+              destination = byName;
+            }
+
+            if (destination) {
+              // Lier au partenaire si pas encore lié à un autre
+              if (!destination.partner_id) {
+                await supabaseAdmin
+                  .from('destinations')
+                  .update({ partner_id: finalPartnerId })
+                  .eq('id', destination.id);
+              }
+            } else {
+              // Destination non trouvée : créer une nouvelle entrée liée au partenaire
+              await supabaseAdmin
+                .from('destinations')
+                .insert({
+                  name: destEntry,
+                  name_en: destEntry,
+                  slug: destSlug,
+                  country: country,
+                  region: 'asia',
+                  partner_id: finalPartnerId,
+                  is_active: false,
+                });
+            }
+          } catch (destError) {
+            console.error(`[Approve] Error linking destination "${destEntry}":`, destError);
+            // Ne pas bloquer l'approbation si le lien de destination échoue
+          }
+        }
       }
 
       // Mode: lier à un partenaire existant (sans join_partner_id = admin fait le lien manuellement)

@@ -199,16 +199,16 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: destData } = await (supabase as any)
       .from('destinations')
-      .select('name, name_en, slug, country_code, region')
+      .select('name, name_en, slug, country, region')
       .eq('partner_id', supabaseData.id)
       .eq('is_active', true);
 
     if (destData?.length) {
-      basePartner.destinations = destData.map((d: { name: string; name_en: string; slug: string; country_code: string; region: string }) => ({
+      basePartner.destinations = destData.map((d: { name: string; name_en: string; slug: string; country: string; region: string }) => ({
         name: d.name,
         nameEn: d.name_en,
         slug: d.slug,
-        code: d.country_code,
+        code: d.country,
         region: d.region as Partner['destinations'][0]['region'],
       }));
     }
@@ -343,7 +343,7 @@ export async function getAllPartnersWithImages(): Promise<Partner[]> {
       specialties,
       has_gir,
       is_active,
-      destinations(name, name_en, slug, country_code, region)
+      destinations(name, name_en, slug, country, region)
     `)
     .eq('is_active', true)
     .order('name');
@@ -353,7 +353,7 @@ export async function getAllPartnersWithImages(): Promise<Partner[]> {
   }
 
   // Create a map for quick lookup
-  const supabaseMap = new Map<string, SupabasePartner & { destinations?: { name: string; name_en: string; slug: string; country_code: string; region: string }[] }>();
+  const supabaseMap = new Map<string, SupabasePartner & { destinations?: { name: string; name_en: string; slug: string; country: string; region: string }[] }>();
   if (supabasePartners) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabasePartners.forEach((partner: any) => {
@@ -384,11 +384,11 @@ export async function getAllPartnersWithImages(): Promise<Partner[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabasePartners.forEach((dbPartner: any) => {
       if (!includedSlugs.has(dbPartner.slug)) {
-        const destinations = (dbPartner.destinations || []).map((d: { name: string; name_en: string; slug: string; country_code: string; region: string }) => ({
+        const destinations = (dbPartner.destinations || []).map((d: { name: string; name_en: string; slug: string; country: string; region: string }) => ({
           name: d.name,
           nameEn: d.name_en,
           slug: d.slug,
-          code: d.country_code || '',
+          code: d.country || '',
           region: (d.region || 'asia') as Partner['destinations'][0]['region'],
         }));
 
