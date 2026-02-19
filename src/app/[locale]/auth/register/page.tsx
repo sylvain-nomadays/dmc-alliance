@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { Building2, Globe, Users, ChevronLeft, Check, AlertCircle, UserPlus, LogIn, KeyRound, X, Search } from 'lucide-react';
+import { Building2, Globe, Users, ChevronLeft, AlertCircle, UserPlus, LogIn, KeyRound, X, Search } from 'lucide-react';
 
 // Types pour le formulaire
 type AccountType = 'agency' | 'dmc' | null;
@@ -75,6 +75,65 @@ const AVAILABLE_SPECIALTIES = [
   { value: 'mice', label: 'MICE / Incentive' },
 ];
 
+// Normaliser une chaîne pour la comparaison (minuscules, sans accents)
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+// Calculer la distance de Levenshtein entre deux chaînes
+function levenshtein(a: string, b: string): number {
+  const an = a.length;
+  const bn = b.length;
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= an; i++) matrix[i] = [i];
+  for (let j = 0; j <= bn; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= an; i++) {
+    for (let j = 1; j <= bn; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return matrix[an][bn];
+}
+
+// Trouver les partenaires similaires à une saisie utilisateur
+function findSimilarPartners(
+  input: string,
+  partners: ExistingPartner[],
+  threshold = 0.4
+): ExistingPartner[] {
+  if (!input || input.length < 3) return [];
+  const normalizedInput = normalize(input);
+
+  return partners
+    .map(p => {
+      const normalizedName = normalize(p.name);
+      const distance = levenshtein(normalizedInput, normalizedName);
+      const maxLen = Math.max(normalizedInput.length, normalizedName.length);
+      const similarity = 1 - distance / maxLen;
+      // Bonus si l'un contient l'autre
+      const containsBonus =
+        normalizedName.includes(normalizedInput) || normalizedInput.includes(normalizedName)
+          ? 0.3
+          : 0;
+      return { partner: p, score: similarity + containsBonus };
+    })
+    .filter(({ score }) => score >= threshold)
+    .sort((a, b) => b.score - a.score)
+    .map(({ partner }) => partner);
+}
+
 function RegisterForm() {
   const router = useRouter();
   const params = useParams();
@@ -84,7 +143,6 @@ function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<'generic' | 'account_exists' | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [pendingJoin, setPendingJoin] = useState(false);
 
   // Pour la détection d'agence existante
@@ -99,6 +157,11 @@ function RegisterForm() {
   const [joinPartnerMode, setJoinPartnerMode] = useState(false);
   const [joinPartnerMessage, setJoinPartnerMessage] = useState('');
   const [pendingPartnerJoin, setPendingPartnerJoin] = useState(false);
+  const [pendingPartnerRequest, setPendingPartnerRequest] = useState(false);
+
+  // Pour les suggestions fuzzy de partenaires existants
+  const [allPartners, setAllPartners] = useState<ExistingPartner[]>([]);
+  const [suggestedPartners, setSuggestedPartners] = useState<ExistingPartner[]>([]);
 
   // Formulaire Agence
   const [agencyForm, setAgencyForm] = useState<AgencyFormData>({
@@ -154,6 +217,37 @@ function RegisterForm() {
     loadDestinations();
   }, []);
 
+  // Charger tous les partenaires existants pour le fuzzy matching
+  useEffect(() => {
+    const loadPartners = async () => {
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from('partners')
+        .select('id, name, slug')
+        .eq('is_active', true)
+        .order('name');
+      if (data) {
+        setAllPartners(data as ExistingPartner[]);
+      }
+    };
+    loadPartners();
+  }, []);
+
+  // Calculer les suggestions fuzzy quand le nom du DMC change
+  useEffect(() => {
+    if (accountType === 'dmc' && dmcForm.partnerName && !joinPartnerMode) {
+      const suggestions = findSimilarPartners(dmcForm.partnerName, allPartners);
+      // Exclure le partenaire déjà détecté comme exact match
+      const filtered = existingPartner
+        ? suggestions.filter(s => s.id !== existingPartner.id)
+        : suggestions;
+      setSuggestedPartners(filtered);
+    } else {
+      setSuggestedPartners([]);
+    }
+  }, [dmcForm.partnerName, accountType, allPartners, joinPartnerMode, existingPartner]);
+
   // Filtrer les destinations selon la recherche
   const filteredDestinations = allDestinations.filter(d =>
     d.name.toLowerCase().includes(destinationSearch.toLowerCase()) &&
@@ -205,6 +299,7 @@ function RegisterForm() {
   const checkExistingPartner = useCallback(async (name: string) => {
     if (!name || name.length < 3) {
       setExistingPartner(null);
+      setPendingPartnerRequest(false);
       return;
     }
 
@@ -214,9 +309,17 @@ function RegisterForm() {
       const data = await response.json();
 
       if (data.exists && data.partner) {
-        setExistingPartner(data.partner);
+        if (data.pendingRequest) {
+          // C'est une demande en cours, pas un vrai partenaire — on ne peut pas le rejoindre
+          setExistingPartner(null);
+          setPendingPartnerRequest(true);
+        } else {
+          setExistingPartner(data.partner);
+          setPendingPartnerRequest(false);
+        }
       } else {
         setExistingPartner(null);
+        setPendingPartnerRequest(false);
       }
     } catch (err) {
       console.error('Error checking partner:', err);
@@ -429,7 +532,21 @@ function RegisterForm() {
         return;
       }
 
-      setSuccess(true);
+      // Connexion automatique après inscription
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: dmcForm.email,
+        password: dmcForm.password,
+      });
+
+      if (signInError) {
+        // Rediriger vers login si la connexion auto échoue
+        router.push(`/${locale}/auth/login?registered=true`);
+        return;
+      }
+
+      // Rediriger vers l'espace partenaire
+      window.location.href = `/${locale}/espace-pro/dashboard`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       setErrorType('generic');
@@ -499,32 +616,6 @@ function RegisterForm() {
           </p>
           <p className="text-sm text-gray-500 mb-6">
             Vous recevrez un email de confirmation à <strong>{dmcForm.email}</strong> une fois votre demande acceptée.
-          </p>
-          <Link href="/">
-            <Button fullWidth>Retour à l&apos;accueil</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Page de succès pour DMC
-  if (success) {
-    return (
-      <div className="max-w-md w-full text-center">
-        <div className="bg-white rounded-2xl shadow-card p-8">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-8 h-8 text-green-600" />
-          </div>
-          <h2 className="text-xl font-heading text-gray-900 mb-4">
-            Demande envoyée avec succès !
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Votre demande d&apos;inscription en tant que membre DMC Alliance a bien été enregistrée.
-            Notre équipe va examiner votre dossier et vous contactera sous 48h.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Un email de confirmation a été envoyé à <strong>{dmcForm.email}</strong>
           </p>
           <Link href="/">
             <Button fullWidth>Retour à l&apos;accueil</Button>
@@ -915,9 +1006,9 @@ function RegisterForm() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Demande d&apos;inscription DMC
+                Inscription DMC
               </h3>
-              <p className="text-sm text-gray-500">Votre demande sera examinée par notre équipe</p>
+              <p className="text-sm text-gray-500">Accès immédiat à l&apos;espace professionnel</p>
             </div>
           </div>
 
@@ -964,6 +1055,7 @@ function RegisterForm() {
                     onChange={(e) => {
                       setDmcForm({ ...dmcForm, partnerName: e.target.value });
                       setJoinPartnerMode(false);
+                      setPendingPartnerRequest(false);
                     }}
                     required
                     disabled={joinPartnerMode}
@@ -972,6 +1064,34 @@ function RegisterForm() {
                   />
                   {checkingPartner && (
                     <p className="text-xs text-gray-500 mt-1">Vérification...</p>
+                  )}
+
+                  {/* Suggestions fuzzy de DMC existants */}
+                  {suggestedPartners.length > 0 && !existingPartner && !pendingPartnerRequest && !joinPartnerMode && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs font-medium text-blue-800 mb-2">
+                        DMC existants avec un nom similaire :
+                      </p>
+                      <div className="space-y-1">
+                        {suggestedPartners.map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setExistingPartner(p);
+                              setDmcForm({ ...dmcForm, partnerName: p.name });
+                              setSuggestedPartners([]);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-blue-700 bg-white rounded border border-blue-100 hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-blue-600 mt-2">
+                        Si aucun ne correspond, continuez avec le nom saisi.
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -1006,6 +1126,32 @@ function RegisterForm() {
                             C&apos;est un autre DMC
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Alerte demande d'inscription en cours */}
+                {pendingPartnerRequest && !existingPartner && !joinPartnerMode && (
+                  <div className="md:col-span-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-800">
+                          Une demande d&apos;inscription pour ce DMC est déjà en cours d&apos;examen
+                        </p>
+                        <p className="text-sm text-amber-700 mt-1">
+                          Un autre utilisateur a déjà soumis une demande d&apos;inscription pour un DMC portant ce nom.
+                          Si vous pensez qu&apos;il s&apos;agit de votre entreprise, veuillez contacter notre équipe à{' '}
+                          <a href="mailto:contact@dmc-alliance.org" className="underline font-medium">contact@dmc-alliance.org</a>.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setPendingPartnerRequest(false)}
+                          className="mt-3 px-4 py-2 bg-white text-amber-700 text-sm font-medium rounded-lg border border-amber-300 hover:bg-amber-50 transition-colors"
+                        >
+                          C&apos;est un autre DMC
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1324,7 +1470,7 @@ function RegisterForm() {
 
             <div className="pt-4">
               <Button type="submit" fullWidth loading={loading}>
-                Soumettre ma demande
+                {joinPartnerMode ? 'Envoyer ma demande' : 'Créer mon compte DMC'}
               </Button>
             </div>
           </form>
