@@ -521,7 +521,7 @@ async function handleDMCRegistration(userId: string, data: {
       );
     }
 
-    // 1. Créer le profil utilisateur avec rôle 'partner'
+    // 1. Créer le profil utilisateur (en attente de validation admin)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
@@ -529,9 +529,9 @@ async function handleDMCRegistration(userId: string, data: {
         email: data.email,
         full_name: data.contactName,
         company_name: data.partnerName,
-        role: 'partner',
+        role: 'member', // Rôle temporaire en attente de validation
         phone: data.contactPhone || null,
-        pending_partner_approval: false,
+        pending_partner_approval: true,
       }, { onConflict: 'id' });
 
     if (profileError) {
@@ -543,48 +543,41 @@ async function handleDMCRegistration(userId: string, data: {
       );
     }
 
-    // 2. Créer le partenaire directement
-    const country = data.destinations.length > 0 ? data.destinations[0] : 'International';
-
-    const { data: newPartner, error: partnerError } = await supabaseAdmin
-      .from('partners')
+    // 2. Créer la demande d'inscription partenaire (en attente de validation admin)
+    const { data: requestData, error: requestError } = await supabaseAdmin
+      .from('partner_registration_requests')
       .insert({
-        owner_id: userId,
-        name: data.partnerName,
-        slug,
-        tier: 'standard',
-        country,
-        email: data.contactEmail,
-        phone: data.contactPhone || null,
+        user_id: userId,
+        partner_name: data.partnerName,
+        partner_slug: slug,
+        contact_name: data.contactName,
+        contact_email: data.contactEmail,
+        contact_phone: data.contactPhone || null,
         website: data.website || null,
-        description_fr: data.description || null,
+        description: data.description || null,
+        destinations: data.destinations,
         specialties: data.specialties,
         has_gir: data.hasGir,
-        is_active: true,
+        status: 'pending',
       })
       .select('id')
       .single();
 
-    if (partnerError || !newPartner) {
-      console.error('[Register] Partner creation error:', partnerError);
+    if (requestError || !requestData) {
+      console.error('[Register] Registration request error:', requestError);
       await supabaseAdmin.from('profiles').delete().eq('id', userId);
       await supabaseAdmin.auth.admin.deleteUser(userId);
       return NextResponse.json(
-        { error: 'Erreur lors de la création du partenaire' },
+        { error: 'Erreur lors de la création de la demande' },
         { status: 500 }
       );
     }
 
-    // 3. Ajouter le créateur comme "owner" dans partner_members
+    // 3. Mettre à jour le profil avec l'ID de la demande
     await supabaseAdmin
-      .from('partner_members')
-      .insert({
-        partner_id: newPartner.id,
-        user_id: userId,
-        role: 'owner',
-        status: 'active',
-        joined_at: new Date().toISOString(),
-      });
+      .from('profiles')
+      .update({ partner_request_id: requestData.id })
+      .eq('id', userId);
 
     // 4. Créer les préférences de notification par défaut
     await supabaseAdmin
@@ -601,33 +594,68 @@ async function handleDMCRegistration(userId: string, data: {
         in_app_notifications: true,
       });
 
-    // 5. Envoyer email de bienvenue
+    // 5. Notifier les admins par email
+    try {
+      const { data: adminProfiles } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('role', 'admin');
+
+      const adminEmails = adminProfiles?.map((p: { email: string }) => p.email).filter(Boolean) || [];
+
+      for (const adminEmail of adminEmails) {
+        await sendEmail({
+          to: adminEmail,
+          subject: `DMC Alliance - Nouvelle demande d'inscription DMC : ${data.partnerName}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #c75a3a;">Nouvelle demande d'inscription DMC</h2>
+              <p>Une nouvelle demande d'inscription DMC a été soumise.</p>
+              <table style="margin: 20px 0; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; color: #666;">Nom du DMC :</td><td style="padding: 8px 0 8px 16px;"><strong>${data.partnerName}</strong></td></tr>
+                <tr><td style="padding: 8px 0; color: #666;">Contact :</td><td style="padding: 8px 0 8px 16px;">${data.contactName}</td></tr>
+                <tr><td style="padding: 8px 0; color: #666;">Email :</td><td style="padding: 8px 0 8px 16px;">${data.contactEmail}</td></tr>
+                <tr><td style="padding: 8px 0; color: #666;">Site web :</td><td style="padding: 8px 0 8px 16px;">${data.website || 'Non renseigné'}</td></tr>
+                <tr><td style="padding: 8px 0; color: #666;">Destinations :</td><td style="padding: 8px 0 8px 16px;">${data.destinations.join(', ') || 'Aucune'}</td></tr>
+              </table>
+              <p>Connectez-vous à l'espace admin pour examiner cette demande :</p>
+              <p style="margin-top: 20px;">
+                <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/admin/partner-requests"
+                   style="display: inline-block; background-color: #c75a3a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                  Voir les demandes
+                </a>
+              </p>
+              <p style="margin-top: 30px;">Cordialement,<br>Le système DMC Alliance</p>
+            </div>
+          `,
+          text: `Nouvelle demande d'inscription DMC\n\nNom: ${data.partnerName}\nContact: ${data.contactName}\nEmail: ${data.contactEmail}\nSite web: ${data.website || 'Non renseigné'}\nDestinations: ${data.destinations.join(', ') || 'Aucune'}\n\nVoir les demandes : ${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/admin/partner-requests`,
+        });
+      }
+    } catch (emailError) {
+      console.error('[Register] Admin notification error:', emailError);
+    }
+
+    // 6. Envoyer email de confirmation au demandeur
     try {
       await sendEmail({
         to: data.email,
-        subject: 'DMC Alliance - Bienvenue !',
+        subject: 'DMC Alliance - Demande d\'inscription reçue',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #c75a3a;">Bienvenue sur DMC Alliance !</h2>
+            <h2 style="color: #c75a3a;">Demande d'inscription reçue</h2>
             <p>Bonjour ${data.contactName},</p>
-            <p>Votre compte DMC pour <strong>${data.partnerName}</strong> a été créé avec succès.</p>
-            <p>Vous pouvez dès maintenant vous connecter pour gérer vos destinations et circuits.</p>
-            <p style="margin-top: 20px;">
-              <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://dmc-alliance.org'}/auth/login"
-                 style="display: inline-block; background-color: #c75a3a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                Se connecter
-              </a>
-            </p>
+            <p>Nous avons bien reçu votre demande d'inscription pour <strong>${data.partnerName}</strong> sur DMC Alliance.</p>
+            <p>Notre équipe va examiner votre demande et vous serez notifié(e) par email une fois celle-ci validée.</p>
             <p style="margin-top: 30px;">Cordialement,<br>L'équipe DMC Alliance</p>
           </div>
         `,
-        text: `Bonjour ${data.contactName},\n\nVotre compte DMC pour ${data.partnerName} a été créé avec succès.\n\nVous pouvez dès maintenant vous connecter.\n\nCordialement,\nL'équipe DMC Alliance`,
+        text: `Bonjour ${data.contactName},\n\nNous avons bien reçu votre demande d'inscription pour ${data.partnerName} sur DMC Alliance.\n\nNotre équipe va examiner votre demande et vous serez notifié(e) par email une fois celle-ci validée.\n\nCordialement,\nL'équipe DMC Alliance`,
       });
     } catch (emailError) {
-      console.error('[Register] Welcome email error:', emailError);
+      console.error('[Register] Confirmation email error:', emailError);
     }
 
-    // 6. Inscription newsletter si opt-in
+    // 7. Inscription newsletter si opt-in
     if (data.subscribeNewsletter !== false) {
       try {
         await supabaseAdmin
@@ -648,8 +676,8 @@ async function handleDMCRegistration(userId: string, data: {
 
     return NextResponse.json({
       success: true,
-      message: 'Compte DMC créé avec succès',
-      partnerId: newPartner.id,
+      message: 'Demande d\'inscription envoyée avec succès',
+      pending: true,
     });
 
   } catch (error) {
