@@ -158,6 +158,7 @@ function RegisterForm() {
   const [joinPartnerMessage, setJoinPartnerMessage] = useState('');
   const [pendingPartnerJoin, setPendingPartnerJoin] = useState(false);
   const [pendingPartnerRequest, setPendingPartnerRequest] = useState(false);
+  const [pendingDMCRegistration, setPendingDMCRegistration] = useState(false);
 
   // Pour les suggestions fuzzy de partenaires existants
   const [allPartners, setAllPartners] = useState<ExistingPartner[]>([]);
@@ -532,21 +533,11 @@ function RegisterForm() {
         return;
       }
 
-      // Connexion automatique après inscription
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: dmcForm.email,
-        password: dmcForm.password,
-      });
-
-      if (signInError) {
-        // Rediriger vers login si la connexion auto échoue
-        router.push(`/${locale}/auth/login?registered=true`);
+      // Demande en attente de validation admin
+      if (data.pending) {
+        setPendingDMCRegistration(true);
         return;
       }
-
-      // Rediriger vers l'espace partenaire
-      window.location.href = `/${locale}/espace-pro/dashboard`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       setErrorType('generic');
@@ -590,6 +581,34 @@ function RegisterForm() {
           </p>
           <p className="text-sm text-gray-500 mb-6">
             Vous recevrez un email de confirmation à <strong>{agencyForm.email}</strong> une fois votre demande acceptée.
+          </p>
+          <Link href="/">
+            <Button fullWidth>Retour à l&apos;accueil</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Page de succès pour nouvelle inscription DMC (en attente de validation admin)
+  if (pendingDMCRegistration) {
+    return (
+      <div className="max-w-md w-full text-center">
+        <div className="bg-white rounded-2xl shadow-card p-8">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-heading text-gray-900 mb-4">
+            Demande d&apos;inscription envoyée !
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Votre demande d&apos;inscription pour <strong>{dmcForm.partnerName}</strong> a bien été reçue.
+            Notre équipe va examiner votre demande et vous contactera sous 48h.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Vous recevrez un email de confirmation à <strong>{dmcForm.email}</strong> une fois votre demande validée.
           </p>
           <Link href="/">
             <Button fullWidth>Retour à l&apos;accueil</Button>

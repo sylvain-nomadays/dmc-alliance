@@ -16,6 +16,7 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ user }: AdminHeaderProps) {
+  const isAdmin = user.role === 'admin';
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
@@ -104,13 +105,15 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                   onClick={() => setIsDropdownOpen(false)}
                 />
                 <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 py-1">
-                  <Link
-                    href="/admin/settings"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    Paramètres
-                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin/settings"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      Paramètres
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

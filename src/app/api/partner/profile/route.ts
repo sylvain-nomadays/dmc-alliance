@@ -20,7 +20,14 @@ export async function GET() {
       .single();
 
     if (partner) {
-      return NextResponse.json({ partner, partnerId: partner.id });
+      // Also fetch destinations for this partner
+      const { data: destinations } = await supabaseAdmin
+        .from('destinations')
+        .select('id, slug, name_fr, name_en, image_url')
+        .eq('partner_id', partner.id)
+        .eq('is_active', true);
+
+      return NextResponse.json({ partner, partnerId: partner.id, destinations: destinations || [] });
     }
 
     // Fallback: chercher via partner_members
@@ -45,7 +52,14 @@ export async function GET() {
       return NextResponse.json({ error: 'Partenaire non trouvé' }, { status: 403 });
     }
 
-    return NextResponse.json({ partner: memberPartner, partnerId: memberPartner.id });
+    // Also fetch destinations for this partner
+    const { data: destinations } = await supabaseAdmin
+      .from('destinations')
+      .select('id, slug, name_fr, name_en, image_url')
+      .eq('partner_id', memberPartner.id)
+      .eq('is_active', true);
+
+    return NextResponse.json({ partner: memberPartner, partnerId: memberPartner.id, destinations: destinations || [] });
   } catch (error) {
     console.error('Partner profile API error:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
