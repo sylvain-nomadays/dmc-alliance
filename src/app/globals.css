@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "mapbox-gl/dist/mapbox-gl.css";
+@plugin "@tailwindcss/typography";
 
 /* Custom Theme */
 @theme {
