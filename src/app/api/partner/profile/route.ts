@@ -23,7 +23,7 @@ export async function GET() {
       // Also fetch destinations for this partner
       const { data: destinations } = await supabaseAdmin
         .from('destinations')
-        .select('id, slug, name_fr, name_en, image_url')
+        .select('id, slug, name, name_en, image_url')
         .eq('partner_id', partner.id)
         .eq('is_active', true);
 
@@ -55,7 +55,7 @@ export async function GET() {
     // Also fetch destinations for this partner
     const { data: destinations } = await supabaseAdmin
       .from('destinations')
-      .select('id, slug, name_fr, name_en, image_url')
+      .select('id, slug, name, name_en, image_url')
       .eq('partner_id', memberPartner.id)
       .eq('is_active', true);
 

@@ -41,7 +41,7 @@ interface Agency {
 }
 
 interface Destination {
-  name_fr: string;
+  name: string;
   name_en: string;
   region: string;
 }
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         group_size_max,
         difficulty_level,
         base_commission_rate,
-        destination:destinations(name_fr, name_en, region)
+        destination:destinations(name, name_en, region)
       `)
       .eq('id', circuitId)
       .eq('status', 'published')
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       title: circuit.title,
       subtitle: circuit.subtitle || undefined,
       destination: destination
-        ? (language === 'fr' ? destination.name_fr : destination.name_en)
+        ? (language === 'fr' ? destination.name : destination.name_en)
         : '',
       region: destination?.region,
       duration_days: circuit.duration_days,

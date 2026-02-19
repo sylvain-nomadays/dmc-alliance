@@ -89,7 +89,7 @@ export default function MyAgencyPage() {
   const [newCertification, setNewCertification] = useState('');
   const [resolvedPartnerId, setResolvedPartnerId] = useState<string | null>(null);
   const [partnerSlug, setPartnerSlug] = useState<string | null>(null);
-  const [destinations, setDestinations] = useState<{ id: string; slug: string; name_fr: string; name_en: string; image_url: string | null }[]>([]);
+  const [destinations, setDestinations] = useState<{ id: string; slug: string; name: string; name_en: string; image_url: string | null }[]>([]);
 
   useEffect(() => {
     if (!auth.isLoading) {
@@ -422,7 +422,7 @@ export default function MyAgencyPage() {
                     {destinations.map((dest) => (
                       <div key={dest.id} className="border border-gray-200 rounded-lg p-4">
                         <p className="text-sm font-medium text-gray-900 mb-2">
-                          {dest.name_fr}
+                          {dest.name}
                         </p>
                         <ImageUpload
                           value={dest.image_url || ''}

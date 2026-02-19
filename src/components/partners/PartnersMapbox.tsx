@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { partners as staticPartners, type Partner, regions, type Region } from '@/data/partners';
 import { getCoordinates } from '@/data/destination-coordinates';
 import { getPartnerProfile } from '@/data/partners-profiles';
-import { cn } from '@/lib/utils';
+import { cn, stripHtml } from '@/lib/utils';
 import {
   XMarkIcon,
   MapPinIcon,
@@ -542,7 +542,7 @@ function PartnerInfoPanel({
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <p className="text-gray-600 mb-8 leading-relaxed text-[15px]">
-          {isFr ? partner.description.fr : partner.description.en}
+          {stripHtml(isFr ? partner.description.fr : partner.description.en)}
         </p>
 
         {/* Destinations */}

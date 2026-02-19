@@ -539,7 +539,7 @@ export const destinationsData: DestinationDetail[] = [
     nameEn: 'Indonesia',
     code: 'ID',
     region: 'asia',
-    partnerId: 'azimuth',
+    partnerId: 'azimuth-adventure',
     metaDescription: {
       fr: "Découvrez l'Indonésie avec Azimuth Adventure Travel. Bali, Java, Komodo et archipels secrets.",
       en: "Discover Indonesia with Azimuth Adventure Travel. Bali, Java, Komodo and secret archipelagos."

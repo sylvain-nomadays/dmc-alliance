@@ -13,7 +13,7 @@ import { getPartnerWithFullProfile, type PartnerVideo, type TeamMember, type Tes
 import { getGirCircuitsByPartner, type DbCircuit } from '@/lib/supabase/circuits';
 import { VideoCarousel } from '@/components/partners/VideoCarousel';
 import { InterestButton } from '@/components/ui/InterestButton';
-import { cn } from '@/lib/utils';
+import { cn, stripHtml } from '@/lib/utils';
 import {
   GlobeAltIcon,
   EnvelopeIcon,
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'Partner not found' };
   }
 
-  const description = locale === 'fr' ? partner.description.fr : partner.description.en;
+  const description = stripHtml(locale === 'fr' ? partner.description.fr : partner.description.en);
 
   return {
     title: `${partner.name} - Partenaire | The DMC Alliance`,
@@ -117,7 +117,7 @@ export default async function PartnerProfilePage({ params }: Props) {
               className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-deep-blue-900/80" />
+            <div className="absolute inset-0 bg-deep-blue-900/50" />
           </div>
         )}
         {/* Pattern fallback if no cover image */}
@@ -182,7 +182,7 @@ export default async function PartnerProfilePage({ params }: Props) {
               </h1>
 
               <p className="text-lg text-white/80 mb-6 max-w-2xl">
-                {isFr ? partner.description.fr : partner.description.en}
+                {stripHtml(isFr ? partner.description.fr : partner.description.en)}
               </p>
 
               {/* Destinations */}
