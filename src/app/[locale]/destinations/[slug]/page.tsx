@@ -57,6 +57,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Revalidate every 60 seconds so content edits appear without a full redeploy
+export const revalidate = 60;
+
 // Generate static params for all destinations and locales
 export function generateStaticParams() {
   const slugs = getAllDestinationSlugs();
