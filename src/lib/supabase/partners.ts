@@ -199,16 +199,16 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: destData } = await (supabase as any)
       .from('destinations')
-      .select('name_fr, name_en, slug, country_code, region')
+      .select('name, name_en, slug, country, region')
       .eq('partner_id', supabaseData.id)
       .eq('is_active', true);
 
     if (destData?.length) {
-      basePartner.destinations = destData.map((d: { name_fr: string; name_en: string; slug: string; country_code: string; region: string }) => ({
-        name: d.name_fr,
+      basePartner.destinations = destData.map((d: { name: string; name_en: string; slug: string; country: string; region: string }) => ({
+        name: d.name,
         nameEn: d.name_en,
         slug: d.slug,
-        code: d.country_code,
+        code: d.country,
         region: d.region as Partner['destinations'][0]['region'],
       }));
     }
@@ -322,11 +322,12 @@ export async function getPartnerTestimonials(partnerId: string): Promise<Testimo
 
 /**
  * Get all partners with Supabase images
+ * Includes both static partners (merged with DB data) and DB-only partners
  */
 export async function getAllPartnersWithImages(): Promise<Partner[]> {
   const supabase = createStaticClient();
 
-  // Get all partners from Supabase
+  // Get all partners from Supabase with their destinations
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: supabasePartners, error } = await (supabase as any)
     .from('partners')
@@ -334,10 +335,15 @@ export async function getAllPartnersWithImages(): Promise<Partner[]> {
       id,
       slug,
       name,
+      tier,
       logo_url,
+      website,
       description_fr,
       description_en,
-      is_active
+      specialties,
+      has_gir,
+      is_active,
+      destinations(name, name_en, slug, country, region)
     `)
     .eq('is_active', true)
     .order('name');
@@ -347,15 +353,20 @@ export async function getAllPartnersWithImages(): Promise<Partner[]> {
   }
 
   // Create a map for quick lookup
-  const supabaseMap = new Map<string, SupabasePartner>();
+  const supabaseMap = new Map<string, SupabasePartner & { destinations?: { name: string; name_en: string; slug: string; country: string; region: string }[] }>();
   if (supabasePartners) {
-    supabasePartners.forEach((partner: SupabasePartner) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabasePartners.forEach((partner: any) => {
       supabaseMap.set(partner.slug, partner);
     });
   }
 
-  // Merge static data with Supabase images
-  return staticPartners.map((staticPartner) => {
+  // Track which slugs we've already included from static data
+  const includedSlugs = new Set<string>();
+
+  // Merge static data with Supabase data
+  const mergedPartners = staticPartners.map((staticPartner) => {
+    includedSlugs.add(staticPartner.slug);
     const supabasePartner = supabaseMap.get(staticPartner.slug);
 
     return {
@@ -367,4 +378,38 @@ export async function getAllPartnersWithImages(): Promise<Partner[]> {
       },
     };
   });
+
+  // Add DB-only partners (not in static data)
+  if (supabasePartners) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabasePartners.forEach((dbPartner: any) => {
+      if (!includedSlugs.has(dbPartner.slug)) {
+        const destinations = (dbPartner.destinations || []).map((d: { name: string; name_en: string; slug: string; country: string; region: string }) => ({
+          name: d.name,
+          nameEn: d.name_en,
+          slug: d.slug,
+          code: d.country || '',
+          region: (d.region || 'asia') as Partner['destinations'][0]['region'],
+        }));
+
+        mergedPartners.push({
+          id: dbPartner.id,
+          name: dbPartner.name,
+          slug: dbPartner.slug,
+          tier: dbPartner.tier || 'classic',
+          destinations,
+          website: dbPartner.website || '',
+          logo: dbPartner.logo_url || undefined,
+          description: {
+            fr: dbPartner.description_fr || '',
+            en: dbPartner.description_en || '',
+          },
+          specialties: dbPartner.specialties || [],
+          hasGir: dbPartner.has_gir || false,
+        });
+      }
+    });
+  }
+
+  return mergedPartners;
 }

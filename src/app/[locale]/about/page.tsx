@@ -26,7 +26,7 @@ interface Partner {
   slug: string;
   logo_url: string | null;
   tier: string;
-  destinations: { name_fr: string; name_en: string }[];
+  destinations: { name: string; name_en: string }[];
 }
 
 const values = [
@@ -145,7 +145,7 @@ export default function AboutPage() {
             logo_url,
             tier,
             destinations:partner_destinations(
-              destination:destinations(name_fr, name_en)
+              destination:destinations(name, name_en)
             )
           `)
           .eq('tier', 'premium')
@@ -159,7 +159,7 @@ export default function AboutPage() {
             slug: string;
             logo_url: string | null;
             tier: string;
-            destinations: Array<{ destination: { name_fr: string; name_en: string } }> | null;
+            destinations: Array<{ destination: { name: string; name_en: string } }> | null;
           }
           const transformedPartners = (partnersData as PartnerData[]).map(p => ({
             id: p.id,
@@ -168,7 +168,7 @@ export default function AboutPage() {
             logo_url: p.logo_url,
             tier: p.tier,
             destinations: p.destinations?.map((d) => ({
-              name_fr: d.destination?.name_fr || '',
+              name: d.destination?.name || '',
               name_en: d.destination?.name_en || ''
             })) || []
           }));
@@ -543,7 +543,7 @@ export default function AboutPage() {
                       {partner.name}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">
-                      {partner.destinations[0] && (isFr ? partner.destinations[0].name_fr : partner.destinations[0].name_en)}
+                      {partner.destinations[0] && (isFr ? partner.destinations[0].name : partner.destinations[0].name_en)}
                     </p>
                   </div>
                 </Link>

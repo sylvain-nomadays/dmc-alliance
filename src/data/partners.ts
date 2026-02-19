@@ -139,9 +139,9 @@ export const partners: Partner[] = [
     hasGir: false
   },
   {
-    id: 'azimuth',
+    id: 'azimuth-adventure',
     name: 'Azimuth Adventure Travel',
-    slug: 'azimuth',
+    slug: 'azimuth-adventure',
     tier: 'premium',
     destinations: [
       { name: 'Indonésie', nameEn: 'Indonesia', slug: 'indonesie', code: 'ID', region: 'asia' }

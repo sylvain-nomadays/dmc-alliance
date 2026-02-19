@@ -9,6 +9,7 @@ import { partners } from '@/data/partners';
 import { getDestinationBySlug, getAllDestinationSlugs, destinationsData } from '@/data/destinations';
 import { getDestinationWithImage, getAllDestinationsWithImages } from '@/lib/supabase/destinations';
 import { getPartnerWithImage } from '@/lib/supabase/partners';
+import { stripHtml } from '@/lib/utils';
 import { RelatedArticles } from '@/components/destinations/RelatedArticles';
 import { InterestButton } from '@/components/ui/InterestButton';
 
@@ -318,7 +319,7 @@ export default async function DestinationPage({ params }: Props) {
                     {/* Partner Content */}
                     <div className="p-6">
                       <p className="text-gray-600 text-sm mb-6">
-                        {isFr ? partner.description.fr : partner.description.en}
+                        {stripHtml(isFr ? partner.description.fr : partner.description.en)}
                       </p>
 
                       {/* Specialties */}

@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { partners as staticPartners, regions, type Region, type Partner } from '@/data/partners';
 import { getPartnerProfile } from '@/data/partners-profiles';
-import { cn } from '@/lib/utils';
+import { cn, stripHtml } from '@/lib/utils';
 import {
   MapPinIcon,
   StarIcon,
@@ -374,7 +374,7 @@ function PartnerCard({ partner, locale }: { partner: Partner; locale: string }) 
       {/* Description */}
       <div className="px-6 pb-4">
         <p className="text-gray-600 text-sm line-clamp-2">
-          {isFr ? partner.description.fr : partner.description.en}
+          {stripHtml(isFr ? partner.description.fr : partner.description.en)}
         </p>
       </div>
 

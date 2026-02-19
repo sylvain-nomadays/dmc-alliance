@@ -98,6 +98,19 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 }
 
 /**
+ * Strip HTML tags from a string (useful for rendering rich-text content as plain text)
+ * Converts block-level closing tags to spaces so text doesn't run together
+ */
+export function stripHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/(p|div|li|h[1-6])>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Check if we're on the client side
  */
 export const isClient = typeof window !== 'undefined';

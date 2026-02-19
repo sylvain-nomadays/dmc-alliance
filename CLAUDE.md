@@ -31,9 +31,9 @@ No test runner is configured.
 ### Protected vs Public Routes
 
 - **Public**: `[locale]/` — destinations, magazine, partners, GIR, about, contact
-- **Partner portal**: `[locale]/espace-pro/` — dashboard, circuits, destinations, requests, settings
-- **Admin panel**: `admin/` (no locale prefix) — full content management
-- Middleware (`src/middleware.ts`) checks auth for routes containing `/admin`, `/partner`, `/agency`, `/espace-pro`
+- **Partner portal**: `[locale]/espace-pro/` — dashboard, circuits, destinations, requests, settings, notifications, watchlist
+- **Admin panel**: `admin/` (no locale prefix) — full content management, partner-requests, join-requests, my-agency
+- Middleware (`src/middleware.ts`) checks auth for routes containing `/admin`, `/partner`, `/agency`, `/espace-pro`; also handles auth code exchange redirects
 
 ### Authentication & Authorization
 
@@ -42,6 +42,14 @@ No test runner is configured.
 - Client-side: `useAuthContext()` hook from `src/hooks/useAuthContext.ts`
 - Four roles: `admin`, `partner`, `agency`, `member` — permissions defined in `src/lib/auth/types.ts`
 - Partners can access admin panel with limited permissions (media upload only)
+
+### Multi-User Account System
+
+- Both partners (DMCs) and agencies support multiple users per account
+- `partner_members` table — links users to a partner with roles: `owner`, `admin`, `member`
+- `agency_members` table — links users to an agency with roles: `owner`, `admin`, `member`
+- RLS policies on `partners`, `agencies`, `destinations`, `circuits`, `circuit_departures`, `quote_requests`, `team_members`, `testimonials` all check membership via these tables
+- Existing partner/agency owners are seeded into their respective members tables
 
 ### Supabase Client Variants
 
@@ -55,10 +63,18 @@ Located in `src/lib/supabase/`:
 
 ### Database
 
-- Schema in `supabase/schema.sql`, migrations in `supabase/migrations/`
+- Schema in `supabase/schema.sql`, migrations in `supabase/migrations/` (30+ migration files)
 - TypeScript types auto-generated in `src/types/database.ts`
-- Key tables: `profiles`, `partners`, `agencies`, `destinations`, `circuits`, `articles`, `newsletter_subscribers`, `contact_messages`, `partner_registration_requests`, `agency_join_requests`
-- Key enums: `user_role`, `circuit_status`, `difficulty_level`, `partner_tier` (premium/classic), `region`
+- Key tables:
+  - **Core**: `profiles`, `partners`, `agencies`, `destinations`, `circuits`, `articles`
+  - **Multi-user**: `partner_members`, `agency_members`
+  - **Circuits**: `circuit_departures`, `quote_requests`
+  - **Partner content**: `team_members`, `testimonials`
+  - **Agencies**: `agency_join_requests`, `agency_requests`, `agency_destination_interests`
+  - **Notifications**: `notifications`, `notification_preferences`
+  - **Email**: `email_templates`, `email_logs`, `newsletter_subscribers`, `newsletter_campaigns`
+  - **Other**: `contact_messages`, `partner_registration_requests`, `gir_watchlist`
+- Key enums: `user_role`, `circuit_status`, `difficulty_level`, `partner_tier` (premium/classic), `region`, `agency_request_type`, `agency_request_status`, `partner_request_status`
 
 ### Data Fetching Pattern
 
@@ -75,6 +91,11 @@ All under `src/app/api/`:
 - `auth/` — registration and login flows
 - `gir/` — GIR data import/sync
 - `newsletter/` — subscribe, send, confirm, translate, unsubscribe
+- `notifications/` — in-app notification management
+- `partner/` — partner-specific operations
+- `partner-requests/` — partner registration request handling
+- `settings/` — settings management
+- `translations/` — translation operations
 - `upload/` — media upload to Supabase Storage
 - `webhooks/` — Resend email event tracking
 
@@ -87,12 +108,13 @@ All under `src/app/api/`:
 
 ### Key Integrations
 
-- **Email**: Resend SDK (`src/lib/email/`) with HTML templates, double opt-in newsletter
+- **Email**: Resend SDK (`src/lib/email/`) with HTML templates, notification emails, double opt-in newsletter
 - **Maps**: Mapbox GL + React Map GL for destination maps
 - **PDF**: `@react-pdf/renderer` for circuit itinerary exports (`src/lib/pdf/`)
 - **AI**: Anthropic SDK for content generation (`src/app/api/ai/`)
 - **Rich Text**: Tiptap editor with custom extensions (`src/components/admin/tiptap-extensions/`)
 - **Newsletter Builder**: Block-based drag-and-drop editor using `@dnd-kit` (`src/components/newsletter/`)
+- **Notifications**: In-app notification system with email preferences (`notifications`, `notification_preferences` tables)
 
 ### Component Organization
 
