@@ -89,6 +89,7 @@ export default function MyAgencyPage() {
   const [newCertification, setNewCertification] = useState('');
   const [resolvedPartnerId, setResolvedPartnerId] = useState<string | null>(null);
   const [partnerSlug, setPartnerSlug] = useState<string | null>(null);
+  const [destinations, setDestinations] = useState<{ id: string; slug: string; name_fr: string; name_en: string; image_url: string | null }[]>([]);
 
   useEffect(() => {
     if (!auth.isLoading) {
@@ -108,6 +109,9 @@ export default function MyAgencyPage() {
         const data = await res.json();
         setResolvedPartnerId(data.partnerId);
         setPartnerSlug(data.partner?.slug || null);
+        if (data.destinations) {
+          setDestinations(data.destinations);
+        }
         if (data.partner) {
           setForm({
             name: data.partner.name || '',
@@ -168,6 +172,28 @@ export default function MyAgencyPage() {
       ...prev,
       certifications: prev.certifications.filter((c) => c !== cert),
     }));
+  }
+
+  async function updateDestinationImage(destinationId: string, imageUrl: string) {
+    try {
+      const res = await fetch('/api/partner/destinations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destinationId, image_url: imageUrl }),
+      });
+
+      if (res.ok) {
+        setDestinations((prev) =>
+          prev.map((d) => (d.id === destinationId ? { ...d, image_url: imageUrl } : d))
+        );
+      } else {
+        console.error('Error updating destination image:', res.status);
+        alert('Erreur lors de la mise à jour de l\'image de destination');
+      }
+    } catch (err) {
+      console.error('Error updating destination image:', err);
+      alert('Erreur lors de la mise à jour de l\'image de destination');
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -382,6 +408,33 @@ export default function MyAgencyPage() {
                   aspect="wide"
                 />
               </div>
+
+              {/* Destination Images */}
+              {destinations.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Images des destinations
+                  </label>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Ces images sont affichées sur les pages de vos destinations sur le site public.
+                  </p>
+                  <div className="space-y-4">
+                    {destinations.map((dest) => (
+                      <div key={dest.id} className="border border-gray-200 rounded-lg p-4">
+                        <p className="text-sm font-medium text-gray-900 mb-2">
+                          {dest.name_fr}
+                        </p>
+                        <ImageUpload
+                          value={dest.image_url || ''}
+                          onChange={(url) => updateDestinationImage(dest.id, url)}
+                          folder="destinations"
+                          aspect="wide"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -703,7 +756,7 @@ export default function MyAgencyPage() {
               </p>
             </div>
             <a
-              href={`/fr/partners/${partnerSlug}`}
+              href={`/fr/partenaires/${partnerSlug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"

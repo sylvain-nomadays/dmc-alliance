@@ -130,15 +130,9 @@ export async function getPartnerWithImage(slug: string): Promise<Partner | null>
 export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWithProfile | null> {
   const supabase = createStaticClient();
 
-  // Get static data first
+  // Get static data if available
   const staticData = staticPartners.find(p => p.slug === slug);
-
-  if (!staticData) {
-    return null;
-  }
-
-  // Get static profile as fallback
-  const staticProfile = getPartnerProfile(staticData.id);
+  const staticProfile = staticData ? getPartnerProfile(staticData.id) : null;
 
   // Try to get from Supabase
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -150,10 +144,12 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
     .single();
 
   if (error || !data) {
+    if (!staticData) {
+      return null;
+    }
     // Return static data with static profile if Supabase fails
     return {
       ...staticData,
-      // Map static profile to expected format if it exists
       ...(staticProfile && {
         story: staticProfile.story,
         mission: staticProfile.mission,
@@ -181,15 +177,52 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
     .eq('partner_id', supabaseData.id)
     .eq('is_visible', true);
 
+  // Build base partner data: use static data if available, otherwise construct from DB
+  const basePartner: Partner = staticData ?? {
+    id: supabaseData.id,
+    name: supabaseData.name,
+    slug: supabaseData.slug,
+    tier: supabaseData.tier,
+    destinations: [],
+    website: supabaseData.website || '',
+    logo: supabaseData.logo_url || undefined,
+    description: {
+      fr: supabaseData.description_fr || '',
+      en: supabaseData.description_en || '',
+    },
+    specialties: supabaseData.specialties || [],
+    hasGir: supabaseData.has_gir,
+  };
+
+  // If no static data, fetch destinations from DB
+  if (!staticData) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: destData } = await (supabase as any)
+      .from('destinations')
+      .select('name_fr, name_en, slug, country_code, region')
+      .eq('partner_id', supabaseData.id)
+      .eq('is_active', true);
+
+    if (destData?.length) {
+      basePartner.destinations = destData.map((d: { name_fr: string; name_en: string; slug: string; country_code: string; region: string }) => ({
+        name: d.name_fr,
+        nameEn: d.name_en,
+        slug: d.slug,
+        code: d.country_code,
+        region: d.region as Partner['destinations'][0]['region'],
+      }));
+    }
+  }
+
   // Merge with static data
   const result: PartnerWithProfile = {
-    ...staticData,
+    ...basePartner,
     supabaseId: supabaseData.id,
-    logo: supabaseData.logo_url || staticData.logo,
+    logo: supabaseData.logo_url || basePartner.logo,
     coverImage: supabaseData.cover_image_url || undefined,
     description: {
-      fr: supabaseData.description_fr || staticData.description.fr,
-      en: supabaseData.description_en || staticData.description.en,
+      fr: supabaseData.description_fr || basePartner.description.fr,
+      en: supabaseData.description_en || basePartner.description.en,
     },
   };
 
