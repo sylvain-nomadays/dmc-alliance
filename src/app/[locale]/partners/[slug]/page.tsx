@@ -181,9 +181,12 @@ export default async function PartnerProfilePage({ params }: Props) {
                 {partner.name}
               </h1>
 
-              <p className="text-lg text-white/80 mb-6 max-w-2xl">
-                {stripHtml(isFr ? partner.description.fr : partner.description.en)}
-              </p>
+              <div
+                className="text-lg text-white/80 mb-6 max-w-2xl prose prose-invert prose-p:text-white/80 prose-p:my-1"
+                dangerouslySetInnerHTML={{
+                  __html: isFr ? partner.description.fr : partner.description.en
+                }}
+              />
 
               {/* Destinations */}
               <div className="flex flex-wrap gap-2 mb-6">
