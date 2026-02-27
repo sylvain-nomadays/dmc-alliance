@@ -591,7 +591,7 @@ export const destinationsData: DestinationDetail[] = [
     nameEn: 'Sri Lanka',
     code: 'LK',
     region: 'asia',
-    partnerId: 'mai-globe',
+    partnerId: 'mai-globe-travels',
     metaDescription: {
       fr: "Découvrez le Sri Lanka avec Mai Globe Travels. Temples, plages et thé pour tour-opérateurs.",
       en: "Discover Sri Lanka with Mai Globe Travels. Temples, beaches and tea for tour operators."
@@ -643,7 +643,7 @@ export const destinationsData: DestinationDetail[] = [
     nameEn: 'Vietnam',
     code: 'VN',
     region: 'asia',
-    partnerId: 'mai-globe',
+    partnerId: 'mai-globe-travels',
     metaDescription: {
       fr: "Découvrez le Vietnam avec Mai Globe Travels. Du nord au sud, rizières et baies légendaires.",
       en: "Discover Vietnam with Mai Globe Travels. From north to south, rice fields and legendary bays."
