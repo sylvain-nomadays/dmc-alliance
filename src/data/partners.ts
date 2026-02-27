@@ -155,9 +155,9 @@ export const partners: Partner[] = [
     hasGir: false
   },
   {
-    id: 'mai-globe',
+    id: 'mai-globe-travels',
     name: 'Mai Globe Travels',
-    slug: 'mai-globe',
+    slug: 'mai-globe-travels',
     tier: 'classic',
     destinations: [
       { name: 'Sri Lanka', nameEn: 'Sri Lanka', slug: 'sri-lanka', code: 'LK', region: 'asia' },

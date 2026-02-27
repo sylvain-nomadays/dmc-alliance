@@ -61,7 +61,7 @@ const defaultForm: PartnerForm = {
   facebook_url: '',
   instagram_url: '',
   linkedin_url: '',
-  tier: 'standard',
+  tier: 'classic',
   founded_year: null,
   team_size: null,
   languages: [],
@@ -84,8 +84,7 @@ const regions = [
 
 const tiers = [
   { value: 'premium', label: 'Premium' },
-  { value: 'standard', label: 'Standard' },
-  { value: 'basic', label: 'Basic' },
+  { value: 'classic', label: 'Classic' },
 ];
 
 const availableLanguages = [

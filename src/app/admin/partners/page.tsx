@@ -12,15 +12,14 @@ interface Partner {
   name: string;
   country: string;
   logo_url: string | null;
-  tier: 'premium' | 'standard' | 'basic';
+  tier: 'premium' | 'classic';
   is_active: boolean;
   destinations_count?: number;
 }
 
 const tierLabels: Record<string, { label: string; class: string }> = {
   premium: { label: 'Premium', class: 'bg-terracotta-100 text-terracotta-700' },
-  standard: { label: 'Standard', class: 'bg-deep-blue-100 text-deep-blue-700' },
-  basic: { label: 'Basic', class: 'bg-gray-100 text-gray-600' },
+  classic: { label: 'Classic', class: 'bg-deep-blue-100 text-deep-blue-700' },
 };
 
 export default function PartnersListPage() {
@@ -146,8 +145,7 @@ export default function PartnersListPage() {
           >
             <option value="all">Tous les niveaux</option>
             <option value="premium">Premium</option>
-            <option value="standard">Standard</option>
-            <option value="basic">Basic</option>
+            <option value="classic">Classic</option>
           </select>
         </div>
       </div>
