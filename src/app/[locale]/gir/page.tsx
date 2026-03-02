@@ -3,6 +3,8 @@ import { getPublishedGirCircuits } from '@/lib/supabase/circuits';
 import { createClient } from '@/lib/supabase/server';
 import GirPageClient from './GirPageClient';
 
+export const dynamic = 'force-dynamic';
+
 // Loading skeleton
 function GirPageSkeleton() {
   return (
