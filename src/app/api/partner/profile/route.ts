@@ -24,8 +24,7 @@ export async function GET() {
       const { data: destinations } = await supabaseAdmin
         .from('destinations')
         .select('id, slug, name, name_en, image_url')
-        .eq('partner_id', partner.id)
-        .eq('is_active', true);
+        .eq('partner_id', partner.id);
 
       return NextResponse.json({ partner, partnerId: partner.id, destinations: destinations || [] });
     }
@@ -56,8 +55,7 @@ export async function GET() {
     const { data: destinations } = await supabaseAdmin
       .from('destinations')
       .select('id, slug, name, name_en, image_url')
-      .eq('partner_id', memberPartner.id)
-      .eq('is_active', true);
+      .eq('partner_id', memberPartner.id);
 
     return NextResponse.json({ partner: memberPartner, partnerId: memberPartner.id, destinations: destinations || [] });
   } catch (error) {
