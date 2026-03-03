@@ -1,4 +1,4 @@
-import { createStaticClient } from './server';
+import { createClient } from './server';
 
 export interface SiteSettings {
   id?: string;
@@ -57,7 +57,7 @@ const defaultSettings: SiteSettings = {
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
-    const supabase = createStaticClient();
+    const supabase = await createClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)

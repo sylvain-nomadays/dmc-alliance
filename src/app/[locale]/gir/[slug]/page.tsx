@@ -11,8 +11,6 @@ import { getCircuitBySlug, getAllCircuitSlugs, type CircuitDeparture, type Circu
 import { getCircuitBySlugFromDb, type DbCircuit } from '@/lib/supabase/circuits';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
-
-export const dynamic = 'force-dynamic';
 import {
   CalendarIcon,
   ClockIcon,

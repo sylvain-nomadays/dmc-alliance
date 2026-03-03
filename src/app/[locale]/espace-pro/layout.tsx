@@ -4,8 +4,6 @@ import { getAuthContext } from '@/lib/auth/getAuthContext';
 import { createClient } from '@/lib/supabase/server';
 import { LogoutButton } from '@/components/espace-pro/LogoutButton';
 
-export const dynamic = 'force-dynamic';
-
 interface AgencyInfo {
   id: string;
   name: string;
