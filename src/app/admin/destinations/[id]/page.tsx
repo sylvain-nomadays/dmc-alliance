@@ -47,7 +47,7 @@ const initialForm: DestinationForm = {
   name: '',
   name_en: '',
   slug: '',
-  region: 'asia',
+  region: '',
   country: '',
   description_fr: '',
   description_en: '',
@@ -109,7 +109,7 @@ export default function DestinationEditPage({ params }: { params: Promise<{ id: 
       name: data.name || '',
       name_en: data.name_en || '',
       slug: data.slug || '',
-      region: data.region || 'asia',
+      region: data.region || '',
       country: data.country || '',
       description_fr: data.description_fr || '',
       description_en: data.description_en || '',
@@ -175,6 +175,7 @@ export default function DestinationEditPage({ params }: { params: Promise<{ id: 
     if (!form.name.trim()) newErrors.name = 'Le nom est requis';
     if (!form.slug.trim()) newErrors.slug = 'Le slug est requis';
     if (!form.country.trim()) newErrors.country = 'Le pays est requis';
+    if (!form.region) newErrors.region = 'La région est requise';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -320,17 +321,19 @@ export default function DestinationEditPage({ params }: { params: Promise<{ id: 
             {/* Region */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Région
+                Région <span className="text-red-500">*</span>
               </label>
               <select
                 value={form.region}
                 onChange={(e) => handleChange('region', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500 bg-white"
               >
+                <option value="">-- Sélectionner une région --</option>
                 {regions.map((region) => (
                   <option key={region.value} value={region.value}>{region.label}</option>
                 ))}
               </select>
+              {errors.region && <p className="mt-1 text-sm text-red-600">{errors.region}</p>}
             </div>
 
             {/* Partner */}
