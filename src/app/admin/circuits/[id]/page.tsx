@@ -346,15 +346,23 @@ export default function CircuitEditPage() {
       ...form,
       price_single_supplement: form.price_single_supplement || null,
       published_at: publishedAt,
+      // Clean empty UUID strings to null
+      destination_id: form.destination_id || null,
+      partner_id: form.partner_id || null,
     };
 
     let saveError = false;
 
-    if (auth.isPartner && !isNew) {
-      // Partner: use API route to bypass RLS
+    if (auth.isPartner) {
+      // Partner: use API routes to bypass RLS
       try {
-        const res = await fetch(`/api/partner/circuits/${params.id}`, {
-          method: 'PUT',
+        const url = isNew
+          ? '/api/partner/circuits'
+          : `/api/partner/circuits/${params.id}`;
+        const method = isNew ? 'POST' : 'PUT';
+
+        const res = await fetch(url, {
+          method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
