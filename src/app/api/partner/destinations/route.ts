@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { revalidatePath } from 'next/cache';
 
 // GET: Liste des destinations du partenaire connecté (bypass RLS)
 export async function GET() {
@@ -67,7 +68,7 @@ export async function GET() {
   }
 }
 
-// PUT: Mise à jour de l'image d'une destination du partenaire
+// PUT: Mise à jour d'une destination du partenaire (bypass RLS)
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createServerClient();
@@ -102,7 +103,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Partenaire non trouvé ou droits insuffisants' }, { status: 403 });
     }
 
-    const { destinationId, image_url } = await request.json();
+    const body = await request.json();
+    const { destinationId } = body;
 
     if (!destinationId) {
       return NextResponse.json({ error: 'ID de destination requis' }, { status: 400 });
@@ -111,7 +113,7 @@ export async function PUT(request: NextRequest) {
     // Vérifier que la destination appartient bien à ce partenaire
     const { data: destination } = await supabaseAdmin
       .from('destinations')
-      .select('id')
+      .select('id, slug')
       .eq('id', destinationId)
       .eq('partner_id', partnerId)
       .single();
@@ -120,14 +122,40 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Destination non trouvée pour ce partenaire' }, { status: 404 });
     }
 
+    // Whitelist des champs modifiables par un partenaire
+    const allowedFields = [
+      'name', 'name_en', 'slug', 'region', 'country',
+      'description_fr', 'description_en', 'image_url',
+      'highlights', 'best_time', 'ideal_duration',
+      'video_url', 'video_title_fr', 'video_title_en', 'video_duration',
+    ];
+
+    const updateData: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in body) {
+        updateData[key] = body[key];
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('destinations')
-      .update({ image_url })
+      .update(updateData)
       .eq('id', destinationId);
 
     if (error) {
-      console.error('Error updating destination image:', error);
+      console.error('Error updating destination:', error);
       return NextResponse.json({ error: 'Erreur lors de la sauvegarde' }, { status: 500 });
+    }
+
+    // Revalider les pages publiques pour que les changements apparaissent immédiatement
+    const slug = body.slug || destination.slug;
+    const locales = ['fr', 'en', 'de', 'nl', 'es', 'it'];
+    for (const locale of locales) {
+      revalidatePath(`/${locale}/destinations/${destination.slug}`);
+      if (slug !== destination.slug) {
+        revalidatePath(`/${locale}/destinations/${slug}`);
+      }
+      revalidatePath(`/${locale}/destinations`);
     }
 
     return NextResponse.json({ success: true });
