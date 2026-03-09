@@ -32,7 +32,7 @@ export async function getAllDestinationsWithImages(): Promise<DestinationListIte
         image_url,
         partner:partners(name, has_gir)
       `)
-      .eq('is_active', true);
+
 
     if (error) {
       console.error('[destinations-list] Error fetching destinations:', error);

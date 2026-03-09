@@ -113,7 +113,6 @@ export async function getAllDestinationsWithImages() {
       image_url,
       is_active
     `)
-    .eq('is_active', true)
     .order('name');
 
   if (error) {
