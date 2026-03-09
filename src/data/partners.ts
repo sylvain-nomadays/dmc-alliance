@@ -208,21 +208,51 @@ export const partners: Partner[] = [
     hasGir: true
   },
   {
-    id: 'detours-operator',
-    name: 'Détours Opérator',
-    slug: 'detours-operator',
+    id: 'detours-madagascar',
+    name: 'Détours Madagascar',
+    slug: 'detours-madagascar',
     tier: 'premium',
     destinations: [
-      { name: 'Madagascar', nameEn: 'Madagascar', slug: 'madagascar', code: 'MG', region: 'africa' },
-      { name: 'Mauritanie', nameEn: 'Mauritania', slug: 'mauritanie', code: 'MR', region: 'africa' },
+      { name: 'Madagascar', nameEn: 'Madagascar', slug: 'madagascar', code: 'MG', region: 'africa' }
+    ],
+    website: 'https://www.detoursmadagascar.com/',
+    description: {
+      fr: "Détours Madagascar propose des voyages d'exception à Madagascar, hors des sentiers battus, à la découverte d'une biodiversité unique.",
+      en: "Détours Madagascar offers exceptional trips to Madagascar, off the beaten track, discovering unique biodiversity."
+    },
+    specialties: ['Aventure', 'Nature', 'Endémisme', 'Écotourisme'],
+    hasGir: false
+  },
+  {
+    id: 'detours-mauritanie',
+    name: 'Détours Mauritanie',
+    slug: 'detours-mauritanie',
+    tier: 'premium',
+    destinations: [
+      { name: 'Mauritanie', nameEn: 'Mauritania', slug: 'mauritanie', code: 'MR', region: 'africa' }
+    ],
+    website: 'https://www.detoursmauritanie.com/',
+    description: {
+      fr: "Détours Mauritanie organise des voyages authentiques en Mauritanie, entre désert du Sahara et traditions nomades.",
+      en: "Détours Mauritanie organizes authentic trips in Mauritania, between the Sahara desert and nomadic traditions."
+    },
+    specialties: ['Désert', 'Aventure', 'Culture', 'Nomadisme'],
+    hasGir: false
+  },
+  {
+    id: 'detours-algerie',
+    name: 'Détours Algérie',
+    slug: 'detours-algerie',
+    tier: 'premium',
+    destinations: [
       { name: 'Algérie', nameEn: 'Algeria', slug: 'algerie', code: 'DZ', region: 'africa' }
     ],
-    website: 'https://www.voyagemadagascar.com/',
+    website: 'https://www.detoursalgerie.com/',
     description: {
-      fr: "Détours Opérator propose des voyages d'exception à Madagascar, en Mauritanie et en Algérie, hors des sentiers battus.",
-      en: "Détours Opérator offers exceptional trips to Madagascar, Mauritania and Algeria, off the beaten track."
+      fr: "Détours Algérie fait découvrir les trésors de l'Algérie, du Sahara au littoral méditerranéen, en passant par les villes impériales.",
+      en: "Détours Algérie reveals the treasures of Algeria, from the Sahara to the Mediterranean coast and imperial cities."
     },
-    specialties: ['Aventure', 'Nature', 'Désert', 'Endémisme'],
+    specialties: ['Désert', 'Culture', 'Aventure', 'Randonnée'],
     hasGir: false
   },
   {
