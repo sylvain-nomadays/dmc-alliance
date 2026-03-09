@@ -3,7 +3,7 @@
  * Falls back to static data if Supabase data is not available
  */
 
-import { createStaticClient } from './server';
+import { supabaseAdmin } from './admin';
 import { partners as staticPartners, type Partner } from '@/data/partners';
 import { getPartnerProfile } from '@/data/partners-profiles';
 
@@ -90,8 +90,6 @@ export interface PartnerWithProfile extends Partner {
  * Falls back to static data if not in Supabase
  */
 export async function getPartnerWithImage(slug: string): Promise<Partner | null> {
-  const supabase = createStaticClient();
-
   // Get static data first
   const staticData = staticPartners.find(p => p.slug === slug);
 
@@ -99,13 +97,11 @@ export async function getPartnerWithImage(slug: string): Promise<Partner | null>
     return null;
   }
 
-  // Try to get from Supabase to override the image
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  // Use supabaseAdmin to bypass RLS — ensures logos/images are always available
+  const { data, error } = await supabaseAdmin
     .from('partners')
     .select('*')
     .eq('slug', slug)
-    .eq('is_active', true)
     .single();
 
   if (error || !data) {
@@ -128,19 +124,15 @@ export async function getPartnerWithImage(slug: string): Promise<Partner | null>
  * This is used on the partner detail page
  */
 export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWithProfile | null> {
-  const supabase = createStaticClient();
-
   // Get static data if available
   const staticData = staticPartners.find(p => p.slug === slug);
   const staticProfile = staticData ? getPartnerProfile(staticData.id) : null;
 
-  // Try to get from Supabase
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  // Use supabaseAdmin to bypass RLS — ensures all partner data is available
+  const { data, error } = await supabaseAdmin
     .from('partners')
     .select('*')
     .eq('slug', slug)
-    .eq('is_active', true)
     .single();
 
   if (error || !data) {
@@ -161,8 +153,7 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
   const supabaseData = data as SupabasePartner;
 
   // Get team members from Supabase
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: teamData } = await (supabase as any)
+  const { data: teamData } = await supabaseAdmin
     .from('team_members')
     .select('*')
     .eq('partner_id', supabaseData.id)
@@ -170,8 +161,7 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
     .order('display_order');
 
   // Get testimonials from Supabase
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: testimonialData } = await (supabase as any)
+  const { data: testimonialData } = await supabaseAdmin
     .from('testimonials')
     .select('*')
     .eq('partner_id', supabaseData.id)
@@ -196,8 +186,7 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
 
   // If no static data, fetch destinations from DB
   if (!staticData) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: destData } = await (supabase as any)
+    const { data: destData } = await supabaseAdmin
       .from('destinations')
       .select('name, name_en, slug, country, region')
       .eq('partner_id', supabaseData.id)
@@ -281,10 +270,7 @@ export async function getPartnerWithFullProfile(slug: string): Promise<PartnerWi
  * Get team members for a partner by partner ID (Supabase UUID)
  */
 export async function getPartnerTeamMembers(partnerId: string): Promise<TeamMember[]> {
-  const supabase = createStaticClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabaseAdmin
     .from('team_members')
     .select('*')
     .eq('partner_id', partnerId)
@@ -303,10 +289,7 @@ export async function getPartnerTeamMembers(partnerId: string): Promise<TeamMemb
  * Get testimonials for a partner by partner ID (Supabase UUID)
  */
 export async function getPartnerTestimonials(partnerId: string): Promise<Testimonial[]> {
-  const supabase = createStaticClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabaseAdmin
     .from('testimonials')
     .select('*')
     .eq('partner_id', partnerId)
@@ -325,11 +308,8 @@ export async function getPartnerTestimonials(partnerId: string): Promise<Testimo
  * Includes both static partners (merged with DB data) and DB-only partners
  */
 export async function getAllPartnersWithImages(): Promise<Partner[]> {
-  const supabase = createStaticClient();
-
-  // Get all partners from Supabase with their destinations
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: supabasePartners, error } = await (supabase as any)
+  // Use supabaseAdmin to bypass RLS — ensures all partner data is available
+  const { data: supabasePartners, error } = await supabaseAdmin
     .from('partners')
     .select(`
       id,

@@ -3,7 +3,7 @@
  * Falls back to static data if Supabase data is not available
  */
 
-import { createStaticClient } from './server';
+import { supabaseAdmin } from './admin';
 import { getStorageUrl } from './storage';
 import { getDestinationBySlug as getStaticDestination, destinationsData, type DestinationDetail } from '@/data/destinations';
 
@@ -40,8 +40,6 @@ export interface SupabaseDestination {
  * Falls back to static data image if no image_url in Supabase
  */
 export async function getDestinationWithImage(slug: string): Promise<DestinationDetail | null> {
-  const supabase = createStaticClient();
-
   // Get static data first - we need it in either case
   const staticData = getStaticDestination(slug);
 
@@ -51,15 +49,16 @@ export async function getDestinationWithImage(slug: string): Promise<Destination
   }
 
   // Try to get from Supabase to override the image
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  // Use supabaseAdmin to bypass RLS — partners may have is_active=false
+  // but their image should still display on the public page (which is
+  // rendered from static data regardless of is_active status).
+  const { data, error } = await supabaseAdmin
     .from('destinations')
     .select(`
       *,
       partner:partners(id, name, slug, logo_url)
     `)
     .eq('slug', slug)
-    .eq('is_active', true)
     .single();
 
   if (error || !data) {
@@ -102,11 +101,8 @@ export async function getDestinationWithImage(slug: string): Promise<Destination
  * Get all destinations with Supabase images
  */
 export async function getAllDestinationsWithImages() {
-  const supabase = createStaticClient();
-
-  // Get all destinations from Supabase
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: supabaseDestinations, error } = await (supabase as any)
+  // Use supabaseAdmin to bypass RLS — ensures images are always available
+  const { data: supabaseDestinations, error } = await supabaseAdmin
     .from('destinations')
     .select(`
       id,
@@ -117,7 +113,6 @@ export async function getAllDestinationsWithImages() {
       image_url,
       is_active
     `)
-    .eq('is_active', true)
     .order('name');
 
   if (error) {
