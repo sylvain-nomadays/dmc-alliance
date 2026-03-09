@@ -852,7 +852,7 @@ export const destinationsData: DestinationDetail[] = [
     nameEn: 'Madagascar',
     code: 'MG',
     region: 'africa',
-    partnerId: 'detours-operator',
+    partnerId: 'detours-madagascar',
     metaDescription: {
       fr: "Découvrez Madagascar avec Détours Madagascar. Lémuriens, baobabs et paysages uniques.",
       en: "Discover Madagascar with Détours Madagascar. Lemurs, baobabs and unique landscapes."
@@ -1008,7 +1008,7 @@ export const destinationsData: DestinationDetail[] = [
     nameEn: 'Mauritania',
     code: 'MR',
     region: 'africa',
-    partnerId: 'detours-operator',
+    partnerId: 'detours-mauritanie',
     metaDescription: {
       fr: "Découvrez la Mauritanie avec Détours. Désert du Sahara et culture nomade.",
       en: "Discover Mauritania with Détours. Sahara desert and nomadic culture."
@@ -1060,7 +1060,7 @@ export const destinationsData: DestinationDetail[] = [
     nameEn: 'Algeria',
     code: 'DZ',
     region: 'africa',
-    partnerId: 'detours-operator',
+    partnerId: 'detours-algerie',
     metaDescription: {
       fr: "Découvrez l'Algérie avec Détours. Sahara, Tassili et patrimoine berbère.",
       en: "Discover Algeria with Détours. Sahara, Tassili and Berber heritage."
