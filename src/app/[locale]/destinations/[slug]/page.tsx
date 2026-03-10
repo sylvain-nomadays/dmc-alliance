@@ -182,13 +182,12 @@ export default async function DestinationPage({ params }: Props) {
                 <h2 className="text-2xl md:text-3xl font-heading text-gray-900 mb-6">
                   {isFr ? 'Présentation de la destination' : 'Destination Overview'}
                 </h2>
-                <div className="prose prose-lg max-w-none text-gray-600">
-                  {(isFr ? destination.description.fr : destination.description.en)
-                    .split('\n\n')
-                    .map((paragraph, idx) => (
-                      <p key={idx}>{paragraph}</p>
-                    ))}
-                </div>
+                <div
+                  className="prose prose-lg max-w-none text-gray-600"
+                  dangerouslySetInnerHTML={{
+                    __html: isFr ? destination.description.fr : destination.description.en
+                  }}
+                />
               </section>
 
               {/* Selling Points */}
