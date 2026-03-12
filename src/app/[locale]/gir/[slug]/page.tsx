@@ -383,11 +383,10 @@ export default async function CircuitPage({ params }: Props) {
                 <h2 className="text-2xl font-heading text-gray-900 mb-4">
                   {isFr ? 'Présentation du voyage' : 'Trip Overview'}
                 </h2>
-                <div className="prose prose-lg max-w-none text-gray-600">
-                  {(isFr ? circuit.summary.fr : circuit.summary.en).split('\n\n').map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                </div>
+                <div
+                  className="prose prose-lg max-w-none text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: isFr ? circuit.summary.fr : circuit.summary.en }}
+                />
               </section>
 
               {/* Highlights */}
@@ -750,9 +749,10 @@ function DayCard({ day, locale }: { day: CircuitDay; locale: string }) {
       </summary>
 
       <div className="px-4 pb-4 pt-2 border-t border-gray-100">
-        <p className="text-gray-600 mb-4">
-          {isFr ? day.description.fr : day.description.en}
-        </p>
+        <div
+          className="prose prose-sm max-w-none text-gray-600 mb-4"
+          dangerouslySetInnerHTML={{ __html: isFr ? day.description.fr : day.description.en }}
+        />
 
         {/* Highlights */}
         {day.highlights && (
