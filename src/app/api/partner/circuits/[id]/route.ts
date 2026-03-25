@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { slugify } from '@/lib/utils';
 
 async function getPartnerIdForUser(userId: string): Promise<string | null> {
   // Trouver le partenaire via owner_id
@@ -115,6 +116,11 @@ export async function PUT(
 
     // Ensure partner_id stays locked to the partner's own ID
     payload.partner_id = partnerId;
+
+    // Sanitize slug to prevent URLs or invalid characters
+    if (payload.slug) {
+      payload.slug = slugify(payload.slug);
+    }
 
     const { data, error } = await supabaseAdmin
       .from('circuits')

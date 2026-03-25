@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { slugify } from '@/lib/utils';
 
 async function getPartnerIdForUser(userId: string): Promise<string | null> {
   const { data: partner } = await supabaseAdmin
@@ -40,6 +41,13 @@ export async function POST(request: Request) {
 
     // Force partner_id to the authenticated partner
     payload.partner_id = partnerId;
+
+    // Sanitize slug to prevent URLs or invalid characters
+    if (payload.slug) {
+      payload.slug = slugify(payload.slug);
+    } else if (payload.title) {
+      payload.slug = slugify(payload.title);
+    }
 
     // Convert empty UUID strings to null
     if (!payload.destination_id) payload.destination_id = null;

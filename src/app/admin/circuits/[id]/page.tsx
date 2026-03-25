@@ -344,6 +344,7 @@ export default function CircuitEditPage() {
 
     const payload = {
       ...form,
+      slug: generateSlug(form.slug || form.title),
       price_single_supplement: form.price_single_supplement || null,
       published_at: publishedAt,
       // Clean empty UUID strings to null
@@ -494,7 +495,7 @@ export default function CircuitEditPage() {
                   <input
                     type="text"
                     value={form.slug}
-                    onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                    onChange={(e) => setForm({ ...form, slug: generateSlug(e.target.value) })}
                     required
                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta-500"
                   />
