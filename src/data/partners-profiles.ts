@@ -236,20 +236,7 @@ export const partnerProfiles: PartnerProfile[] = [
       }
     ],
     teamSize: 8,
-    team: [
-      {
-        name: 'Antoine Girard',
-        role: { fr: 'Fondateur & Directeur', en: 'Founder & Director' },
-        photo: '/images/team/antoine-girard.jpg',
-        bio: { fr: "Guide de haute montagne de formation, Antoine parcourt le Kirghizistan depuis plus de 10 ans.", en: "Trained as a high mountain guide, Antoine has been exploring Kyrgyzstan for over 10 years." }
-      },
-      {
-        name: 'Aïgul',
-        role: { fr: 'Responsable réservations', en: 'Reservations Manager' },
-        photo: '/images/team/aigul.jpg',
-        bio: { fr: "Kirghize parlant parfaitement français, Aïgul est le point de contact privilégié des agences partenaires.", en: "Kyrgyz fluent in French, Aïgul is the preferred contact for partner agencies." }
-      }
-    ],
+    team: [],
     stats: {
       travelersPerYear: 280,
       yearsExperience: 9,
