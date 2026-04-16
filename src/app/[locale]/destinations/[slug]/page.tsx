@@ -200,7 +200,16 @@ export default async function DestinationPage({ params }: Props) {
                     (point, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <CheckCircleIcon className="w-6 h-6 text-sage-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{point}</span>
+                        <span className="text-gray-700">
+                          {point.includes('*')
+                            ? point.split(/\*([^*]+)\*/).map((part, i) =>
+                                i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                              )
+                            : point.includes(' — ')
+                              ? <><strong>{point.split(' — ')[0]}</strong>{' — '}{point.split(' — ').slice(1).join(' — ')}</>
+                              : point
+                          }
+                        </span>
                       </li>
                     )
                   )}
