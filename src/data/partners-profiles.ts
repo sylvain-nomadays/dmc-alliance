@@ -332,18 +332,22 @@ export const partnerProfiles: PartnerProfile[] = [
     },
     uniqueSellingPoints: {
       fr: [
-        "Expertise de 20 ans sur le terrain",
+        "Expertise de 40 ans sur le terrain",
         "Véhicules 4x4 privatifs spécialement aménagés",
         "Accès exclusif à des conservancies privés",
+        "Safari aventure au Safari luxe",
+        "Trek et aventure",
         "Guides francophones passionnés de faune",
-        "Hébergements triés sur le volet"
+        "Hébergement de qualités testés et validés"
       ],
       en: [
-        "20 years of field expertise",
+        "40 years of field expertise",
         "Private specially equipped 4x4 vehicles",
         "Exclusive access to private conservancies",
+        "From adventure safari to luxury safari",
+        "Trekking and adventure",
         "French-speaking guides passionate about wildlife",
-        "Hand-picked accommodations"
+        "Quality accommodations tested and approved"
       ]
     },
     b2bServices: {
