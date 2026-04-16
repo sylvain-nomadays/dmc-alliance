@@ -82,6 +82,14 @@ export async function getDestinationWithImage(slug: string): Promise<Destination
     },
   };
 
+  // Override sellingPoints with Supabase highlights if available
+  if (data.highlights && data.highlights.length > 0) {
+    result.sellingPoints = {
+      ...staticData.sellingPoints,
+      fr: data.highlights,
+    };
+  }
+
   // Override webinarVideo with Supabase data if available
   if (data.video_url) {
     result.webinarVideo = {

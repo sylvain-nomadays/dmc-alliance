@@ -1030,18 +1030,22 @@ export const destinationsData: DestinationDetail[] = [
     },
     sellingPoints: {
       fr: [
-        "Sahara authentique et préservé",
-        "Chinguetti, ville UNESCO",
-        "Expérience nomade vraie",
-        "Nuits sous les étoiles",
-        "Destination confidentielle"
+        "Un Sahara vivant et accessible — Ergs immenses, massifs de grès millénaires, solitude absolue — la Mauritanie offre l'expérience saharienne la plus authentique et la plus préservée du monde.",
+        "La liberté absolue du voyageur — Ici, aucune barrière, aucune foule, aucun circuit imposé — juste l'espace infini et la liberté de tracer sa propre route au fil du désert.",
+        "Un nomadisme encore vivant — Les tentes maures se dressent encore dans l'erg, les dromadaires tracent leurs routes millénaires — le nomadisme saharien résiste, fier et vivant, aux assauts du monde moderne.",
+        "Un patrimoine historique exceptionnel — Quatre cités caravanières classées UNESCO, des milliers de manuscrits anciens, des bibliothèques de sable — la Mauritanie est un conservatoire vivant de la mémoire saharo-africaine.",
+        "Une diversité humaine et culturelle profonde — Maures, Peuls, Toucouleurs, Sarakolés — la Mauritanie est un pays-carrefour où deux grandes civilisations africaines se rencontrent, se mêlent et s'enrichissent mutuellement depuis des siècles.",
+        "Une nature entre deux extrêmes — Du Banc d'Arguin aux rives du fleuve Sénégal, en passant par les gueltats du Tagant, la Mauritanie déploie une biodiversité insoupçonnée et spectaculaire.",
+        "Une destination encore préservée — Loin du tourisme de masse, la Mauritanie se livre à ceux qui la cherchent vraiment — intacte, généreuse, profondément humaine, et terriblement addictive."
       ],
       en: [
-        "Authentic and preserved Sahara",
-        "Chinguetti, UNESCO city",
-        "True nomadic experience",
-        "Nights under the stars",
-        "Confidential destination"
+        "A living, accessible Sahara — Immense ergs, millennia-old sandstone massifs, absolute solitude — Mauritania offers the most authentic and preserved Saharan experience in the world.",
+        "The ultimate freedom of the traveler — No barriers, no crowds, no imposed routes — just infinite space and the freedom to trace your own path through the desert.",
+        "A still-living nomadism — Moorish tents still rise in the erg, dromedaries trace their millennia-old routes — Saharan nomadism endures, proud and alive, against the modern world.",
+        "An exceptional historical heritage — Four UNESCO-listed caravan cities, thousands of ancient manuscripts, libraries of sand — Mauritania is a living conservatory of Saharo-African memory.",
+        "A deep human and cultural diversity — Moors, Fulani, Toucouleurs, Soninke — Mauritania is a crossroads country where two great African civilizations meet, blend and enrich each other.",
+        "Nature between two extremes — From the Banc d'Arguin to the banks of the Senegal River, through the gueltats of Tagant, Mauritania reveals an unsuspected and spectacular biodiversity.",
+        "A still-preserved destination — Far from mass tourism, Mauritania reveals itself to those who truly seek it — intact, generous, profoundly human, and terribly addictive."
       ]
     },
     idealFor: {
