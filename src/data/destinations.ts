@@ -414,14 +414,6 @@ export const destinationsData: DestinationDetail[] = [
       fr: ["Amateurs de safari", "Photographes animaliers", "Familles", "Lune de miel safari", "Groupes"],
       en: ["Safari enthusiasts", "Wildlife photographers", "Families", "Safari honeymoon", "Groups"]
     },
-    webinarVideo: {
-      url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      title: {
-        fr: "Webinaire : Safari Kenya, conseils de pro",
-        en: "Webinar: Kenya Safari, pro tips"
-      },
-      duration: "55 min"
-    },
     images: {
       hero: "/images/destinations/kenya.jpg",
       gallery: []

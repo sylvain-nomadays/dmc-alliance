@@ -385,10 +385,6 @@ export const partnerProfiles: PartnerProfile[] = [
         '/images/partners/galago-expeditions/gallery-2.jpg',
         '/images/partners/galago-expeditions/gallery-3.jpg'
       ]
-    },
-    presentationVideo: {
-      url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      title: { fr: 'Safari avec Galago Expeditions', en: 'Safari with Galago Expeditions' }
     }
   },
 
