@@ -335,14 +335,15 @@ export const partners: Partner[] = [
     slug: 'alainn-tours',
     tier: 'classic',
     destinations: [
+      { name: 'Angleterre', nameEn: 'England', slug: 'angleterre', code: 'GB-ENG', region: 'europe' },
       { name: 'Écosse', nameEn: 'Scotland', slug: 'ecosse', code: 'GB-SCT', region: 'europe' },
       { name: 'Irlande', nameEn: 'Ireland', slug: 'irlande', code: 'IE', region: 'europe' },
       { name: 'Pays de Galles', nameEn: 'Wales', slug: 'pays-de-galles', code: 'GB-WLS', region: 'europe' }
     ],
     website: 'https://www.alainntours.fr/',
     description: {
-      fr: "Alainn Tours fait vibrer les terres celtiques : Écosse, Irlande et Pays de Galles, entre châteaux, légendes et paysages sauvages.",
-      en: "Alainn Tours brings Celtic lands to life: Scotland, Ireland and Wales, among castles, legends and wild landscapes."
+      fr: "Alainn Tours fait vibrer les terres celtiques et britanniques : Angleterre, Écosse, Irlande et Pays de Galles, entre châteaux, légendes et paysages sauvages.",
+      en: "Alainn Tours brings Celtic and British lands to life: England, Scotland, Ireland and Wales, among castles, legends and wild landscapes."
     },
     specialties: ['Autotour', 'Culture celtique', 'Châteaux', 'Nature'],
     hasGir: false

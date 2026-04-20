@@ -1313,6 +1313,58 @@ export const destinationsData: DestinationDetail[] = [
     hasGir: false
   },
   {
+    slug: 'angleterre',
+    name: 'Angleterre',
+    nameEn: 'England',
+    code: 'GB-ENG',
+    region: 'europe',
+    partnerId: 'alainn-tours',
+    metaDescription: {
+      fr: "Découvrez l'Angleterre avec Alainn Tours. Londres, campagnes anglaises et patrimoine royal.",
+      en: "Discover England with Alainn Tours. London, English countryside and royal heritage."
+    },
+    tagline: {
+      fr: "Londres, campagnes anglaises et patrimoine royal",
+      en: "London, English countryside and royal heritage"
+    },
+    description: {
+      fr: "L'Angleterre marie l'effervescence de Londres à la douceur de ses campagnes : villages de pierre des Cotswolds, côtes crayeuses du Sud, universités millénaires d'Oxford et Cambridge. Alainn Tours compose des circuits qui révèlent toutes les facettes du pays.\n\nEntre patrimoine royal, pubs chaleureux, jardins anglais et musées de classe mondiale, l'Angleterre offre un dépaysement culturel à quelques heures de Paris.",
+      en: "England combines the buzz of London with the gentleness of its countryside: stone villages of the Cotswolds, chalky coasts of the South, ancient universities of Oxford and Cambridge. Alainn Tours designs circuits that reveal all facets of the country.\n\nBetween royal heritage, welcoming pubs, English gardens and world-class museums, England offers a cultural getaway just hours from Paris."
+    },
+    highlights: {
+      bestSeason: "Mai - Septembre",
+      currency: "Livre sterling (GBP)",
+      language: "Anglais",
+      timezone: "UTC+0",
+      flightTime: "1h15 direct"
+    },
+    sellingPoints: {
+      fr: [
+        "Londres, capitale cosmopolite",
+        "Villages des Cotswolds",
+        "Universités d'Oxford et Cambridge",
+        "Côtes du Sud (Douvres, Cornouailles)",
+        "Patrimoine royal et châteaux"
+      ],
+      en: [
+        "London, cosmopolitan capital",
+        "Cotswolds villages",
+        "Oxford and Cambridge universities",
+        "Southern coasts (Dover, Cornwall)",
+        "Royal heritage and castles"
+      ]
+    },
+    idealFor: {
+      fr: ["Citytrip", "Culture", "Familles", "Amateurs d'histoire", "Jardins"],
+      en: ["City break", "Culture", "Families", "History lovers", "Gardens"]
+    },
+    images: {
+      hero: "/images/destinations/angleterre.jpg",
+      gallery: []
+    },
+    hasGir: false
+  },
+  {
     slug: 'ecosse',
     name: 'Écosse',
     nameEn: 'Scotland',
